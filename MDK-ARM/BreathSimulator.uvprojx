@@ -957,59 +957,9 @@
               <FilePath>..\CM7\Core\Src\diagnostics_data.c</FilePath>
             </File>
             <File>
-              <FileName>blower_ctrl.c</FileName>
+              <FileName>breath_sim.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\blower_ctrl.c</FilePath>
-            </File>
-            <File>
-              <FileName>blower_osc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\blower_osc.c</FilePath>
-            </File>
-            <File>
-              <FileName>flow_sensor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\flow_sensor.c</FilePath>
-            </File>
-            <File>
-              <FileName>tube_comp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\tube_comp.c</FilePath>
-            </File>
-            <File>
-              <FileName>leak_estimator.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\leak_estimator.c</FilePath>
-            </File>
-            <File>
-              <FileName>leak_estimator_vivo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\leak_estimator_vivo.c</FilePath>
-            </File>
-            <File>
-              <FileName>leak_btps.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\leak_btps.c</FilePath>
-            </File>
-            <File>
-              <FileName>therapy.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\therapy.c</FilePath>
-            </File>
-            <File>
-              <FileName>safety_supervisor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\safety_supervisor.c</FilePath>
-            </File>
-            <File>
-              <FileName>epr_ctrl.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\epr_ctrl.c</FilePath>
-            </File>
-            <File>
-              <FileName>apap_ctrl.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\apap_ctrl.c</FilePath>
+              <FilePath>..\CM7\Core\Src\breath_sim.c</FilePath>
             </File>
             <File>
               <FileName>humidifier.c</FileName>
@@ -1040,11 +990,6 @@
               <FileName>nfc_test.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\CM7\Core\Src\nfc_test.c</FilePath>
-            </File>
-            <File>
-              <FileName>pressure_sensors.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\pressure_sensors.c</FilePath>
             </File>
             <File>
               <FileName>rfal_platform.c</FileName>
@@ -3714,24 +3659,14 @@
           </GroupOption>
           <Files>
             <File>
-              <FileName>cpap_menu.cpp</FileName>
+              <FileName>breath_sim_menu.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/cpap_menu.cpp</FilePath>
+              <FilePath>../cm7/touchgfx/gui/src/breath_sim/breath_sim_menu.cpp</FilePath>
             </File>
             <File>
-              <FileName>cpap_settings.cpp</FileName>
+              <FileName>breath_sim_settings.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/cpap_settings.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>icon_widget.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/icon_widget.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>status_icons.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/status_icons.cpp</FilePath>
+              <FilePath>../cm7/touchgfx/gui/src/breath_sim/breath_sim_settings.cpp</FilePath>
             </File>
             <File>
               <FileName>FrontendApplication.cpp</FileName>
@@ -4780,59 +4715,9 @@
               <FilePath>..\CM7\Core\Src\diagnostics_data.c</FilePath>
             </File>
             <File>
-              <FileName>blower_ctrl.c</FileName>
+              <FileName>breath_sim.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\blower_ctrl.c</FilePath>
-            </File>
-            <File>
-              <FileName>blower_osc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\blower_osc.c</FilePath>
-            </File>
-            <File>
-              <FileName>flow_sensor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\flow_sensor.c</FilePath>
-            </File>
-            <File>
-              <FileName>tube_comp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\tube_comp.c</FilePath>
-            </File>
-            <File>
-              <FileName>leak_estimator.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\leak_estimator.c</FilePath>
-            </File>
-            <File>
-              <FileName>leak_estimator_vivo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\leak_estimator_vivo.c</FilePath>
-            </File>
-            <File>
-              <FileName>leak_btps.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\leak_btps.c</FilePath>
-            </File>
-            <File>
-              <FileName>therapy.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\therapy.c</FilePath>
-            </File>
-            <File>
-              <FileName>safety_supervisor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\safety_supervisor.c</FilePath>
-            </File>
-            <File>
-              <FileName>epr_ctrl.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\epr_ctrl.c</FilePath>
-            </File>
-            <File>
-              <FileName>apap_ctrl.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\apap_ctrl.c</FilePath>
+              <FilePath>..\CM7\Core\Src\breath_sim.c</FilePath>
             </File>
             <File>
               <FileName>humidifier.c</FileName>
@@ -4863,11 +4748,6 @@
               <FileName>nfc_test.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\CM7\Core\Src\nfc_test.c</FilePath>
-            </File>
-            <File>
-              <FileName>pressure_sensors.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\CM7\Core\Src\pressure_sensors.c</FilePath>
             </File>
             <File>
               <FileName>rfal_platform.c</FileName>
@@ -5474,24 +5354,14 @@
           <GroupName>gui</GroupName>
           <Files>
             <File>
-              <FileName>cpap_menu.cpp</FileName>
+              <FileName>breath_sim_menu.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/cpap_menu.cpp</FilePath>
+              <FilePath>../cm7/touchgfx/gui/src/breath_sim/breath_sim_menu.cpp</FilePath>
             </File>
             <File>
-              <FileName>cpap_settings.cpp</FileName>
+              <FileName>breath_sim_settings.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/cpap_settings.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>icon_widget.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/icon_widget.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>status_icons.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>../cm7/touchgfx/gui/src/cpap/status_icons.cpp</FilePath>
+              <FilePath>../cm7/touchgfx/gui/src/breath_sim/breath_sim_settings.cpp</FilePath>
             </File>
             <File>
               <FileName>FrontendApplication.cpp</FileName>

@@ -24,8 +24,8 @@
     <ClCompile Include="..\..\gui\src\screen_screen\screenView.cpp"/>
     <ClCompile Include="..\..\generated\gui_generated\src\screen_screen\screenViewBase.cpp"/>
     <ClCompile Include="..\..\generated\simulator\src\video\SoftwareMJPEGDecoder.cpp"/>
-    <ClCompile Include="..\..\gui\src\cpap\cpap_menu.cpp"/>
-    <ClCompile Include="..\..\gui\src\cpap\cpap_settings.cpp"/>
+    <ClCompile Include="..\..\gui\src\breath_sim\breath_sim_menu.cpp"/>
+    <ClCompile Include="..\..\gui\src\breath_sim\breath_sim_settings.cpp"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="$(ApplicationRoot)\assets\texts\texts.xml"/>
@@ -179,8 +179,8 @@
     <ClInclude Include="..\..\generated\gui_generated\include\gui_generated\screen_screen\screenViewBase.hpp"/>
     <ClInclude Include="..\..\generated\gui_generated\include\gui_generated\common\SimConstants.hpp"/>
     <ClInclude Include="..\..\generated\simulator\include\simulator\video\SoftwareMJPEGDecoder.hpp"/>
-    <ClInclude Include="..\..\gui\include\gui\cpap\cpap_menu.hpp"/>
-    <ClInclude Include="..\..\gui\include\gui\cpap\cpap_settings.hpp"/>
+    <ClInclude Include="..\..\gui\include\gui\breath_sim\breath_sim_menu.hpp"/>
+    <ClInclude Include="..\..\gui\include\gui\breath_sim\breath_sim_settings.hpp"/>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="$(ApplicationRoot)\generated\simulator\touchgfx.rc"/>

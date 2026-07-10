@@ -35,7 +35,20 @@ void BlowerIpc_CM7_Init(void)
 bool BlowerIpc_CM7_Start(void)
 {
   DBG_I("BLR", "cmd START");
-  return BlowerIpc_CM7_PostCommand(BLOWER_CMD_START, 0, 0U);
+  if (g_blower_ipc.magic != BLOWER_IPC_MAGIC)
+  {
+    BlowerIpc_InitSharedMemory();
+  }
+
+  /* Do not overwrite target_speed_rpm — CM4 must program the speed
+   * reference before MC_StartMotor1(). Caller should post SET_SPEED first. */
+  g_blower_ipc.command = (uint32_t)BLOWER_CMD_START;
+  __DMB();
+  g_blower_ipc.cm7_cmd_seq++;
+  __DMB();
+
+  (void)HAL_HSEM_Release(BLOWER_IPC_HSEM_CMD_ID, 0U);
+  return true;
 }
 
 bool BlowerIpc_CM7_Stop(void)

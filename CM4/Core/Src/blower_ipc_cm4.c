@@ -193,6 +193,15 @@ static void BlowerIpc_CM4_HandleCommand(BlowerIpcCommand_t cmd, int32_t rpm, uin
     case BLOWER_CMD_START:
       HAL_GPIO_WritePin(STSPIN_STBY_GPIO_Port, STSPIN_STBY_Pin, GPIO_PIN_SET);
       HAL_GPIO_WritePin(MOT_POW_EN_GPIO_Port, MOT_POW_EN_Pin, GPIO_PIN_SET);
+      if ((MC_GetSTMStateMotor1() == (MCI_State_t)FAULT_OVER) &&
+          (MC_GetCurrentFaultsMotor1() == MC_NO_FAULTS))
+      {
+        (void)MC_AcknowledgeFaultMotor1();
+      }
+      if (rpm != 0)
+      {
+        MC_ProgramSpeedRampMotor1(BlowerIpc_RpmToSpeedUnit(rpm), ramp_ms);
+      }
       (void)MC_StartMotor1();
       break;
 

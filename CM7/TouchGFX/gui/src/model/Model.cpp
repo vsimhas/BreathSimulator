@@ -1,7 +1,7 @@
 #include <gui/model/Model.hpp>
 #include <gui/model/ModelListener.hpp>
 
-#include <gui/cpap/cpap_menu.hpp>
+#include <gui/breath_sim/breath_sim_menu.hpp>
 
 extern "C" {
     #include "rotary_input.h"
@@ -38,10 +38,10 @@ void Model::tick()
     {
         DBG_D("UI", "rotary delta=%d page=%u mode=%u sel=%u",
               (int)d,
-              (unsigned)cpap::getMenu().page(),
-              (unsigned)cpap::getMenu().mode(),
-              (unsigned)cpap::getMenu().selectedIndex());
-        cpap::getMenu().onRotaryDelta(static_cast<int>(d));
+              (unsigned)breath_sim::getMenu().page(),
+              (unsigned)breath_sim::getMenu().mode(),
+              (unsigned)breath_sim::getMenu().selectedIndex());
+        breath_sim::getMenu().onRotaryDelta(static_cast<int>(d));
     }
 
     /* Process at most ONE press per tick. The driver debounces bursts at
@@ -52,11 +52,11 @@ void Model::tick()
     uint8_t p = RotaryInput_PopPress();
     if (p > 0U)
     {
-        cpap::getMenu().onButtonPress();
+        breath_sim::getMenu().onButtonPress();
         DBG_D("UI", "press -> page=%u mode=%u sel=%u",
-              (unsigned)cpap::getMenu().page(),
-              (unsigned)cpap::getMenu().mode(),
-              (unsigned)cpap::getMenu().selectedIndex());
+              (unsigned)breath_sim::getMenu().page(),
+              (unsigned)breath_sim::getMenu().mode(),
+              (unsigned)breath_sim::getMenu().selectedIndex());
 
         /* Return any extra presses to the latch for the next frame. */
         if (p > 1U)

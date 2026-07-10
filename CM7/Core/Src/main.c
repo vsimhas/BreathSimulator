@@ -32,7 +32,6 @@
 #include "lcd_drv.h"
 #include "boot_trace.h"
 #include "stm32h7xx_hal_rcc_ex.h"
-#include "pressure_sensors.h"
 #include "blower_ipc.h"
 #include "nfc_test.h"
 #include "sensirion_th.h"
@@ -40,16 +39,8 @@
 #include "telemetry_stream.h"
 #include "humidifier.h"
 #include "rotary_input.h"
-#include "blower_ctrl.h"
-#include "flow_sensor.h"
-#include "tube_comp.h"
-#include "leak_estimator.h"
-#include "therapy.h"
-#include "safety_supervisor.h"
+#include "breath_sim.h"
 /* USER CODE END Includes */
-
-#define MAIN_MBAR_PER_CMH2O   0.980665f
-#define MAIN_MBAR_TO_CMH2O(x) ((x) * (1.0f / MAIN_MBAR_PER_CMH2O))
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
@@ -186,12 +177,8 @@ BlowerIpcStatus_t g_blower_status;
  *  - GuiTask      : TouchGFX render loop. Blocks on LTDC VSYNC (~60 Hz), so
  *                   it consumes CPU only while drawing. Polls rotary input
  *                   once per frame before rendering.
- *  - SensorTask   : Fast sensor acquisition (3x AMS5935 SPI + ADC), leak,
- *                   outer pressure PID (200 Hz), and Therapy_Update.
- *                   osPriorityAboveNormal — below SafetyTask.
- *  - SafetyTask   : Independent safety_supervisor @ 200 Hz (pressure faults,
- *                   CM4 IPC heartbeat). osPriorityRealtime — preempts all
- *                   other CM7 application tasks.
+ *  - BreathSimTask: RPM waveform @ 200 Hz, blower IPC status, telemetry.
+ *  - SystemTask   : USB command drain, bench blower globals, fault logging.
  *  - NfcTask      : RFAL discovery worker + secure tag verify. Needs regular
  *                   servicing (10 ms) but each call is short.
  *  - ClimateTask  : SHT4x/STS4x I2C reads (~10 ms blocking each) + 1 Hz
@@ -209,17 +196,11 @@ static const osThreadAttr_t guiTask_attributes = {
   .stack_size = 4096,
   .priority = (osPriority_t) osPriorityNormal,
 };
-static osThreadId_t sensorTaskHandle;
-static const osThreadAttr_t sensorTask_attributes = {
-  .name = "sensors",
-  .stack_size = 1536,
-  .priority = (osPriority_t) osPriorityAboveNormal,
-};
-static osThreadId_t safetyTaskHandle;
-static const osThreadAttr_t safetyTask_attributes = {
-  .name = "safety",
+static osThreadId_t breathSimTaskHandle;
+static const osThreadAttr_t breathSimTask_attributes = {
+  .name = "breathsim",
   .stack_size = 1024,
-  .priority = (osPriority_t) osPriorityRealtime,
+  .priority = (osPriority_t) osPriorityAboveNormal,
 };
 static osThreadId_t nfcTaskHandle;
 static const osThreadAttr_t nfcTask_attributes = {
@@ -292,8 +273,7 @@ static void BootMarkerWrite(uint32_t marker);
 static void LCD_UpdateDebugRegs(void);
 static void CM7_EnableFpu(void);
 static void GuiTask(void *argument);
-static void SensorTask(void *argument);
-static void SafetyTask(void *argument);
+static void BreathSimTask(void *argument);
 static void NfcTask(void *argument);
 static void ClimateTask(void *argument);
 static void SystemTask(void *argument);
@@ -1106,15 +1086,6 @@ static HAL_StatusTypeDef SDRAM_RunBasicTest(void)
   return HAL_OK;
 }
 
-AMS5935_HandleTypeDef hamsFS;
-AMS5935_Data_t measFS;
-
-AMS5935_HandleTypeDef hamsAS;
-AMS5935_Data_t measAS;
-
-AMS5935_HandleTypeDef hamsPS;
-AMS5935_Data_t measPS;
-
 volatile uint8_t g_bench_blower_enable = 0U;
 volatile uint8_t g_bench_blower_enable_prev = 0U;
 /* int32 to span the full motor speed range without wrapping the IPC wire. */
@@ -1296,13 +1267,12 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   guiTaskHandle      = osThreadNew(GuiTask,      NULL, &guiTask_attributes);
-  sensorTaskHandle   = osThreadNew(SensorTask,   NULL, &sensorTask_attributes);
-  safetyTaskHandle   = osThreadNew(SafetyTask,   NULL, &safetyTask_attributes);
+  breathSimTaskHandle = osThreadNew(BreathSimTask, NULL, &breathSimTask_attributes);
   nfcTaskHandle      = osThreadNew(NfcTask,      NULL, &nfcTask_attributes);
   climateTaskHandle  = osThreadNew(ClimateTask,  NULL, &climateTask_attributes);
   systemTaskHandle   = osThreadNew(SystemTask,   NULL, &systemTask_attributes);
   selfTestTaskHandle = osThreadNew(SelfTestTask, NULL, &selfTestTask_attributes);
-  if ((guiTaskHandle == NULL) || (sensorTaskHandle == NULL) ||
+  if ((guiTaskHandle == NULL) || (breathSimTaskHandle == NULL) ||
       (nfcTaskHandle == NULL) || (climateTaskHandle == NULL) ||
       (systemTaskHandle == NULL) || (selfTestTaskHandle == NULL))
   {
@@ -2219,117 +2189,18 @@ static void GuiTask(void *argument)
 }
 
 /**
-  * @brief Fast sensor acquisition: 3x AMS5935 (SPI) + analog pressure + blower
-  *        IPC status snapshot, plus the outer-loop pressure PID.
-  *
-  *  Timing strategy
-  *  ---------------
-  *  Each AMS5935 single-shot conversion takes ~4 ms (datasheet) and the
-  *  HAL transaction itself is sub-100us. So a naive
-  *      Start -> HAL_Delay(6) -> Read
-  *  pattern can never run faster than ~6 ms per sensor, which is what the
-  *  previous implementation did at a 10 ms period.
-  *
-  *  To get the patient pressure (PS) and flow (FS) sensors up to 200 Hz
-  *  for the pressure PID, we run a *pipelined* scheme:
-  *      tick N  : start conversions
-  *      tick N+1: read results (4 ms conversion fits inside one 5 ms tick)
-  *  FS lives on its own bus (SPI2) so it gets a fresh sample every tick.
-  *  AS and PS share SPI4, so PS gets every tick except 1-in-20 where AS
-  *  borrows the slot (PS effective rate = ~190 Hz; AS = 10 Hz, plenty for
-  *  weather/altitude tracking).
-  *
-  *  After reading the new pressure, we run BlowerCtrl_Step() so the PID
-  *  acts on the freshest sample with minimum loop latency.
+  * @brief Breath simulation task: open-loop RPM waveform @ 200 Hz.
   */
-static void SensorTask(void *argument)
+static void BreathSimTask(void *argument)
 {
   (void)argument;
 
-  /* One-time bring-up (runs with the scheduler active so HAL_Delay()
-   * timeouts inside the SPI transactions work). */
+  BreathSim_Init();
 
-  /* Flow Sensor Handle Init */
-  hamsFS.hspi = &hspi2;
-  hamsFS.cs_port = GPIOB;
-  hamsFS.cs_pin = GPIO_PIN_12;
-  hamsFS.use_eoc = 0;              /* set 1 if EOC line connected */
-  hamsFS.p_min = -5.0f;
-  hamsFS.p_max = 5.0f;
-  AMS5935_Init(&hamsFS);
-
-  /* Atmospheric Pressure Sensor Handle Init */
-  hamsAS.hspi = &hspi4;
-  hamsAS.cs_port = GPIOE;
-  hamsAS.cs_pin = GPIO_PIN_4;
-  hamsAS.use_eoc = 0;
-  hamsAS.p_min = 700.0f;
-  hamsAS.p_max = 1200.0f;
-  AMS5935_Init(&hamsAS);
-
-  /* Pressure Sensor Handle Init */
-  hamsPS.hspi = &hspi4;
-  hamsPS.cs_port = GPIOG;
-  hamsPS.cs_pin = GPIO_PIN_3;
-  hamsPS.use_eoc = 0;
-  hamsPS.p_min = -50.0f;
-  hamsPS.p_max = 50.0f;
-  AMS5935_Init(&hamsPS);
-
-  /* PID state. Defaults to disabled in BlowerCtrl_Init() - flip
-   * g_blower_ctrl_enabled = 1 (and a sensible setpoint) from the watch
-   * window, the GUI, or boot config when you want to use it. */
-  BlowerCtrl_Init();
-
-  /* Flow-sensor conditioning. Default is a 10 Hz LPF on the raw FS
-   * differential pressure - smooths the blower-induced pulsation while
-   * preserving respiratory features. Tune via g_flow_lpf_cutoff_hz. */
-  Flow_Init();
-
-  /* Tube-loss compensator. Defaults disabled - on the current bench rig
-   * the sensor sits adjacent to the load so the hose drop is negligible.
-   * When you connect a real 1.8 m hose, set g_tubecomp_enabled = 1 and
-   * (optionally) tune the R coefficients to your hose. With it enabled,
-   * the PID and leak estimator both automatically work off the
-   * mask-pressure estimate instead of the device-side sensor reading. */
-  TubeComp_Init();
-
-  /* Unintentional-leak estimator. Always-on; meaningful values appear
-   * within ~1 second of therapy start (Therapy_Start reseeds the LPF). */
-  Leak_Init();
-
-  /* CPAP therapy state machine. Starts in IDLE; the GUI flips it to
-   * RAMP/RUNNING via Therapy_Start when the user clicks START THERAPY. */
-  Therapy_Init();
-
-  /* Tick period of the loop. 5 ms = 200 Hz, matched to the BlowerCtrl
-   * PID. Changing this requires re-tuning the PID gains. */
   const uint32_t period_ms = 5U;
-  const float    dt_s      = (float)period_ms * 0.001f;
-
-  /* Period 1-in-N for atmospheric (AS) sampling. AS borrows one PS slot
-   * every AS_DECIMATE ticks. 20 ticks @ 5 ms = 100 ms = 10 Hz. */
-  const uint32_t AS_DECIMATE = 20U;
-
-  /* Period 1-in-N for analog ADC pressure sampling. ADC is cheap (~10us)
-   * but every tick is overkill - 100 Hz is plenty for the AMS5105. */
-  const uint32_t ADC_DECIMATE = 2U;
-
-  /* Period 1-in-N for IPC status snapshot. CM4 only updates the mailbox
-   * at ~100 Hz, so polling at 100 Hz is enough; saves a few cycles per
-   * tick that we'd rather give to the PID. */
+  const float dt_s = (float)period_ms * 0.001f;
   const uint32_t IPC_DECIMATE = 2U;
-
-  /* Kick off the first set of conversions BEFORE the loop so the very
-   * first tick has data to harvest. FS is on SPI2; PS goes on SPI4 (AS
-   * will get its turn after AS_DECIMATE ticks). */
-  (void)AMS5935_StartSingleMeasurement(&hamsFS);
-  (void)AMS5935_StartSingleMeasurement(&hamsPS);
-  uint8_t fs_in_flight = 1U;
-  uint8_t ps_in_flight = 1U;
-  uint8_t as_in_flight = 0U;
-
-  uint32_t tick_n    = 0U;
+  uint32_t tick_n = 0U;
   uint32_t next_wake = osKernelGetTickCount() + period_ms;
 
   for (;;)
@@ -2337,109 +2208,22 @@ static void SensorTask(void *argument)
     (void)osDelayUntil(next_wake);
     next_wake += period_ms;
 
-    /* ---------- Harvest results from previous tick's conversions ---------- */
-
-    /* SPI2: FS (flow). Always in flight. */
-    if (fs_in_flight)
-    {
-      (void)AMS5935_ReadRaw(&hamsFS, &measFS);
-      fs_in_flight = 0U;
-
-      /* Run the LPF on every fresh FS sample. Consumers that need the
-       * smoothed value read g_flow_dp_filt_mbar / Flow_GetDpFiltered();
-       * the raw measFS.pressure remains untouched for FOT bandpass and
-       * other wide-band uses. */
-      Flow_Update(measFS.pressure, dt_s);
-    }
-
-    /* SPI4: AS or PS - mutually exclusive each tick. */
-    if (as_in_flight)
-    {
-      (void)AMS5935_ReadRaw(&hamsAS, &measAS);
-      as_in_flight = 0U;
-    }
-    else if (ps_in_flight)
-    {
-      (void)AMS5935_ReadRaw(&hamsPS, &measPS);
-      ps_in_flight = 0U;
-    }
-
-    /* ---------- Start next-tick conversions ---------- */
-
-    /* SPI2: FS - start every tick (200 Hz). */
-    (void)AMS5935_StartSingleMeasurement(&hamsFS);
-    fs_in_flight = 1U;
-
-    /* SPI4: every AS_DECIMATE-th tick we devote the slot to AS, skipping
-     * PS for that one tick. PS effective rate = (AS_DECIMATE-1)/AS_DECIMATE
-     * * 200 Hz = 190 Hz with AS_DECIMATE=20. */
-    if ((tick_n % AS_DECIMATE) == 0U)
-    {
-      (void)AMS5935_StartSingleMeasurement(&hamsAS);
-      as_in_flight = 1U;
-    }
-    else
-    {
-      (void)AMS5935_StartSingleMeasurement(&hamsPS);
-      ps_in_flight = 1U;
-    }
-
-    /* ---------- Lower-priority bookkeeping ---------- */
-
-    if ((tick_n % ADC_DECIMATE) == 0U)
-    {
-      (void)pressure_sensor_read_analog_adc_raw();
-    }
+    BreathSim_Update(dt_s);
 
     if ((tick_n % IPC_DECIMATE) == 0U)
     {
       (void)BlowerIpc_CM7_GetStatus(&g_blower_status);
     }
 
-    /* ---------- Leak / patient flow (before PID so flow FF is current) --- */
-    const float q_total_slm = Flow_GetSlm();
-    const float p_sensor_cmh2o = MAIN_MBAR_TO_CMH2O(measPS.pressure);
-    const float p_mask_est_cmh2o = TubeComp_Apply(p_sensor_cmh2o, q_total_slm);
-    Leak_SetTherapyPressureCmh2o(BlowerCtrl_GetSetpoint());
-    Leak_Update(q_total_slm, p_mask_est_cmh2o, dt_s);
-
-    /* ---------- Therapy management (before PID so EPR setpoint is current) --- */
-    Therapy_Update(dt_s);
-
-    /* ---------- Outer-loop pressure PID ---------- */
-    BlowerCtrl_Step(dt_s);
-
-    /* USB telemetry: P_sensor, P_mask, patient flow, PID cmd, CM4 mech RPM at 50 Hz. */
     if ((tick_n % 4U) == 0U)
     {
-      Telem_PushSample(BlowerCtrl_GetSensorCmh2o(),
-                       Flow_GetDpFiltered(),//Flow_GetPatientSlm(),
-                       (int32_t)BlowerCtrl_GetOutputRpm(),
-                       g_blower_status.mech_speed_rpm,
-                       BlowerCtrl_GetMeasured());
+      Telem_PushBreathSample(BreathSim_GetTargetRpm(),
+                             g_blower_status.mech_speed_rpm,
+                             BreathSim_GetPhase(),
+                             BreathSim_GetEnvelope());
     }
 
     tick_n++;
-  }
-}
-
-/**
-  * @brief Safety supervisor: pressure faults + CM4 IPC heartbeat.
-  *        Runs at osPriorityRealtime so it can preempt SensorTask/GUI.
-  */
-static void SafetyTask(void *argument)
-{
-  (void)argument;
-
-  const uint32_t period_ms = 5U;
-  const float dt_s = (float)period_ms * 0.001f;
-  uint32_t next_wake = osKernelGetTickCount() + period_ms;
-
-  for (;;)
-  {
-    (void)osDelayUntil(next_wake);
-    next_wake += period_ms;
-    Safety_Supervisor_Update(dt_s);
   }
 }
 
@@ -2508,6 +2292,56 @@ static void ClimateTask(void *argument)
   }
 }
 
+/* ST MC SDK MCI_State_t::FAULT_OVER — latched until MC_AcknowledgeFaultMotor1(). */
+#define BLOWER_MC_STATE_FAULT_OVER  11U
+/* One-shot delay before probing CM4 (500 ms at SystemTask's 10 ms period). */
+#define BLOWER_BOOT_FAULT_ACK_DELAY_TICKS  50U
+
+/**
+  * @brief Clear a boot-time driver-protection latch on CM4 once, after MC init.
+  *
+  * Spurious TIM8 BRK events during CM4 power-up can leave the motor in
+  * FAULT_OVER with occurred_faults set even though current_faults is clear.
+   * Acknowledging here lets later breath-simulation start commands succeed.
+  */
+static void SystemTask_BootAckBlowerFaultOnce(void)
+{
+  static uint8_t  s_done  = 0U;
+  static uint32_t s_ticks = 0U;
+  BlowerIpcStatus_t st;
+
+  if (s_done != 0U)
+  {
+    return;
+  }
+
+  if (++s_ticks < BLOWER_BOOT_FAULT_ACK_DELAY_TICKS)
+  {
+    return;
+  }
+
+  s_done = 1U;
+
+  if (!BlowerIpc_CM7_GetStatus(&st))
+  {
+    DBG_W("BLR", "boot fault ack: IPC status unavailable");
+    return;
+  }
+
+  if ((st.mc_state == BLOWER_MC_STATE_FAULT_OVER) && (st.current_faults == 0U))
+  {
+    (void)BlowerIpc_CM7_AcknowledgeFault();
+    DBG_I("BLR", "boot fault ack sent (occurred=0x%04X)", (unsigned)st.occurred_faults);
+  }
+  else if ((st.mc_state == BLOWER_MC_STATE_FAULT_OVER) || (st.occurred_faults != 0U))
+  {
+    DBG_W("BLR", "boot fault ack skipped state=%u cur=0x%04X occ=0x%04X",
+          (unsigned)st.mc_state,
+          (unsigned)st.current_faults,
+          (unsigned)st.occurred_faults);
+  }
+}
+
 /**
   * @brief System task: blower start/stop/speed commands driven from the
   *        debugger globals (g_bench_blower_enable / g_bench_blower_speed_rpm),
@@ -2523,6 +2357,7 @@ static void SystemTask(void *argument)
 
   for (;;)
   {
+    SystemTask_BootAckBlowerFaultOnce();
     Telem_ProcessCommands();
 
     if ((g_bench_blower_enable == 1U) && (g_bench_blower_enable_prev == 0U))
@@ -2537,9 +2372,10 @@ static void SystemTask(void *argument)
     if (g_bench_blower_speed_rpm != g_bench_blower_speed_prev_rpm)
     {
       BlowerIpc_CM7_SetSpeedRpm(g_bench_blower_speed_rpm, 0U);
-      Telem_PushBenchRpm(g_bench_blower_speed_rpm,
-                         g_blower_status.mech_speed_rpm,
-                         BlowerCtrl_GetSensorCmh2o());
+      Telem_PushBreathSample(g_bench_blower_speed_rpm,
+                             g_blower_status.mech_speed_rpm,
+                             BreathSim_GetPhase(),
+                             BreathSim_GetEnvelope());
     }
 
     g_bench_blower_speed_prev_rpm = g_bench_blower_speed_rpm;
