@@ -1,0 +1,29 @@
+; *************************************************************
+; *** Scatter-Loading Description File - CPAP_TestBoard_V0_2 ***
+; *************************************************************
+; TouchGFX framebuffer is in external SDRAM (0xC0100000), not linked here.
+; Do NOT place RW/ZI in SDRAM: __main scatter load runs before MX_FMC_Init().
+
+LR_IROM1 0x08000000 0x00100000  {
+  ER_IROM1 0x08000000 0x00100000  {
+   *.o (RESET, +First)
+   *(InRoot$$Sections)
+   .ANY (+RO)
+  }
+  RW_DTCM 0x20000000 0x00020000  {
+   startup_stm32h747xx_cm7.o (STACK)
+   startup_stm32h747xx_cm7.o (HEAP)
+  }
+  RW_NOINIT 0x2403F800 UNINIT 0x00000800  {
+   *(.noinit)
+  }
+  RW_SHMEM 0x38000000 UNINIT 0x00000400  {
+   *(.blower_ipc)
+  }
+  RW_IRAM1 0x24000000 0x0003F800  {
+   .ANY (+RW +ZI)
+  }
+  RW_IRAM2 0x24040000 0x00040000  {
+   .ANY (+RW +ZI)
+  }
+}

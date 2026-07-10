@@ -1,0 +1,49 @@
+# === Keil MDK / µVision build output ===
+MDK-ARM/RTE/_*/
+MDK-ARM/*.uvguix.*
+MDK-ARM/*.uvoptx
+MDK-ARM/build_*.log
+MDK-ARM/disasm.txt
+MDK-ARM/JLinkLog.txt
+MDK-ARM/Listings/
+MDK-ARM/Objects/
+
+# Stray reference-project leftovers (delete from disk too)
+MDK-ARM/CPAP_TestBoard_V0_2.*
+
+# === Generic compile/link outputs anywhere ===
+*.o
+*.d
+*.axf
+*.lnp
+*.lst
+*.dep
+*.htm
+*.crf
+*.lnp
+*.bak
+*.tmp
+
+# === TouchGFX simulator builds (sources/templates kept) ===
+CM7/TouchGFX/simulator/build/
+CM7/TouchGFX/simulator/gcc/build/
+CM7/TouchGFX/simulator/msvs/build/
+CM7/TouchGFX/simulator/msvs/Debug/
+CM7/TouchGFX/simulator/msvs/Release/
+CM7/TouchGFX/simulator/msvs/.vs/
+CM7/TouchGFX/simulator/msvs/*.user
+
+# === IDE / OS ===
+.vscode/
+.idea/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# === Cursor chat exports / loose top-level ===
+cursor_*.md
+/-
+
+# Optional: ignore Cursor workspace file (contains absolute machine paths)
+# CPAP_InitialCode.code-workspace

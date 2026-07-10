@@ -1,0 +1,85 @@
+APAP Touch Screen GUI
+│
+├── Welcome / Initial Setup
+│   └── USER
+│       └── Follow setup prompts
+│
+├── Home Screen
+│   │
+│   ├── MY OPTIONS
+│   │   ├── Ramp Time
+│   │   │   ├── Off
+│   │   │   ├── Auto
+│   │   │   └── 5 to 45 minutes
+│   │   │       └── Adjustable in 5-minute increments
+│   │   │
+│   │   ├── Pressure Relief / EPR
+│   │   │   ├── On
+│   │   │   └── Off
+│   │   │   Note: Available only if enabled by care provider
+│   │   │
+│   │   ├── SmartStart
+│   │   │   ├── On
+│   │   │   └── Off
+│   │   │   Note: Available only if enabled by care provider
+│   │   │
+│   │   ├── SmartStop
+│   │   │   ├── On
+│   │   │   └── Off
+│   │   │   Note: Available only if enabled by care provider
+│   │   │
+│   │   ├── Tube Temperature
+│   │   │   ├── Off
+│   │   │   ├── Auto
+│   │   │   │   └── Auto = 80°F / 27°C
+│   │   │   └── Manual temperature
+│   │   │       └── 60°F to 86°F / 16°C to 30°C
+│   │   │
+│   │   ├── Climate Control
+│   │   │   ├── Auto
+│   │   │   │   ├── Recommended/default setting
+│   │   │   │   ├── Maintains about 85% relative humidity
+│   │   │   │   └── Provides rainout protection
+│   │   │   └── Manual
+│   │   │       ├── User controls temperature
+│   │   │       └── User controls humidity separately
+│   │   │
+│   │   └── Humidity Level
+│   │       ├── Off
+│   │       └── 1 to 8
+│   │           ├── 1 = lowest humidity
+│   │           └── 8 = highest humidity
+│   │
+│   ├── MY SLEEP VIEW
+│   │   ├── Sleep progress / therapy summary
+│   │   ├── Hours used last night
+│   │   └── Mask status
+│   │
+│   └── MORE
+│       ├── Mask Fit
+│       │   └── Checks for possible air leaks around the mask
+│       │
+│       ├── Airplane Mode
+│       │   ├── On
+│       │   └── Off
+│       │
+│       └── myAir / Smart Device Connection
+│           ├── Bluetooth pairing
+│           ├── Setup guidance through app
+│           ├── Mask fitting videos
+│           ├── Test Drive feature through app
+│           └── Sleep health tracking through app
+│
+├── Therapy Screen
+│   ├── Dynamic pulse wave during therapy
+│   └── Sleep progress details
+│
+└── Status Bar Icons
+    ├── Home
+    ├── Humidifier fault
+    ├── Humidifier warming
+    ├── Humidifier cooling
+    ├── Bluetooth connected
+    ├── Cellular signal strength
+    ├── No cellular connection
+    └── Airplane mode
