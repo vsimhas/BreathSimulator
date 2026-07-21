@@ -276,7 +276,7 @@ void MenuController::onRotaryDelta(int delta)
             case Page::VALUE_RPM_AMP:    s.rpm_amplitude = stepRpm(s.rpm_amplitude, delta, 0, 25000); break;
             case Page::VALUE_WAVEFORM:   s.waveform = stepWaveform(s.waveform, delta); break;
             case Page::VALUE_INSP_PAUSE: s.insp_pause_s = stepPause(s.insp_pause_s, delta); break;
-            case Page::VALUE_EXP_PAUSE:  s.exp_pause_s = stepPause(s.exp_pause_s, delta); break;
+            case Page::VALUE_EXP_PAUSE:  s.exp_pause_s = stepExpPause(s.exp_pause_s, delta); break;
             default: break;
         }
         applySettingsToBackend();

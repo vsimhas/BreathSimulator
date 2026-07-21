@@ -33,7 +33,7 @@ typedef struct
   int32_t  rpm_amplitude;   /**< Additional RPM at peak inspiration. */
   uint8_t  waveform;        /**< BreathWaveform_t */
   float    insp_pause_s;    /**< Plateau at peak inspiration (0..1.0 s). */
-  float    exp_pause_s;     /**< Pause at baseline before next breath. */
+  float    exp_pause_s;     /**< Pause at baseline before next breath (0..2.0 s). */
 } BreathSimParams_t;
 
 void BreathSim_Init(void);

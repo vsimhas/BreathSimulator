@@ -73,6 +73,14 @@ float stepPause(float v, int delta)
     return nv;
 }
 
+float stepExpPause(float v, int delta)
+{
+    float nv = v + static_cast<float>(delta) * 0.1f;
+    if (nv < 0.0f) { nv = 0.0f; }
+    if (nv > 2.0f) { nv = 2.0f; }
+    return nv;
+}
+
 const char* toString(Waveform v)
 {
     switch (v)

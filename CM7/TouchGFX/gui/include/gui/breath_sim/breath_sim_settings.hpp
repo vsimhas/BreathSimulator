@@ -39,6 +39,7 @@ int32_t  stepRpm(int32_t v, int delta, int32_t min_v, int32_t max_v);
 int32_t  stepRpmBase(int32_t v, int delta);
 Waveform stepWaveform(Waveform v, int delta);
 float    stepPause(float v, int delta);
+float    stepExpPause(float v, int delta);
 
 const char* toString(Waveform v);
 
