@@ -10,41 +10,35 @@ extern "C" {
 namespace breath_sim
 {
 
-enum class Waveform : uint8_t
-{
-    SINE = 0,
-    RAMP,
-    SQUARE,
-    NUM_VALUES
-};
+/**
+  * The editor works directly on BreathSimParams_t. There used to be a
+  * parallel `Settings` struct plus two conversion functions, which meant the
+  * screen, the USB parser and the waveform generator each carried their own
+  * copy of the parameter list and the limits — and they drifted. There is
+  * now one definition, and the limits come from breath_sim.h.
+  */
+using Settings = BreathSimParams_t;
 
-struct Settings
-{
-    uint8_t  rate_bpm;
-    float    insp_time_s;
-    uint8_t  ie_ratio_exp;
-    int32_t  rpm_base;
-    int32_t  rpm_amplitude;
-    Waveform waveform;
-    float    insp_pause_s;
-    float    exp_pause_s;
-};
-
+/** Editor working copy, seeded from the backend on first use. */
 Settings& getSettings();
+/** Re-read the backend (e.g. after it normalised a derived field). */
+void refreshSettings();
 
-uint8_t  stepRateBpm(uint8_t v, int delta);
-float    stepInspTime(float v, int delta);
-uint8_t  stepIeRatio(uint8_t v, int delta);
-int32_t  stepRpm(int32_t v, int delta, int32_t min_v, int32_t max_v);
-int32_t  stepRpmBase(int32_t v, int delta);
-Waveform stepWaveform(Waveform v, int delta);
-float    stepPause(float v, int delta);
-float    stepExpPause(float v, int delta);
+float   stepRateBpm(float v, int delta);
+float   stepInspTime(float v, int delta);
+float   stepIeRatio(float v, int delta);
+int32_t stepRpm(int32_t v, int delta, int32_t min_v, int32_t max_v);
+int32_t stepRpmBase(int32_t v, int delta);
+int32_t stepRpmAmplitude(int32_t v, int delta);
+uint8_t stepWaveform(uint8_t v, int delta);
+uint8_t stepTimingMode(uint8_t v, int delta);
+float   stepInspPause(float v, int delta);
+float   stepExpPause(float v, int delta);
+float   stepExpTau(float v, int delta);
+float   stepFlattening(float v, int delta);
+float   stepJitter(float v, int delta);
 
-const char* toString(Waveform v);
-
-void settingsToParams(const Settings& s, BreathSimParams_t* out);
-void paramsToSettings(const BreathSimParams_t& in, Settings* out);
+const char* timingModeName(uint8_t mode);
 
 } // namespace breath_sim
 

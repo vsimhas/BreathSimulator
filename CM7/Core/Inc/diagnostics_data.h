@@ -43,6 +43,11 @@ typedef struct
     uint8_t              tube_temp_valid;
 
     uint8_t              sim_running;
+    uint8_t              sim_state;    /**< BreathSimState_t */
+    uint8_t              sim_segment;  /**< BreathSegment_t */
+    uint8_t              sim_event;    /**< BreathEventType_t */
+    uint16_t             sim_flags;    /**< Sticky BREATH_FLAG_* for the run. */
+    uint32_t             breath_index;
     int32_t              rpm_cmd;
     int32_t              rpm_act;
     float                phase;

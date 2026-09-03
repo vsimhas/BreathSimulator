@@ -399,7 +399,10 @@ void screenView::renderWelcomePage()
 
 void screenView::updateRunningGraph()
 {
-    const float env = BreathSim_GetEnvelope();
+    BreathSimStatus_t st;
+    BreathSim_GetStatus(&st);
+
+    const float env = st.envelope;
     if (run_hist_count_ < static_cast<uint8_t>(kWaveBars))
     {
         run_hist_[run_hist_count_++] = env;
@@ -424,14 +427,49 @@ void screenView::updateRunningGraph()
 
     char line[48];
     const breath_sim::Settings& s = breath_sim::getSettings();
-    snprintf(line, sizeof(line), "RPM %ld  (base %ld)",
-             (long)BreathSim_GetTargetRpm(), (long)s.rpm_base);
+    BreathSimTiming_t t;
+    BreathSim_GetTiming(&t);
+
+    /* Line 1 tracks the motor. While priming there are no valid breaths yet,
+     * and a non-zero flag word means the delivered waveform may not match
+     * what was asked for - both need to be visible on the rig itself, not
+     * only in the USB log. */
+    if (st.state == static_cast<uint8_t>(BREATH_STATE_PRIMING))
+    {
+        snprintf(line, sizeof(line), "Priming... %ld / %ld RPM",
+                 (long)st.rpm_act, (long)st.rpm_cmd);
+    }
+    else if (st.state == static_cast<uint8_t>(BREATH_STATE_FAULT))
+    {
+        snprintf(line, sizeof(line), "FAULT  mc=%u  flags 0x%04X",
+                 (unsigned)st.mc_state, (unsigned)st.flags);
+    }
+    else if (st.flags != 0U)
+    {
+        snprintf(line, sizeof(line), "RPM %ld/%ld  ! 0x%04X",
+                 (long)st.rpm_cmd, (long)st.rpm_act, (unsigned)st.flags);
+    }
+    else
+    {
+        snprintf(line, sizeof(line), "RPM %ld  (act %ld)",
+                 (long)st.rpm_cmd, (long)st.rpm_act);
+    }
     utf8ToBuf(line, run_live_buf_, sizeof(run_live_buf_) / sizeof(run_live_buf_[0]));
     run_live_text_.invalidate();
 
-    snprintf(line, sizeof(line), "%u BPM  Ti %.1fs  peak %ld",
-             (unsigned)s.rate_bpm, (double)s.insp_time_s,
-             (long)(s.rpm_base + s.rpm_amplitude));
+    if (st.event != static_cast<uint8_t>(BREATH_EVENT_NONE))
+    {
+        snprintf(line, sizeof(line), "#%lu  %s  %s",
+                 (unsigned long)st.breath_index,
+                 BreathSim_SegmentName(st.segment),
+                 BreathSim_EventName(st.event));
+    }
+    else
+    {
+        snprintf(line, sizeof(line), "#%lu  %.1f BPM  Ti %.2fs  peak %ld",
+                 (unsigned long)st.breath_index, (double)t.rate_bpm,
+                 (double)t.insp_s, (long)(s.rpm_base + s.rpm_amplitude));
+    }
     utf8ToBuf(line, run_summary_buf_, sizeof(run_summary_buf_) / sizeof(run_summary_buf_[0]));
     run_summary_text_.invalidate();
 }

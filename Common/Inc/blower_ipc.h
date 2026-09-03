@@ -17,11 +17,13 @@ extern "C" {
 
 /*
  * Hard ceiling exposed to the CM7 caller. The MCWB-generated firmware on
- * CM4 saturates the speed reference at MAX_APPLICATION_SPEED_RPM (currently
- * 36528 in drive_parameters.h). We clamp at that same value on the CM7 side
- * so requests beyond the motor's reachable speed do not behave like faults.
+ * CM4 saturates the speed reference at MAX_APPLICATION_SPEED_RPM, which is
+ * 36012 in drive_parameters.h. This value must not exceed it: clamping at a
+ * higher number on the CM7 side made the mailbox contents disagree with what
+ * the motor actually targets, which is exactly what this clamp exists to
+ * prevent. Keep the two in step if the motor profile is regenerated.
  */
-#define BLOWER_IPC_MAX_SPEED_RPM    36528
+#define BLOWER_IPC_MAX_SPEED_RPM    36012
 
 typedef enum
 {

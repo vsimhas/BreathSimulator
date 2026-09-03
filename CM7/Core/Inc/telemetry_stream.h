@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "breath_sim.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,7 +29,7 @@ extern volatile uint32_t g_telem_dropped_count;
 void Telem_Init(void);
 void Telem_Pump(void);
 void Telem_ProcessCommands(void);
-void Telem_PushBreathSample(int32_t rpm_cmd, int32_t rpm_act, float phase, float envelope);
+void Telem_PushBreathSample(const BreathSimStatus_t *status);
 void Telem_OnRx(const uint8_t *data, uint32_t len);
 
 #else
@@ -35,7 +37,7 @@ void Telem_OnRx(const uint8_t *data, uint32_t len);
 #define Telem_Init() ((void)0)
 #define Telem_Pump() ((void)0)
 #define Telem_ProcessCommands() ((void)0)
-#define Telem_PushBreathSample(c, a, p, e) ((void)0)
+#define Telem_PushBreathSample(s) ((void)0)
 
 #endif /* TELEM_ENABLED */
 

@@ -78,8 +78,19 @@ void Diagnostics_GetSnapshot(DiagnosticsSnapshot_t *out)
     out->tube_temp_c        = hSts4x.temperature_c;
     out->tube_temp_valid    = hSts4x.last_crc_ok;
 
+    /* One coherent snapshot rather than several independent getters: the
+     * breath task runs at a higher priority than this caller, so pulling
+     * phase and RPM separately could mix values from different ticks. */
+    BreathSimStatus_t sim;
+    BreathSim_GetStatus(&sim);
+
     out->sim_running        = BreathSim_IsRunning() ? 1U : 0U;
-    out->rpm_cmd            = BreathSim_GetTargetRpm();
-    out->rpm_act            = g_blower_status.mech_speed_rpm;
-    out->phase              = BreathSim_GetPhase();
+    out->sim_state          = sim.state;
+    out->sim_segment        = sim.segment;
+    out->sim_event          = sim.event;
+    out->sim_flags          = sim.flags;
+    out->breath_index       = sim.breath_index;
+    out->rpm_cmd            = sim.rpm_cmd;
+    out->rpm_act            = sim.rpm_act;
+    out->phase              = sim.phase;
 }

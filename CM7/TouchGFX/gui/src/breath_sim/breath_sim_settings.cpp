@@ -5,117 +5,140 @@
 namespace breath_sim
 {
 
-static Settings g_settings;
+namespace
+{
+
+Settings g_settings;
+bool     g_init = false;
+
+float clampf(float v, float lo, float hi)
+{
+    if (v < lo) { return lo; }
+    if (v > hi) { return hi; }
+    return v;
+}
+
+int32_t clampi(int32_t v, int32_t lo, int32_t hi)
+{
+    if (v < lo) { return lo; }
+    if (v > hi) { return hi; }
+    return v;
+}
+
+uint8_t stepEnum(uint8_t v, int delta, uint8_t count)
+{
+    int nv = static_cast<int>(v) + delta;
+    if (nv < 0) { nv = 0; }
+    if (nv >= static_cast<int>(count)) { nv = static_cast<int>(count) - 1; }
+    return static_cast<uint8_t>(nv);
+}
+
+} // namespace
 
 Settings& getSettings()
 {
-    static bool init = false;
-    if (!init)
+    if (!g_init)
     {
-        BreathSimParams_t p;
-        BreathSim_GetParams(&p);
-        paramsToSettings(p, &g_settings);
-        init = true;
+        BreathSim_GetParams(&g_settings);
+        g_init = true;
     }
     return g_settings;
 }
 
-uint8_t stepRateBpm(uint8_t v, int delta)
+void refreshSettings()
 {
-    int nv = static_cast<int>(v) + delta;
-    if (nv < 4) { nv = 4; }
-    if (nv > 60) { nv = 60; }
-    return static_cast<uint8_t>(nv);
+    BreathSim_GetParams(&g_settings);
+    g_init = true;
+}
+
+/* Every limit below comes from breath_sim.h so the screen can never offer a
+ * value the waveform generator would then quietly clamp. */
+
+float stepRateBpm(float v, int delta)
+{
+    return clampf(v + static_cast<float>(delta) * 0.5f,
+                  BREATH_RATE_MIN_BPM, BREATH_RATE_MAX_BPM);
 }
 
 float stepInspTime(float v, int delta)
 {
-    float nv = v + static_cast<float>(delta) * 0.1f;
-    if (nv < 0.3f) { nv = 0.3f; }
-    if (nv > 4.0f) { nv = 4.0f; }
-    return nv;
+    return clampf(v + static_cast<float>(delta) * 0.1f,
+                  BREATH_INSP_MIN_S, BREATH_INSP_MAX_S);
 }
 
-uint8_t stepIeRatio(uint8_t v, int delta)
+float stepIeRatio(float v, int delta)
 {
-    int nv = static_cast<int>(v) + delta;
-    if (nv < 1) { nv = 1; }
-    if (nv > 4) { nv = 4; }
-    return static_cast<uint8_t>(nv);
+    return clampf(v + static_cast<float>(delta) * 0.5f,
+                  BREATH_IE_RATIO_MIN, BREATH_IE_RATIO_MAX);
 }
 
 int32_t stepRpm(int32_t v, int delta, int32_t min_v, int32_t max_v)
 {
-    int32_t nv = v + static_cast<int32_t>(delta) * 250;
-    if (nv < min_v) { nv = min_v; }
-    if (nv > max_v) { nv = max_v; }
-    return nv;
+    return clampi(v + static_cast<int32_t>(delta) * 250, min_v, max_v);
 }
 
 int32_t stepRpmBase(int32_t v, int delta)
 {
-    return stepRpm(v, delta, 2000, 20000);
+    return stepRpm(v, delta, BREATH_RPM_BASE_MIN, BREATH_RPM_BASE_MAX);
 }
 
-Waveform stepWaveform(Waveform v, int delta)
+int32_t stepRpmAmplitude(int32_t v, int delta)
 {
-    int nv = static_cast<int>(v) + delta;
-    if (nv < 0) { nv = 0; }
-    if (nv >= static_cast<int>(Waveform::NUM_VALUES)) { nv = static_cast<int>(Waveform::NUM_VALUES) - 1; }
-    return static_cast<Waveform>(nv);
+    return stepRpm(v, delta, 0, BREATH_RPM_AMP_MAX);
 }
 
-float stepPause(float v, int delta)
+uint8_t stepWaveform(uint8_t v, int delta)
 {
-    float nv = v + static_cast<float>(delta) * 0.1f;
-    if (nv < 0.0f) { nv = 0.0f; }
-    if (nv > 1.0f) { nv = 1.0f; }
+    uint8_t nv = stepEnum(v, delta, static_cast<uint8_t>(BREATH_WAVE_COUNT));
+    /* Skip the table entry when nothing has been uploaded over USB. */
+    if ((nv == static_cast<uint8_t>(BREATH_WAVE_TABLE)) &&
+        (BreathSim_GetTableLength() < 2U))
+    {
+        nv = (delta >= 0) ? static_cast<uint8_t>(BREATH_WAVE_SINE)
+                          : static_cast<uint8_t>(BREATH_WAVE_SQUARE);
+    }
     return nv;
+}
+
+uint8_t stepTimingMode(uint8_t v, int delta)
+{
+    return stepEnum(v, delta, static_cast<uint8_t>(BREATH_TIMING_COUNT));
+}
+
+float stepInspPause(float v, int delta)
+{
+    return clampf(v + static_cast<float>(delta) * 0.1f,
+                  0.0f, BREATH_INSP_PAUSE_MAX_S);
 }
 
 float stepExpPause(float v, int delta)
 {
-    float nv = v + static_cast<float>(delta) * 0.1f;
-    if (nv < 0.0f) { nv = 0.0f; }
-    if (nv > 2.0f) { nv = 2.0f; }
-    return nv;
+    return clampf(v + static_cast<float>(delta) * 0.1f,
+                  0.0f, BREATH_EXP_PAUSE_MAX_S);
 }
 
-const char* toString(Waveform v)
+float stepExpTau(float v, int delta)
 {
-    switch (v)
-    {
-        case Waveform::RAMP:   return "Ramp";
-        case Waveform::SQUARE: return "Square";
-        case Waveform::SINE:
-        default:               return "Sine";
-    }
+    return clampf(v + static_cast<float>(delta) * 0.05f,
+                  BREATH_EXP_TAU_MIN_S, BREATH_EXP_TAU_MAX_S);
 }
 
-void settingsToParams(const Settings& s, BreathSimParams_t* out)
+float stepFlattening(float v, int delta)
 {
-    if (out == nullptr) { return; }
-    out->rate_bpm = static_cast<float>(s.rate_bpm);
-    out->insp_time_s = s.insp_time_s;
-    out->ie_ratio_exp = static_cast<float>(s.ie_ratio_exp);
-    out->rpm_base = s.rpm_base;
-    out->rpm_amplitude = s.rpm_amplitude;
-    out->waveform = static_cast<uint8_t>(s.waveform);
-    out->insp_pause_s = s.insp_pause_s;
-    out->exp_pause_s = s.exp_pause_s;
+    return clampf(v + static_cast<float>(delta) * 0.05f,
+                  0.0f, BREATH_FLATTENING_MAX);
 }
 
-void paramsToSettings(const BreathSimParams_t& in, Settings* out)
+float stepJitter(float v, int delta)
 {
-    if (out == nullptr) { return; }
-    out->rate_bpm = static_cast<uint8_t>(in.rate_bpm);
-    out->insp_time_s = in.insp_time_s;
-    out->ie_ratio_exp = static_cast<uint8_t>(in.ie_ratio_exp);
-    out->rpm_base = in.rpm_base;
-    out->rpm_amplitude = in.rpm_amplitude;
-    out->waveform = static_cast<Waveform>(in.waveform);
-    out->insp_pause_s = in.insp_pause_s;
-    out->exp_pause_s = in.exp_pause_s;
+    return clampf(v + static_cast<float>(delta) * 1.0f,
+                  0.0f, BREATH_JITTER_MAX_PCT);
+}
+
+const char* timingModeName(uint8_t mode)
+{
+    return (mode == static_cast<uint8_t>(BREATH_TIMING_EXPLICIT))
+               ? "Insp+I:E" : "Rate+I:E";
 }
 
 } // namespace breath_sim

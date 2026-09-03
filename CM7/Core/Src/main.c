@@ -2190,6 +2190,13 @@ static void GuiTask(void *argument)
 
 /**
   * @brief Breath simulation task: open-loop RPM waveform @ 200 Hz.
+  *
+  * dt is measured from the actual tick delta rather than assumed to be the
+  * nominal period. osDelayUntil() keeps the schedule drift-free, but if a
+  * deadline is missed the backlog would otherwise be integrated as if no
+  * time had passed, and the delivered breath rate would quietly run slow.
+  * Breath rate is a specified property of a test rig, so an overrun is
+  * both corrected for and reported.
   */
 static void BreathSimTask(void *argument)
 {
@@ -2198,17 +2205,23 @@ static void BreathSimTask(void *argument)
   BreathSim_Init();
 
   const uint32_t period_ms = 5U;
-  const float dt_s = (float)period_ms * 0.001f;
   const uint32_t IPC_DECIMATE = 2U;
   uint32_t tick_n = 0U;
-  uint32_t next_wake = osKernelGetTickCount() + period_ms;
+  uint32_t prev_tick = osKernelGetTickCount();
+  uint32_t next_wake = prev_tick + period_ms;
 
   for (;;)
   {
     (void)osDelayUntil(next_wake);
     next_wake += period_ms;
 
-    BreathSim_Update(dt_s);
+    const uint32_t now = osKernelGetTickCount();
+    uint32_t elapsed_ms = now - prev_tick;
+    prev_tick = now;
+    if (elapsed_ms == 0U) { elapsed_ms = period_ms; }
+    if (elapsed_ms > (period_ms * 4U)) { elapsed_ms = period_ms * 4U; }
+
+    BreathSim_Update((float)elapsed_ms * 0.001f);
 
     if ((tick_n % IPC_DECIMATE) == 0U)
     {
@@ -2217,10 +2230,9 @@ static void BreathSimTask(void *argument)
 
     if ((tick_n % 4U) == 0U)
     {
-      Telem_PushBreathSample(BreathSim_GetTargetRpm(),
-                             g_blower_status.mech_speed_rpm,
-                             BreathSim_GetPhase(),
-                             BreathSim_GetEnvelope());
+      BreathSimStatus_t bs;
+      BreathSim_GetStatus(&bs);
+      Telem_PushBreathSample(&bs);
     }
 
     tick_n++;
@@ -2372,10 +2384,11 @@ static void SystemTask(void *argument)
     if (g_bench_blower_speed_rpm != g_bench_blower_speed_prev_rpm)
     {
       BlowerIpc_CM7_SetSpeedRpm(g_bench_blower_speed_rpm, 0U);
-      Telem_PushBreathSample(g_bench_blower_speed_rpm,
-                             g_blower_status.mech_speed_rpm,
-                             BreathSim_GetPhase(),
-                             BreathSim_GetEnvelope());
+      BreathSimStatus_t bs;
+      BreathSim_GetStatus(&bs);
+      bs.rpm_cmd = g_bench_blower_speed_rpm;
+      bs.rpm_act = g_blower_status.mech_speed_rpm;
+      Telem_PushBreathSample(&bs);
     }
 
     g_bench_blower_speed_prev_rpm = g_bench_blower_speed_rpm;
