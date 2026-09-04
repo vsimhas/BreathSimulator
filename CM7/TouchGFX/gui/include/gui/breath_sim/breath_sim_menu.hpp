@@ -24,6 +24,7 @@ enum class Page : uint8_t
     VALUE_FLATTENING,
     VALUE_JITTER,
     EVENTS,
+    PROTOCOLS,
     RUNNING,
     DIAGNOSTICS,
     NUM_PAGES

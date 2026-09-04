@@ -360,8 +360,8 @@ static float BreathSim_ApplyFlattening(float e, float flat)
   return (v > 1.0f) ? 1.0f : v;
 }
 
-/** Normalised inspiratory flow demand for u in [0,1]. */
-static float BreathSim_InspShape(float u, const BreathSimParams_t *p)
+/** Unflattened normalised inspiratory flow demand for u in [0,1]. */
+static float BreathSim_BaseShape(float u, const BreathSimParams_t *p)
 {
   float e;
 
@@ -390,7 +390,36 @@ static float BreathSim_InspShape(float u, const BreathSimParams_t *p)
       break;
   }
 
-  return BreathSim_ApplyFlattening(e, g_flat_eff);
+  return e;
+}
+
+/**
+ * Mean of the normalised inspiratory envelope for a given flattening.
+ *
+ * Tidal volume is proportional to this mean, so the ratio between two
+ * flattening values is the amplitude correction needed to hold Vt constant.
+ * Integrated numerically rather than in closed form so it stays correct for
+ * every waveform, including an arbitrary uploaded table.
+ */
+#define BREATH_ENV_MEAN_STEPS 64U
+
+static float BreathSim_EnvelopeMean(const BreathSimParams_t *p, float flat)
+{
+  float sum = 0.0f;
+
+  for (uint32_t i = 0U; i < BREATH_ENV_MEAN_STEPS; i++)
+  {
+    const float u = ((float)i + 0.5f) / (float)BREATH_ENV_MEAN_STEPS;
+    sum += BreathSim_ApplyFlattening(BreathSim_BaseShape(u, p), flat);
+  }
+
+  return sum / (float)BREATH_ENV_MEAN_STEPS;
+}
+
+/** Normalised inspiratory flow demand for u in [0,1]. */
+static float BreathSim_InspShape(float u, const BreathSimParams_t *p)
+{
+  return BreathSim_ApplyFlattening(BreathSim_BaseShape(u, p), g_flat_eff);
 }
 
 /**
@@ -576,6 +605,29 @@ static void BreathSim_LatchBreathModifiers(void)
 
     case BREATH_EVENT_FLOW_LIMIT:
       if (g_event_severity > g_flat_eff) { g_flat_eff = g_event_severity; }
+      /* Hold tidal volume across the flattening.
+       *
+       * BreathSim_ApplyFlattening() divides the envelope by k and clips at
+       * unity: the peak is preserved but the top widens, so the AREA grows
+       * (a half-sine at severity 0.8 gains ~40% Vt). A breath that delivers
+       * MORE air than the unflattened one is not flow-limited by any
+       * definition, and an APAP will correctly score nothing for it -
+       * confirmed against an AirSense 11 on 2026-09-04, where a flattened
+       * run raised Vt 0.366 -> 0.459 L and left FlowLim.2s pinned at 0.000.
+       *
+       * Scaling the amplitude by the inverse area ratio caps flow instead of
+       * widening the breath, which is what a limited airway actually does.
+       * This is a first-order correction in RPM-envelope space; RPM->flow is
+       * not perfectly linear, so trim Amplitude against measured Vt when the
+       * exact volume matters. */
+      {
+        const float mean_flat = BreathSim_EnvelopeMean(&g_params, g_flat_eff);
+        const float mean_base = BreathSim_EnvelopeMean(&g_params, 0.0f);
+        if (mean_flat > 1.0e-3f)
+        {
+          g_amp_scale *= (mean_base / mean_flat);
+        }
+      }
       break;
 
     case BREATH_EVENT_CSR:

@@ -20,10 +20,18 @@ struct ListItem
     Mode        target_mode;
 };
 
+/* Generic element count; the ListItem-specific arrLen() below predates it. */
+template <typename T, size_t N>
+constexpr uint8_t arrLenT(const T (&)[N])
+{
+    return static_cast<uint8_t>(N);
+}
+
 const ListItem k_home_items[] = {
     { "Settings",         Page::SETTINGS,    Mode::LIST },
     { "Start Simulation", Page::RUNNING,     Mode::INFO },
     { "Events",           Page::EVENTS,      Mode::LIST },
+    { "Protocols",        Page::PROTOCOLS,   Mode::LIST },
     { "Diagnostics",      Page::DIAGNOSTICS, Mode::INFO },
 };
 
@@ -70,6 +78,69 @@ const ListItem k_events_items[] = {
     { "Cancel Event",      Page::EVENTS, Mode::LIST },
 };
 
+/* Scripted protocols. A single event is not enough to exercise an APAP: it
+ * needs a settled baseline to reference against before the disturbance
+ * arrives, and it titrates over minutes rather than breaths. Each protocol
+ * below opens with a normal segment for exactly that reason, and loops so a
+ * run can be left unattended.
+ *
+ * Steps are (duration_s, event, severity) and are appended in order. */
+struct ProtocolStep
+{
+    float   duration_s;
+    uint8_t event;
+    float   severity;
+};
+
+struct Protocol
+{
+    const char*         label;
+    const ProtocolStep* steps;
+    uint8_t             count;
+};
+
+const ProtocolStep k_proto_fl[] = {
+    { 180.0f, static_cast<uint8_t>(BREATH_EVENT_NONE),       0.00f },
+    { 180.0f, static_cast<uint8_t>(BREATH_EVENT_FLOW_LIMIT), 0.85f },
+};
+
+const ProtocolStep k_proto_hyp[] = {
+    { 180.0f, static_cast<uint8_t>(BREATH_EVENT_NONE),     0.00f },
+    { 120.0f, static_cast<uint8_t>(BREATH_EVENT_HYPOPNEA), 0.50f },
+};
+
+const ProtocolStep k_proto_apnea[] = {
+    { 180.0f, static_cast<uint8_t>(BREATH_EVENT_NONE),  0.00f },
+    {  30.0f, static_cast<uint8_t>(BREATH_EVENT_APNEA), 1.00f },
+};
+
+/* Escalating flattening against one shared baseline — the sweep to run when
+ * hunting the severity at which the device under test first reacts. */
+const ProtocolStep k_proto_fl_ramp[] = {
+    { 180.0f, static_cast<uint8_t>(BREATH_EVENT_NONE),       0.00f },
+    { 120.0f, static_cast<uint8_t>(BREATH_EVENT_FLOW_LIMIT), 0.50f },
+    { 120.0f, static_cast<uint8_t>(BREATH_EVENT_FLOW_LIMIT), 0.70f },
+    { 120.0f, static_cast<uint8_t>(BREATH_EVENT_FLOW_LIMIT), 0.85f },
+    { 120.0f, static_cast<uint8_t>(BREATH_EVENT_FLOW_LIMIT), 1.00f },
+};
+
+/* Parallel to k_protocols_items[1..4]. */
+const Protocol k_protocols[] = {
+    { "Norm 3m > FL 3m",   k_proto_fl,      arrLenT(k_proto_fl)      },
+    { "FL ramp 50-100%",   k_proto_fl_ramp, arrLenT(k_proto_fl_ramp) },
+    { "Norm 3m > Hyp 2m",  k_proto_hyp,     arrLenT(k_proto_hyp)     },
+    { "Norm 3m > Apn 30s", k_proto_apnea,   arrLenT(k_proto_apnea)   },
+};
+
+const ListItem k_protocols_items[] = {
+    { "<- Back",           Page::HOME,      Mode::LIST },
+    { "Norm 3m > FL 3m",   Page::PROTOCOLS, Mode::LIST },
+    { "FL ramp 50-100%",   Page::PROTOCOLS, Mode::LIST },
+    { "Norm 3m > Hyp 2m",  Page::PROTOCOLS, Mode::LIST },
+    { "Norm 3m > Apn 30s", Page::PROTOCOLS, Mode::LIST },
+    { "Stop Protocol",     Page::PROTOCOLS, Mode::LIST },
+};
+
 template <size_t N>
 constexpr uint8_t arrLen(const ListItem (&)[N])
 {
@@ -89,6 +160,9 @@ const ListItem* itemsForPage(Page p, uint8_t& out_count)
         case Page::EVENTS:
             out_count = arrLen(k_events_items);
             return k_events_items;
+        case Page::PROTOCOLS:
+            out_count = arrLen(k_protocols_items);
+            return k_protocols_items;
         default:
             out_count = 0;
             return nullptr;
@@ -114,6 +188,7 @@ Page parentList(Page p)
             return Page::SETTINGS;
         case Page::SETTINGS:
         case Page::EVENTS:
+        case Page::PROTOCOLS:
         case Page::RUNNING:
         case Page::DIAGNOSTICS:
             return Page::HOME;
@@ -253,6 +328,7 @@ const char* MenuController::editorTitle() const
         case Page::VALUE_FLATTENING: return "Flattening";
         case Page::VALUE_JITTER:     return "Jitter";
         case Page::EVENTS:           return "Events";
+        case Page::PROTOCOLS:        return "Protocols";
         case Page::RUNNING:          return "Running";
         case Page::DIAGNOSTICS:      return "Diagnostics";
         default:                     return "Breath Simulator";
@@ -343,6 +419,36 @@ void MenuController::enterSelectedItem()
             ev.duration_s = e.duration_s;
             ev.severity   = e.severity;
             (void)BreathSim_TriggerEvent(&ev);
+        }
+        needs_redraw_ = true;
+        return;
+    }
+
+    if (current_page_ == Page::PROTOCOLS)
+    {
+        if (selected_index_ == 0U) { goBack(); return; }
+
+        const uint8_t k_stop_index =
+            static_cast<uint8_t>(arrLen(k_protocols_items) - 1U);
+        if (selected_index_ == k_stop_index)
+        {
+            BreathSim_ScriptStop();
+        }
+        else
+        {
+            const Protocol& pr = k_protocols[selected_index_ - 1U];
+            BreathSim_ScriptClear();
+            for (uint8_t i = 0U; i < pr.count; i++)
+            {
+                BreathScriptStep_t st;
+                st.duration_s = pr.steps[i].duration_s;
+                st.event      = pr.steps[i].event;
+                st.severity   = pr.steps[i].severity;
+                if (!BreathSim_ScriptAppend(&st)) { break; }
+            }
+            /* Loop so an overnight-style run needs no attendance, and so the
+             * device under test sees the baseline restored between bouts. */
+            (void)BreathSim_ScriptStart(true);
         }
         needs_redraw_ = true;
         return;
