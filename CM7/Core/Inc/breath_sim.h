@@ -37,11 +37,31 @@
   * pair is authoritative via @ref BreathTimingMode_t, and the resolved
   * timing is always readable through BreathSim_GetTiming().
   *
-  * No pressure or flow sensors are required. This is an open-loop RPM
-  * generator: it commands the blower, it does not regulate delivered flow.
-  * BreathSim_GetStatus() reports whether the motor actually tracked the
-  * command, so an invalid run announces itself instead of producing
-  * plausible-looking but wrong data.
+  * ---------------------------------------------------------------------------
+  * Control modes
+  * ---------------------------------------------------------------------------
+  * BREATH_CTRL_OPEN_LOOP_RPM is the original behaviour: the envelope scales
+  * RPM directly. Delivered flow then depends on the load, so tidal volume is
+  * unknown and varies with the pressure the device under test happens to be
+  * holding. Useful for blower characterisation, not for quantitative tests.
+  *
+  * BREATH_CTRL_FLOW closes the loop on the SFM3300: the envelope becomes a
+  * target inspiratory flow, and a feed-forward + PI controller finds the RPM
+  * that delivers it. Breaths are then specified the way they are clinically -
+  * tidal volume in mL, rate, I:E - and the delivered volume is measured
+  * rather than assumed.
+  *
+  * Flow control, not pressure control, is the right choice here. The CPAP
+  * under test is itself a pressure regulator; a pressure-controlled simulator
+  * would put two pressure loops on the same node fighting each other, and the
+  * result would say more about which controller won than about the device. A
+  * flow source is also what a patient actually is. Pressure is therefore a
+  * measurement, not a controlled variable: it is the device's response, and
+  * the per-breath pressure statistics are the test result.
+  *
+  * Only inspiration is regulated. Expiration stays passive (see above), so
+  * the controller is disabled and the command decays to baseline - there is
+  * nothing to regulate when the lung, not the blower, is moving the gas.
   */
 
 #ifndef BREATH_SIM_H
@@ -94,6 +114,20 @@ extern "C" {
 /** Fraction of the cycle inspiration may occupy (physiologic sanity cap). */
 #define BREATH_MAX_INSP_DUTY            0.60f
 
+/* Closed-loop flow control limits. */
+#define BREATH_TIDAL_MIN_ML             50.0f
+#define BREATH_TIDAL_MAX_ML           2000.0f
+#define BREATH_TIDAL_DEFAULT_ML        500.0f
+#define BREATH_FLOW_KP_MAX             500.0f   /**< RPM per (L/min) */
+#define BREATH_FLOW_KI_MAX            5000.0f   /**< RPM per (L/min) per s */
+#define BREATH_FLOW_FF_MAX            2000.0f   /**< RPM per (L/min) */
+/** Peak inspiratory flow the rig will ask for, whatever the tidal volume. */
+#define BREATH_Q_PEAK_MAX_LPM          200.0f
+/** Abort the run above this airway pressure. 0 disables the check. */
+#define BREATH_PRESSURE_LIMIT_MAX_CMH2O 80.0f
+/** A flow sample older than this is not usable as feedback. */
+#define BREATH_FLOW_STALE_MS              50U
+
 /** Arbitrary-waveform table size (normalised inspiratory flow, 0..1). */
 #define BREATH_TABLE_POINTS             64U
 
@@ -125,6 +159,16 @@ typedef enum
   BREATH_TIMING_EXPLICIT,
   BREATH_TIMING_COUNT
 } BreathTimingMode_t;
+
+typedef enum
+{
+  /** Envelope scales RPM directly. Delivered volume is unknown. */
+  BREATH_CTRL_OPEN_LOOP_RPM = 0,
+  /** Envelope becomes a target inspiratory flow, regulated against the
+    * SFM3300. Breaths are specified by tidal volume. */
+  BREATH_CTRL_FLOW,
+  BREATH_CTRL_COUNT
+} BreathControlMode_t;
 
 typedef enum
 {
@@ -174,6 +218,10 @@ typedef enum
 #define BREATH_FLAG_MOTOR_FAULT     0x0008U /**< CM4 reported a fault during the run. */
 #define BREATH_FLAG_TICK_OVERRUN    0x0010U /**< Control task missed its deadline. */
 #define BREATH_FLAG_VBUS_DERATE     0x0020U /**< Decel slowed to protect the DC bus. */
+#define BREATH_FLAG_FLOW_INVALID    0x0040U /**< Flow feedback unusable; fell back to open loop. */
+#define BREATH_FLAG_FLOW_SAT        0x0080U /**< Flow controller output hit a limit. */
+#define BREATH_FLAG_PRESSURE_LIMIT  0x0100U /**< Airway pressure limit tripped; run aborted. */
+#define BREATH_FLAG_VOLUME_SHORT    0x0200U /**< Delivered tidal volume missed target by >20%. */
 
 /* ===========================================================================
  * Data
@@ -201,6 +249,14 @@ typedef struct
   /* --- realism --- */
   float    jitter_pct;      /**< Breath-to-breath variability, 0..25 %. */
   uint32_t jitter_seed;     /**< PRNG seed; a fixed seed makes runs reproducible. */
+
+  /* --- closed-loop flow control (BREATH_CTRL_FLOW) --- */
+  uint8_t  control_mode;    /**< BreathControlMode_t */
+  float    tidal_ml;        /**< Target inspired volume per breath. */
+  float    flow_kp;         /**< RPM per (L/min) of flow error. */
+  float    flow_ki;         /**< RPM per (L/min) per second. */
+  float    flow_ff_rpm_per_lpm; /**< Feed-forward slope; 0 until characterised. */
+  float    pressure_limit_cmh2o; /**< Abort above this. 0 = disabled. */
 } BreathSimParams_t;
 
 /** Resolved (derived) timing — always consistent, always sums to period_s. */
@@ -229,6 +285,22 @@ typedef struct
   int32_t  rpm_act;         /**< Measured mechanical RPM from CM4. */
   uint16_t bus_voltage_v;
   uint16_t mc_state;        /**< Raw MCI_State_t from CM4. */
+
+  /* --- closed-loop flow control --- */
+  uint8_t  control_mode;
+  uint8_t  flow_valid;      /**< 1 = feedback usable this tick. */
+  float    q_target_lpm;    /**< Commanded inspiratory flow. */
+  float    q_meas_lpm;      /**< Measured flow. */
+  float    q_peak_lpm;      /**< Peak flow this breath implies for tidal_ml. */
+  float    volume_ml;       /**< Inspired volume so far in this breath. */
+  float    ctrl_integ_rpm;  /**< Integrator state, for tuning visibility. */
+
+  /* --- last completed breath: this is the test result --- */
+  float    last_tidal_ml;   /**< Delivered inspired volume. */
+  float    p_cmh2o;         /**< Current airway pressure. */
+  float    p_min_cmh2o;     /**< Minimum over the last breath (~EPAP). */
+  float    p_max_cmh2o;     /**< Maximum over the last breath (~IPAP). */
+  float    p_mean_cmh2o;    /**< Mean over the last breath. */
 } BreathSimStatus_t;
 
 typedef struct
@@ -278,6 +350,30 @@ bool BreathSim_IsRunning(void);
 /** Call at a fixed rate (200 Hz) from the breath task. */
 void BreathSim_Update(float dt_s);
 
+/**
+  * @brief Publish the latest sensor readings for the control loop.
+  *
+  * Called from SensorTask at 100 Hz. The breath loop runs at 200 Hz and
+  * simply holds the most recent sample; a sample older than
+  * BREATH_FLOW_STALE_MS is treated as no feedback at all, which drops the
+  * controller back to open loop rather than letting it act on stale data.
+  *
+  * @param q_lpm    Flow in L/min, positive = into the test lung (inspiration).
+  * @param q_valid  0 if the sample failed CRC / range checks.
+  * @param p_cmh2o  Airway pressure. Measurement only, never a controlled variable.
+  * @param p_valid  0 if the pressure sample is not trustworthy.
+  */
+void BreathSim_SetSensorInputs(float q_lpm, uint8_t q_valid,
+                               float p_cmh2o, uint8_t p_valid);
+
+/**
+  * @brief 1 when the flow feedback is fresh enough to close a loop around.
+  *
+  * Lets the GUI refuse to offer BREATH_CTRL_FLOW when the sensor is not
+  * measuring, without the GUI having to know about the sensor driver.
+  */
+bool BreathSim_FlowSensorReady(void);
+
 /** Load a normalised (0..1) inspiratory flow profile. @p n <= BREATH_TABLE_POINTS. */
 bool BreathSim_SetTable(const float *points, uint8_t n);
 uint8_t BreathSim_GetTableLength(void);
@@ -295,6 +391,7 @@ void BreathSim_ScriptStop(void);
 bool BreathSim_ScriptIsRunning(void);
 
 const char *BreathSim_WaveformName(uint8_t waveform);
+const char *BreathSim_ControlModeName(uint8_t mode);
 const char *BreathSim_EventName(uint8_t event);
 const char *BreathSim_StateName(uint8_t state);
 const char *BreathSim_SegmentName(uint8_t segment);

@@ -41,6 +41,20 @@ typedef struct
 
     float                tube_temp_c;
     uint8_t              tube_temp_valid;
+    /** 0 when the climate sensors are compiled out (CLIMATE_SENSORS_ENABLED). */
+    uint8_t              climate_enabled;
+
+    float                flow_slm;
+    uint16_t             flow_raw;
+    uint8_t              flow_present;   /**< Sensor has answered at least once. */
+    uint8_t              flow_valid;     /**< Last sample passed CRC + range. */
+    uint32_t             flow_error_count;
+
+    float                press_cmh2o;    /**< Working pressure, zero-corrected. */
+    float                press_mbar;
+    float                baro_mbar;
+    uint8_t              press_present;  /**< AMS5935-0050 has answered. */
+    uint8_t              press_held;     /**< Last sample was a repeat, not fresh. */
 
     uint8_t              sim_running;
     uint8_t              sim_state;    /**< BreathSimState_t */

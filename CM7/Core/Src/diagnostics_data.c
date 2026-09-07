@@ -8,10 +8,13 @@
 #include "diagnostics_data.h"
 
 #include "stm32h7xx_hal.h"
+#include "main.h"
 #include "sensirion_th.h"
 #include "nfc_test.h"
 #include "breath_sim.h"
 #include "blower_ipc.h"
+#include "sfm3300.h"
+#include "pressure_sensors.h"
 
 #include <string.h>
 
@@ -29,6 +32,11 @@ extern volatile uint32_t          qspi_test_step;
 
 extern SensirionTH_Handle_t hSht4x;
 extern SensirionTH_Handle_t hSts4x;
+extern SFM3300_Handle_t       hSfm3300;
+extern AMS5935_HandleTypeDef  hamsPS;
+extern float g_press_mbar;
+extern float g_press_cmh2o;
+extern float g_baro_mbar;
 
 extern BlowerIpcStatus_t g_blower_status;
 
@@ -71,12 +79,29 @@ void Diagnostics_GetSnapshot(DiagnosticsSnapshot_t *out)
     out->sdram_state = halToState(sdram_test_result, sdram_test_step);
     out->qspi_state  = halToState(qspi_test_result,  qspi_test_step);
 
+    /* With the climate sensors compiled out these handles are never read,
+     * so report them as invalid rather than passing stale zeroes up to the
+     * screen as if they were measurements. */
+    out->climate_enabled    = (uint8_t)(CLIMATE_SENSORS_ENABLED);
+
     out->humidity_pct       = hSht4x.humidity_pct;
     out->humidifier_temp_c  = hSht4x.temperature_c;
-    out->humidity_valid     = hSht4x.last_crc_ok;
+    out->humidity_valid     = (CLIMATE_SENSORS_ENABLED) ? hSht4x.last_crc_ok : 0U;
 
     out->tube_temp_c        = hSts4x.temperature_c;
-    out->tube_temp_valid    = hSts4x.last_crc_ok;
+    out->tube_temp_valid    = (CLIMATE_SENSORS_ENABLED) ? hSts4x.last_crc_ok : 0U;
+
+    out->flow_slm           = hSfm3300.flow_filt_slm;
+    out->flow_raw           = hSfm3300.raw;
+    out->flow_present       = hSfm3300.present;
+    out->flow_valid         = hSfm3300.last_sample_ok;
+    out->flow_error_count   = hSfm3300.error_count;
+
+    out->press_cmh2o        = g_press_cmh2o;
+    out->press_mbar         = g_press_mbar;
+    out->baro_mbar          = g_baro_mbar;
+    out->press_present      = hamsPS.present;
+    out->press_held         = hamsPS.held_last;
 
     /* One coherent snapshot rather than several independent getters: the
      * breath task runs at a higher priority than this caller, so pulling

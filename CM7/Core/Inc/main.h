@@ -136,6 +136,41 @@ extern volatile HAL_StatusTypeDef lcd_test_result;
 
 /* USER CODE BEGIN Private defines */
 
+/**
+  * Climate sensors (Sensirion SHT4x on I2C2, STS4x on I2C1) and the
+  * humidifier control loop that depends on them.
+  *
+  * Set to 0 for breath-simulator work: the rig does not need humidity or
+  * tube temperature, and the STS4x read blocks I2C1 for ~10 ms every
+  * 250 ms, which is the only thing competing with the SFM3300 flow sensor
+  * for the bus. With this at 0 the flow sensor has I2C1 to itself and
+  * neither I2C peripheral carries any other traffic.
+  *
+  * Set back to 1 to restore both sensors and the humidifier loop; nothing
+  * else has to change.
+  */
+#ifndef CLIMATE_SENSORS_ENABLED
+#define CLIMATE_SENSORS_ENABLED   0
+#endif
+
+/**
+  * Barometric pressure sensor U11 (AMS5935-1200, SPI4 CS1 = PE4).
+  *
+  * Set to 0 while the part is not fitted. With it off the working pressure
+  * sensor U24 gets every SPI4 slot (a true 100 Hz instead of 95 Hz), and
+  * the log is not cluttered with probe failures for a device that is not
+  * there. U11's chip select is still driven inactive at startup either way
+  * - MX_GPIO_Init leaves both SPI4 chip selects asserted, so deasserting is
+  * not optional even for an unpopulated footprint.
+  *
+  * Set to 1 when U11 is populated; it is only needed for density/BTPS
+  * correction of the flow reading, which matters once flow is used
+  * quantitatively rather than just observed.
+  */
+#ifndef PRESSURE_AS_ENABLED
+#define PRESSURE_AS_ENABLED       0
+#endif
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

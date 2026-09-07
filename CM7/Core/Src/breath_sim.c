@@ -10,6 +10,7 @@
 #include "breath_sim.h"
 #include "blower_ipc.h"
 #include "dbg_log.h"
+#include "stm32h7xx_hal.h"   /* HAL_GetTick for sensor-sample ageing */
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -135,6 +136,39 @@ static uint8_t  g_table_len;
 /* PRNG for breath-to-breath variability. */
 static uint32_t g_rng;
 
+/* ---------------------------------------------------------------------------
+ * Closed-loop flow control state
+ * ------------------------------------------------------------------------ */
+/* Latest sensor inputs, pushed by SensorTask at 100 Hz. The breath loop runs
+ * at 200 Hz and holds the most recent sample; that is a zero-order hold at
+ * half the loop rate, which is untroubling here because the fastest feature
+ * in a breath is ~0.3 s and the blower's own response is far slower than
+ * either rate. */
+static float    g_q_meas_lpm;
+static uint8_t  g_q_valid;
+static uint32_t g_q_stamp_ms;
+static float    g_p_cmh2o;
+static uint8_t  g_p_valid;
+
+static float    g_q_target_lpm;
+static float    g_q_peak_lpm;      /* peak this breath needs for tidal_ml */
+static float    g_shape_area;      /* mean/peak of the inspiratory shape */
+static float    g_ctrl_integ_rpm;  /* PI integrator, RPM */
+static float    g_volume_ml;       /* inspired volume so far this breath */
+static float    g_last_tidal_ml;
+/* RPM as inspiration ended; the passive decay starts from here so
+ * exp_tau_s means the same thing in both control modes. */
+static int32_t  g_rpm_insp_end;
+
+/* Airway-pressure statistics accumulated over the breath in progress. */
+static float    g_p_min_acc;
+static float    g_p_max_acc;
+static float    g_p_sum;
+static uint32_t g_p_count;
+static float    g_p_min_last;
+static float    g_p_max_last;
+static float    g_p_mean_last;
+
 /* Coherent snapshot published for other tasks. */
 static BreathSimStatus_t g_status;
 
@@ -174,6 +208,41 @@ static float rng_bipolar(void)
 }
 
 /* ===========================================================================
+ * Sensor inputs
+ * ======================================================================== */
+
+void BreathSim_SetSensorInputs(float q_lpm, uint8_t q_valid,
+                               float p_cmh2o, uint8_t p_valid)
+{
+  taskENTER_CRITICAL();
+  if (q_valid != 0U)
+  {
+    g_q_meas_lpm = q_lpm;
+    g_q_stamp_ms = HAL_GetTick();
+  }
+  g_q_valid = q_valid;
+
+  if (p_valid != 0U)
+  {
+    g_p_cmh2o = p_cmh2o;
+  }
+  g_p_valid = p_valid;
+  taskEXIT_CRITICAL();
+}
+
+/** 1 while the last flow sample is recent enough to close a loop around. */
+static uint8_t BreathSim_FlowUsable(void)
+{
+  if (g_q_valid == 0U) { return 0U; }
+  return ((HAL_GetTick() - g_q_stamp_ms) <= BREATH_FLOW_STALE_MS) ? 1U : 0U;
+}
+
+bool BreathSim_FlowSensorReady(void)
+{
+  return (BreathSim_FlowUsable() != 0U);
+}
+
+/* ===========================================================================
  * Parameter resolution
  *
  * Rate, inspiratory time and I:E are three knobs on two degrees of freedom.
@@ -201,6 +270,18 @@ static bool BreathSim_Resolve(BreathSimParams_t *p, BreathSimTiming_t *t)
   p->exp_tau_s    = clampf(p->exp_tau_s, BREATH_EXP_TAU_MIN_S, BREATH_EXP_TAU_MAX_S);
   p->flattening   = clampf(p->flattening, 0.0f, BREATH_FLATTENING_MAX);
   p->jitter_pct   = clampf(p->jitter_pct, 0.0f, BREATH_JITTER_MAX_PCT);
+
+  p->tidal_ml     = clampf(p->tidal_ml, BREATH_TIDAL_MIN_ML, BREATH_TIDAL_MAX_ML);
+  p->flow_kp      = clampf(p->flow_kp, 0.0f, BREATH_FLOW_KP_MAX);
+  p->flow_ki      = clampf(p->flow_ki, 0.0f, BREATH_FLOW_KI_MAX);
+  p->flow_ff_rpm_per_lpm = clampf(p->flow_ff_rpm_per_lpm, 0.0f, BREATH_FLOW_FF_MAX);
+  p->pressure_limit_cmh2o =
+      clampf(p->pressure_limit_cmh2o, 0.0f, BREATH_PRESSURE_LIMIT_MAX_CMH2O);
+  if (p->control_mode >= (uint8_t)BREATH_CTRL_COUNT)
+  {
+    p->control_mode = (uint8_t)BREATH_CTRL_OPEN_LOOP_RPM;
+    ok = false;
+  }
 
   p->rpm_base      = clamp_i32(p->rpm_base, BREATH_RPM_BASE_MIN, BREATH_RPM_BASE_MAX);
   p->rpm_amplitude = clamp_i32(p->rpm_amplitude, 0, BREATH_RPM_AMP_MAX);
@@ -464,6 +545,75 @@ static float BreathSim_Envelope(float t, const BreathSimParams_t *p,
 }
 
 /* ===========================================================================
+ * Closed-loop flow control
+ *
+ * Feed-forward + PI on inspiratory flow, output in RPM. Only inspiration is
+ * regulated: during expiration the lung, not the blower, moves the gas, and
+ * a controller asked to hold zero flow against the recoil would push forward
+ * to cancel it - actively fighting the very thing it is meant to allow.
+ * ======================================================================== */
+
+static int32_t BreathSim_FlowControlRpm(float dt_s, BreathSegment_t seg)
+{
+  const float rpm_base_f = (float)g_params.rpm_base;
+  const float rpm_max_f  = (float)BREATH_RPM_ABS_MAX;
+
+  /* The envelope already carries event and jitter amplitude scaling. */
+  g_q_target_lpm = g_q_peak_lpm * g_envelope;
+
+  const uint8_t inspiring = ((seg == BREATH_SEG_INSP) ||
+                             (seg == BREATH_SEG_INSP_PAUSE)) ? 1U : 0U;
+
+  if (inspiring == 0U)
+  {
+    /* Passive expiration: decay from wherever inspiration left the blower,
+     * with the same time constant the open-loop mode uses. Freeze - do not
+     * zero - the integrator, so the operating point learned during this
+     * breath is still there for the next one. */
+    const float t_exp = g_t_s - (g_active.insp_s + g_active.insp_pause_s);
+    const float k = (t_exp > 0.0f) ? expf(-t_exp / g_params.exp_tau_s) : 1.0f;
+    const float out = rpm_base_f + (((float)g_rpm_insp_end - rpm_base_f) * k);
+    return (int32_t)lroundf(clampf(out, rpm_base_f, rpm_max_f));
+  }
+
+  if (BreathSim_FlowUsable() == 0U)
+  {
+    /* No usable feedback. Fall back to the open-loop RPM shape rather than
+     * integrating against a stale or bad sample - a flow controller driven
+     * by a dead sensor is the one failure mode that could drive the blower
+     * to a limit and hold it there. */
+    g_flags |= BREATH_FLAG_FLOW_INVALID;
+    const float out = rpm_base_f +
+                      ((float)g_params.rpm_amplitude * g_envelope);
+    return (int32_t)lroundf(clampf(out, rpm_base_f, rpm_max_f));
+  }
+
+  const float err = g_q_target_lpm - g_q_meas_lpm;
+  const float ff  = g_params.flow_ff_rpm_per_lpm * g_q_target_lpm;
+
+  const float unsat = rpm_base_f + ff + (g_params.flow_kp * err) +
+                      g_ctrl_integ_rpm;
+  const float sat   = clampf(unsat, rpm_base_f, rpm_max_f);
+
+  /* Conditional integration: while saturated, integrate only in the
+   * direction that walks the output back into the linear region. */
+  uint8_t may_integrate = 1U;
+  if (sat != unsat)
+  {
+    g_flags |= BREATH_FLAG_FLOW_SAT;
+    may_integrate = (((sat < unsat) && (err < 0.0f)) ||
+                     ((sat > unsat) && (err > 0.0f))) ? 1U : 0U;
+  }
+  if (may_integrate != 0U)
+  {
+    g_ctrl_integ_rpm += g_params.flow_ki * err * dt_s;
+    g_ctrl_integ_rpm = clampf(g_ctrl_integ_rpm, 0.0f, rpm_max_f - rpm_base_f);
+  }
+
+  return (int32_t)lroundf(sat);
+}
+
+/* ===========================================================================
  * Slew limiting
  * ======================================================================== */
 
@@ -587,6 +737,30 @@ static void BreathSim_TickEvents(float dt_s)
   }
 }
 
+/**
+  * @brief Mean/peak of the inspiratory shape, integrated numerically.
+  *
+  * Needed to turn a tidal volume into a peak flow:
+  *     V_T = Q_peak * T_insp * area
+  * Doing it numerically rather than with a per-waveform constant means the
+  * flattening morph and an uploaded table are handled for free - both change
+  * the area, and a hard-coded 2/pi for the half-sine would quietly deliver
+  * the wrong volume as soon as flattening was dialled in.
+  */
+static float BreathSim_ShapeArea(const BreathSimParams_t *p)
+{
+  const uint32_t N = 32U;
+  float sum = 0.0f;
+
+  for (uint32_t i = 0U; i < N; i++)
+  {
+    const float u = ((float)i + 0.5f) / (float)N;
+    sum += BreathSim_InspShape(u, p);
+  }
+  const float area = sum / (float)N;
+  return (area > 0.05f) ? area : 0.05f;   /* guard a degenerate table */
+}
+
 /** Amplitude / shape modifiers for the breath about to start. */
 static void BreathSim_LatchBreathModifiers(void)
 {
@@ -683,6 +857,26 @@ static void BreathSim_LatchBreathModifiers(void)
   {
     g_active = g_timing;
   }
+
+  /* Peak inspiratory flow this breath needs to deliver the target volume.
+   * g_flat_eff is already latched above, so the area reflects any flow
+   * limitation applied to this particular breath. */
+  g_shape_area = BreathSim_ShapeArea(&g_params);
+  if (g_active.insp_s > 0.01f)
+  {
+    const float litres = g_params.tidal_ml * 0.001f;
+    g_q_peak_lpm = (litres / (g_active.insp_s * g_shape_area)) * 60.0f;
+  }
+  else
+  {
+    g_q_peak_lpm = 0.0f;
+  }
+  /* Deliberately NOT scaled by g_amp_scale here: the target flow is formed
+   * as q_peak * envelope, and the envelope already carries the event and
+   * jitter scaling. Applying it in both places would square it, so a
+   * 50% hypopnea would come out at 25%. This value is therefore the
+   * nominal peak for a full-amplitude breath. */
+  g_q_peak_lpm = clampf(g_q_peak_lpm, 0.0f, BREATH_Q_PEAK_MAX_LPM);
 }
 
 /* ===========================================================================
@@ -803,6 +997,19 @@ static void BreathSim_PublishStatus(void)
   s.bus_voltage_v = g_bus_voltage_v;
   s.mc_state      = g_mc_state;
 
+  s.control_mode   = g_params.control_mode;
+  s.flow_valid     = BreathSim_FlowUsable();
+  s.q_target_lpm   = g_q_target_lpm;
+  s.q_meas_lpm     = g_q_meas_lpm;
+  s.q_peak_lpm     = g_q_peak_lpm;
+  s.volume_ml      = g_volume_ml;
+  s.ctrl_integ_rpm = g_ctrl_integ_rpm;
+  s.last_tidal_ml  = g_last_tidal_ml;
+  s.p_cmh2o        = g_p_cmh2o;
+  s.p_min_cmh2o    = g_p_min_last;
+  s.p_max_cmh2o    = g_p_max_last;
+  s.p_mean_cmh2o   = g_p_mean_last;
+
   taskENTER_CRITICAL();
   g_status = s;
   taskEXIT_CRITICAL();
@@ -828,6 +1035,21 @@ void BreathSim_Init(void)
   g_params.flattening    = 0.0f;
   g_params.jitter_pct    = 0.0f;
   g_params.jitter_seed   = 0x1234ABCDU;
+
+  /* Closed-loop flow control. Off by default so a board with no flow sensor
+   * behaves exactly as before. */
+  g_params.control_mode  = (uint8_t)BREATH_CTRL_OPEN_LOOP_RPM;
+  g_params.tidal_ml      = BREATH_TIDAL_DEFAULT_ML;
+  /* Feed-forward starts at zero on purpose: the RPM-per-(L/min) slope is a
+   * property of this rig's pneumatic impedance, and a guessed value would
+   * overshoot on the first breath of every session. With ff = 0 the
+   * integrator finds the operating point within a breath or two and then
+   * holds it. Measure the slope once and set it to get the first breath
+   * right too. */
+  g_params.flow_kp       = 80.0f;
+  g_params.flow_ki       = 400.0f;
+  g_params.flow_ff_rpm_per_lpm = 0.0f;
+  g_params.pressure_limit_cmh2o = 0.0f;
 
   g_table_len = 0U;
   (void)BreathSim_Resolve(&g_params, &g_timing);
@@ -869,6 +1091,26 @@ void BreathSim_Init(void)
   g_script_remaining_s = 0.0f;
 
   g_rng = g_params.jitter_seed;
+
+  g_q_meas_lpm     = 0.0f;
+  g_q_valid        = 0U;
+  g_q_stamp_ms     = 0U;
+  g_p_cmh2o        = 0.0f;
+  g_p_valid        = 0U;
+  g_q_target_lpm   = 0.0f;
+  g_q_peak_lpm     = 0.0f;
+  g_shape_area     = 0.637f;
+  g_ctrl_integ_rpm = 0.0f;
+  g_volume_ml      = 0.0f;
+  g_last_tidal_ml  = 0.0f;
+  g_rpm_insp_end   = 0;
+  g_p_min_acc      = 1.0e9f;
+  g_p_max_acc      = -1.0e9f;
+  g_p_sum          = 0.0f;
+  g_p_count        = 0U;
+  g_p_min_last     = 0.0f;
+  g_p_max_last     = 0.0f;
+  g_p_mean_last    = 0.0f;
 
   memset(&g_status, 0, sizeof(g_status));
   g_status.script_step = 0xFFU;
@@ -959,6 +1201,15 @@ void BreathSim_Start(void)
   g_rng             = (g_params.jitter_seed != 0U) ? g_params.jitter_seed : 0x1234ABCDU;
   g_target_rpm      = g_params.rpm_base;
   g_have_posted     = 0U;
+  g_ctrl_integ_rpm  = 0.0f;
+  g_volume_ml       = 0.0f;
+  g_last_tidal_ml   = 0.0f;
+  g_q_target_lpm    = 0.0f;
+  g_rpm_insp_end    = g_params.rpm_base;
+  g_p_min_acc       = 1.0e9f;
+  g_p_max_acc       = -1.0e9f;
+  g_p_sum           = 0.0f;
+  g_p_count         = 0U;
 
   (void)BlowerIpc_CM7_SetSpeedRpmSilent(g_target_rpm);
   g_last_posted_rpm = g_target_rpm;
@@ -966,6 +1217,13 @@ void BreathSim_Start(void)
   BreathSim_AckFaultIfLatched();
   (void)BlowerIpc_CM7_Start();
 
+  if (g_params.control_mode == (uint8_t)BREATH_CTRL_FLOW)
+  {
+    DBG_I("SIM", "flow control: Vt=%d mL over %d ms -> peak ~%d L/min",
+          (int)g_params.tidal_ml, (int)(g_timing.insp_s * 1000.0f),
+          (int)((g_params.tidal_ml * 0.001f /
+                 (g_timing.insp_s * BreathSim_ShapeArea(&g_params))) * 60.0f));
+  }
   DBG_I("SIM", "start: %d bpm I:E 1:%d insp=%dms base=%ld amp=%ld %s",
         (int)g_timing.rate_bpm, (int)g_params.ie_ratio_exp,
         (int)(g_timing.insp_s * 1000.0f),
@@ -1089,6 +1347,33 @@ void BreathSim_Update(float dt_s)
     if (g_t_s < 0.0f) { g_t_s = 0.0f; }
     g_breath_index++;
 
+    /* Latch the breath that just finished. This pair - delivered volume and
+     * the pressure the device responded with - is what a test report is
+     * actually made of. */
+    g_last_tidal_ml = g_volume_ml;
+    if (g_p_count > 0U)
+    {
+      g_p_min_last  = g_p_min_acc;
+      g_p_max_last  = g_p_max_acc;
+      g_p_mean_last = g_p_sum / (float)g_p_count;
+    }
+    if ((g_params.control_mode == (uint8_t)BREATH_CTRL_FLOW) &&
+        (g_amp_scale > 0.5f))
+    {
+      /* Only meaningful on a normal breath: an apnea or deep hypopnea is
+       * supposed to fall short. */
+      const float shortfall = g_params.tidal_ml - g_last_tidal_ml;
+      if (shortfall > (0.2f * g_params.tidal_ml))
+      {
+        g_flags |= BREATH_FLAG_VOLUME_SHORT;
+      }
+    }
+    g_volume_ml = 0.0f;
+    g_p_min_acc = 1.0e9f;
+    g_p_max_acc = -1.0e9f;
+    g_p_sum     = 0.0f;
+    g_p_count   = 0U;
+
     /* Breath boundary: the one safe point to swap parameters. */
     if (g_params_dirty != 0U)
     {
@@ -1099,6 +1384,26 @@ void BreathSim_Update(float dt_s)
       taskEXIT_CRITICAL();
     }
     BreathSim_LatchBreathModifiers();
+  }
+
+  /* Airway pressure is a measurement, never a controlled variable - but it
+   * is the device under test's response, so the per-breath statistics are
+   * the actual test result. Accumulate them every tick. */
+  if (g_p_valid != 0U)
+  {
+    if (g_p_cmh2o < g_p_min_acc) { g_p_min_acc = g_p_cmh2o; }
+    if (g_p_cmh2o > g_p_max_acc) { g_p_max_acc = g_p_cmh2o; }
+    g_p_sum += g_p_cmh2o;
+    g_p_count++;
+
+    if ((g_params.pressure_limit_cmh2o > 0.0f) &&
+        (g_p_cmh2o > g_params.pressure_limit_cmh2o))
+    {
+      g_flags |= BREATH_FLAG_PRESSURE_LIMIT;
+      BreathSim_EnterFault("airway pressure limit exceeded");
+      BreathSim_PublishStatus();
+      return;
+    }
   }
 
   const BreathSegment_t prev_seg = g_segment;
@@ -1123,9 +1428,35 @@ void BreathSim_Update(float dt_s)
   if (env > 1.0f) { env = 1.0f; }
   g_envelope = env;
 
-  const int32_t desired_rpm =
-      g_params.rpm_base +
-      (int32_t)lroundf((float)g_params.rpm_amplitude * g_envelope);
+  /* Inspired volume. Only positive flow during inspiration counts toward
+   * tidal volume; expiratory (negative) flow is the lung emptying. */
+  const uint8_t inspiring = ((seg == BREATH_SEG_INSP) ||
+                             (seg == BREATH_SEG_INSP_PAUSE)) ? 1U : 0U;
+  if ((inspiring != 0U) && (BreathSim_FlowUsable() != 0U) &&
+      (g_q_meas_lpm > 0.0f))
+  {
+    /* L/min -> mL over dt: q * dt * 1000/60 */
+    g_volume_ml += g_q_meas_lpm * dt_s * (1000.0f / 60.0f);
+  }
+
+  int32_t desired_rpm;
+  if (g_params.control_mode == (uint8_t)BREATH_CTRL_FLOW)
+  {
+    desired_rpm = BreathSim_FlowControlRpm(dt_s, seg);
+  }
+  else
+  {
+    g_q_target_lpm = 0.0f;
+    desired_rpm = g_params.rpm_base +
+                  (int32_t)lroundf((float)g_params.rpm_amplitude * g_envelope);
+  }
+
+  /* Remember where inspiration left the blower so the passive decay starts
+   * from the right place next tick. */
+  if (inspiring != 0U)
+  {
+    g_rpm_insp_end = desired_rpm;
+  }
 
   g_target_rpm = BreathSim_ApplySlew(
       clamp_i32(desired_rpm, 0, BREATH_RPM_ABS_MAX), dt_s);
@@ -1258,6 +1589,11 @@ const char *BreathSim_WaveformName(uint8_t waveform)
     case BREATH_WAVE_SINE:
     default:                 return "Sine";
   }
+}
+
+const char *BreathSim_ControlModeName(uint8_t mode)
+{
+  return (mode == (uint8_t)BREATH_CTRL_FLOW) ? "Flow" : "OpenRPM";
 }
 
 const char *BreathSim_EventName(uint8_t event)

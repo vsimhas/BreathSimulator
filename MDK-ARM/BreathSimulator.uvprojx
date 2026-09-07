@@ -1007,6 +1007,16 @@
               <FilePath>..\CM7\Core\Src\sensirion_th.c</FilePath>
             </File>
             <File>
+              <FileName>sfm3300.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CM7\Core\Src\sfm3300.c</FilePath>
+            </File>
+            <File>
+              <FileName>pressure_sensors.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CM7\Core\Src\pressure_sensors.c</FilePath>
+            </File>
+            <File>
               <FileName>sha256.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\CM7\Core\Src\sha256.c</FilePath>
@@ -4763,6 +4773,16 @@
               <FileName>sensirion_th.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\CM7\Core\Src\sensirion_th.c</FilePath>
+            </File>
+            <File>
+              <FileName>sfm3300.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CM7\Core\Src\sfm3300.c</FilePath>
+            </File>
+            <File>
+              <FileName>pressure_sensors.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CM7\Core\Src\pressure_sensors.c</FilePath>
             </File>
             <File>
               <FileName>sha256.c</FileName>

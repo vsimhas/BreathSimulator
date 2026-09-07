@@ -15,15 +15,36 @@
 #include <stddef.h>
 
 #include "stm32h7xx_hal.h"
+#include "main.h"
 #include "cmsis_compiler.h"
 #include "breath_sim.h"
 #include "blower_ipc.h"
+#include "sfm3300.h"
+#include "pressure_sensors.h"
 
 #include "usbd_def.h"
 #include "usbd_cdc.h"
 #include "usbd_cdc_if.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
+
+/* Owned by main.c; FlowTask does all the I2C, this file only reads
+ * the handle and raises the re-init request flag. */
+extern SFM3300_Handle_t hSfm3300;
+extern volatile HAL_StatusTypeDef sfm3300_init_status;
+extern volatile uint8_t  g_flow_reinit_request;
+extern volatile uint32_t g_flow_bus_busy_count;
+
+/* AMS5935 pressure sensors; SensorTask owns all SPI4 traffic, this
+ * file only reads the published values and raises the tare request. */
+extern AMS5935_HandleTypeDef hamsPS;
+extern AMS5935_HandleTypeDef hamsAS;
+extern AMS5935_Data_t        g_measPS;
+extern AMS5935_Data_t        g_measAS;
+extern float g_press_mbar;
+extern float g_press_cmh2o;
+extern float g_baro_mbar;
+extern volatile uint8_t g_press_zero_request;
 
 #ifndef TELEM_BUF_SIZE
 #define TELEM_BUF_SIZE   2048U
@@ -38,6 +59,10 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 #define TELEM_CMD_MAX_LEN    96U
 
 volatile uint8_t  g_telem_enabled      = 1U;
+/* Flow and pressure lines are off by default: they multiply the line
+ * rate, and neither sensor is part of the control loop yet. */
+static volatile uint8_t s_telem_flow_enabled = 0U;
+static volatile uint8_t s_telem_press_enabled = 0U;
 volatile uint32_t g_telem_sample_count = 0U;
 volatile uint32_t g_telem_dropped_count = 0U;
 
@@ -200,6 +225,15 @@ static int Telem_ParseLong(const char *text, long *out)
  *
  *  M, tick_ms, breath_index          <- emitted at each breath boundary
  *
+ *  V, breath_index, tidal_ml, p_min, p_max, p_mean, q_peak_lpm, flags
+ *                                    <- one per completed breath: the result
+ *
+ *  Q, tick_ms, q_target_lpm, q_meas_lpm, volume_ml, p_cmh2o, flow_valid,
+ *     integ_rpm                      <- flow-control detail, BREATH_CTRL_FLOW only
+ *
+ *  C, control_mode, tidal_ml, q_peak_lpm, kp, ki, ff, p_limit, last_tidal_ml
+ *                                    <- second half of the status reply
+ *
  * `flags` is the sticky BREATH_FLAG_* bitfield for the run. A non-zero
  * value means the delivered waveform may not match the requested one, so
  * analysis should treat the affected breaths as suspect.
@@ -237,6 +271,19 @@ static void Telem_PushStatus(void)
     (unsigned long)p.jitter_seed,
     (unsigned)st.flags);
   if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
+  char line2[192];
+  const int n2 = snprintf(line2, sizeof(line2),
+    "C,%s,%.0f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\r\n",
+    BreathSim_ControlModeName(p.control_mode),
+    (double)p.tidal_ml,
+    (double)st.q_peak_lpm,
+    (double)p.flow_kp,
+    (double)p.flow_ki,
+    (double)p.flow_ff_rpm_per_lpm,
+    (double)p.pressure_limit_cmh2o,
+    (double)st.last_tidal_ml);
+  if (n2 > 0) { Telem_BufPush((const uint8_t *)line2, (uint32_t)n2); }
 }
 
 /* ---------------------------------------------------------------------------
@@ -267,6 +314,11 @@ static const TelemParamDef_t k_param_defs[] = {
   { "jitter",     TP_FLOAT, 0.0f,                 BREATH_JITTER_MAX_PCT,   offsetof(BreathSimParams_t, jitter_pct)    },
   { "rpm_base",   TP_INT,   (float)BREATH_RPM_BASE_MIN, (float)BREATH_RPM_BASE_MAX, offsetof(BreathSimParams_t, rpm_base)      },
   { "amplitude",  TP_INT,   0.0f,                 (float)BREATH_RPM_AMP_MAX,  offsetof(BreathSimParams_t, rpm_amplitude) },
+  { "tidal",      TP_FLOAT, BREATH_TIDAL_MIN_ML,  BREATH_TIDAL_MAX_ML,     offsetof(BreathSimParams_t, tidal_ml)      },
+  { "flow_kp",    TP_FLOAT, 0.0f,                 BREATH_FLOW_KP_MAX,      offsetof(BreathSimParams_t, flow_kp)       },
+  { "flow_ki",    TP_FLOAT, 0.0f,                 BREATH_FLOW_KI_MAX,      offsetof(BreathSimParams_t, flow_ki)       },
+  { "flow_ff",    TP_FLOAT, 0.0f,                 BREATH_FLOW_FF_MAX,      offsetof(BreathSimParams_t, flow_ff_rpm_per_lpm) },
+  { "plimit",     TP_FLOAT, 0.0f,  BREATH_PRESSURE_LIMIT_MAX_CMH2O,        offsetof(BreathSimParams_t, pressure_limit_cmh2o) },
 };
 #define TELEM_PARAM_COUNT  (sizeof(k_param_defs) / sizeof(k_param_defs[0]))
 
@@ -310,12 +362,16 @@ static void Telem_PushHelp(void)
   Telem_PushRaw("# sim set <param> <value>\r\n");
   Telem_PushRaw("#   rate insp ie insp_pause exp_pause exp_tau flattening jitter\r\n");
   Telem_PushRaw("#   rpm_base amplitude seed\r\n");
+  Telem_PushRaw("#   tidal flow_kp flow_ki flow_ff plimit\r\n");
+  Telem_PushRaw("# sim set control openrpm|flow\r\n");
   Telem_PushRaw("# sim set waveform sine|ramp|square|table\r\n");
   Telem_PushRaw("# sim set timing rate_ie|explicit\r\n");
   Telem_PushRaw("# sim table clear | add <v>.. | show   (values 0..1)\r\n");
   Telem_PushRaw("# sim event <apnea|hypopnea|flowlimit|csr> <secs> [severity%]\r\n");
   Telem_PushRaw("# sim event cancel\r\n");
   Telem_PushRaw("# sim script clear | add <event> <secs> [severity%] | start [loop] | stop\r\n");
+  Telem_PushRaw("# flow status|on|off|zero|clearzero|reinit|filter <a>\r\n");
+  Telem_PushRaw("# press status|on|off|zero|clearzero|range <lo> <hi>\r\n");
   Telem_PushRaw("# foc set <gain> <value>\r\n");
 }
 
@@ -363,6 +419,23 @@ static void Telem_CmdSet(const char *cmd, const char *args)
     if      (strcmp(rest, "rate_ie") == 0)  { p.timing_mode = (uint8_t)BREATH_TIMING_RATE_IE; }
     else if (strcmp(rest, "explicit") == 0) { p.timing_mode = (uint8_t)BREATH_TIMING_EXPLICIT; }
     else { Telem_PushErr("timing rate_ie|explicit"); return; }
+    Telem_ApplyParams(&p, cmd);
+    return;
+  }
+
+  if (strcmp(name, "control") == 0)
+  {
+    if      (strcmp(rest, "openrpm") == 0) { p.control_mode = (uint8_t)BREATH_CTRL_OPEN_LOOP_RPM; }
+    else if (strcmp(rest, "flow") == 0)
+    {
+      if (hSfm3300.measuring == 0U)
+      {
+        Telem_PushErr("flow sensor not measuring; see 'flow status'");
+        return;
+      }
+      p.control_mode = (uint8_t)BREATH_CTRL_FLOW;
+    }
+    else { Telem_PushErr("control openrpm|flow"); return; }
     Telem_ApplyParams(&p, cmd);
     return;
   }
@@ -615,6 +688,270 @@ static void Telem_CmdScript(const char *cmd, const char *args)
   Telem_PushErr("sim script clear|add|start [loop]|stop");
 }
 
+/* ---------------------------------------------------------------------------
+ *  F, tick_ms, raw_counts, flow_slm, flow_filt_slm, sample_ok, error_count
+ *
+ * flow_slm is signed: positive is flow in the direction of the arrow on the
+ * sensor body. Mount it so positive means CPAP -> test lung, i.e. positive
+ * is inspiration.
+ * ------------------------------------------------------------------------ */
+void Telem_PushFlowSample(const SFM3300_Handle_t *flow)
+{
+  if ((g_telem_enabled == 0U) || (s_telem_flow_enabled == 0U) || (flow == NULL))
+  {
+    return;
+  }
+
+  char line[96];
+  const int n = snprintf(line, sizeof(line),
+    "F,%lu,%u,%.3f,%.3f,%u,%lu\r\n",
+    (unsigned long)HAL_GetTick(),
+    (unsigned)flow->raw,
+    (double)flow->flow_slm,
+    (double)flow->flow_filt_slm,
+    (unsigned)flow->last_sample_ok,
+    (unsigned long)flow->error_count);
+  if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+}
+
+static void Telem_PushFlowStatus(void)
+{
+  char line[208];
+  const int n = snprintf(line, sizeof(line),
+    "# flow init=%d present=%u meas=%u ser_ok=%u serial=0x%08lX raw=%u "
+    "slm=%.2f filt=%.2f zero=%.2f alpha=%.2f\r\n",
+    (int)sfm3300_init_status,
+    (unsigned)hSfm3300.present,
+    (unsigned)hSfm3300.measuring,
+    (unsigned)hSfm3300.serial_ok,
+    (unsigned long)hSfm3300.serial,
+    (unsigned)hSfm3300.raw,
+    (double)hSfm3300.flow_slm,
+    (double)hSfm3300.flow_filt_slm,
+    (double)hSfm3300.zero_offset_slm,
+    (double)hSfm3300.filter_alpha);
+  if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
+  char line2[208];
+  const int n2 = snprintf(line2, sizeof(line2),
+    "# flow reads=%lu err=%lu crc=%lu range=%lu recov=%lu startfail=%lu "
+    "busbusy=%lu hal=%d\r\n",
+    (unsigned long)hSfm3300.read_count,
+    (unsigned long)hSfm3300.error_count,
+    (unsigned long)hSfm3300.crc_error_count,
+    (unsigned long)hSfm3300.range_error_count,
+    (unsigned long)hSfm3300.recover_count,
+    (unsigned long)hSfm3300.start_fail_count,
+    (unsigned long)g_flow_bus_busy_count,
+    (int)hSfm3300.last_status);
+  if (n2 > 0) { Telem_BufPush((const uint8_t *)line2, (uint32_t)n2); }
+}
+
+static void Telem_CmdFlow(const char *cmd, const char *args)
+{
+  if ((args[0] == '\0') || (strcmp(args, "status") == 0))
+  {
+    Telem_PushFlowStatus();
+    return;
+  }
+
+  if ((strcmp(args, "on") == 0) || (strcmp(args, "1") == 0))
+  {
+    s_telem_flow_enabled = 1U;
+    Telem_PushAck(cmd);
+    return;
+  }
+  if ((strcmp(args, "off") == 0) || (strcmp(args, "0") == 0))
+  {
+    s_telem_flow_enabled = 0U;
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  if (strcmp(args, "zero") == 0)
+  {
+    if (hSfm3300.present == 0U)
+    {
+      Telem_PushErr("flow sensor not responding");
+      return;
+    }
+    /* Tare only touches the offset, no bus traffic, so it is safe to do
+     * from the command task. It is only meaningful at genuinely zero flow. */
+    SFM3300_ZeroNow(&hSfm3300);
+    Telem_PushAck(cmd);
+    Telem_PushFlowStatus();
+    return;
+  }
+
+  if (strcmp(args, "clearzero") == 0)
+  {
+    SFM3300_ClearZero(&hSfm3300);
+    Telem_PushAck(cmd);
+    Telem_PushFlowStatus();
+    return;
+  }
+
+  if (strcmp(args, "reinit") == 0)
+  {
+    /* Re-init blocks for ~60 ms and needs the I2C1 mutex, so hand it to
+     * FlowTask rather than doing it here. */
+    g_flow_reinit_request = 1U;
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  if (strncmp(args, "filter ", 7U) == 0)
+  {
+    float v;
+    if (!Telem_ParseFloat(&args[7], &v) || (v < 0.0f) || (v > 1.0f))
+    {
+      Telem_PushErr("filter alpha 0..1 (0 = off)");
+      return;
+    }
+    hSfm3300.filter_alpha = v;
+    Telem_PushAck(cmd);
+    Telem_PushFlowStatus();
+    return;
+  }
+
+  Telem_PushErr("flow status|on|off|zero|clearzero|reinit|filter <a>");
+}
+
+/* ---------------------------------------------------------------------------
+ *  P, tick_ms, raw_counts, mbar, cmH2O, temp_c, held, status, baro_mbar
+ *
+ * `held` is 1 when the driver repeated its last good sample instead of a
+ * finished conversion (busy, overflow or a torn 24-bit register). Those
+ * ticks carry a valid pressure but are not new data, so anything computing
+ * a derivative must skip them.
+ * ------------------------------------------------------------------------ */
+void Telem_PushPressureSample(const AMS5935_HandleTypeDef *ps,
+                              float mbar, float cmh2o)
+{
+  if ((g_telem_enabled == 0U) || (s_telem_press_enabled == 0U) || (ps == NULL))
+  {
+    return;
+  }
+
+  char line[112];
+  const int n = snprintf(line, sizeof(line),
+    "P,%lu,%lu,%.4f,%.3f,%.1f,%u,0x%02X,%.1f\r\n",
+    (unsigned long)HAL_GetTick(),
+    (unsigned long)g_measPS.pressure_raw,
+    (double)mbar,
+    (double)cmh2o,
+    (double)g_measPS.temperature_c,
+    (unsigned)ps->held_last,
+    (unsigned)g_measPS.status,
+    (double)g_baro_mbar);
+  if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+}
+
+static void Telem_PushPressureStatus(void)
+{
+  char line[208];
+  int n = snprintf(line, sizeof(line),
+    "# press PS(0050,CS2/PG3) present=%u raw=%lu %.4f mbar %.3f cmH2O "
+    "%.1fC zero=%.4f status=0x%02X\r\n",
+    (unsigned)hamsPS.present,
+    (unsigned long)g_measPS.pressure_raw,
+    (double)g_press_mbar,
+    (double)g_press_cmh2o,
+    (double)g_measPS.temperature_c,
+    (double)hamsPS.zero_offset_mbar,
+    (unsigned)g_measPS.status);
+  if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
+  n = snprintf(line, sizeof(line),
+    "# press PS reads=%lu err=%lu held=%lu range=%.0f..%.0f mbar spi=%d\r\n",
+    (unsigned long)hamsPS.read_count,
+    (unsigned long)hamsPS.error_count,
+    (unsigned long)hamsPS.held_count,
+    (double)hamsPS.p_min, (double)hamsPS.p_max,
+    (int)g_pressure_spi_last_status);
+  if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
+#if PRESSURE_AS_ENABLED
+  n = snprintf(line, sizeof(line),
+    "# press AS(1200,CS1/PE4) present=%u %.1f mbar reads=%lu err=%lu held=%lu\r\n",
+    (unsigned)hamsAS.present,
+    (double)g_baro_mbar,
+    (unsigned long)hamsAS.read_count,
+    (unsigned long)hamsAS.error_count,
+    (unsigned long)hamsAS.held_count);
+  if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+#else
+  Telem_PushRaw("# press AS(1200,CS1/PE4) disabled (PRESSURE_AS_ENABLED=0)\r\n");
+#endif
+}
+
+static void Telem_CmdPress(const char *cmd, const char *args)
+{
+  if ((args[0] == '\0') || (strcmp(args, "status") == 0))
+  {
+    Telem_PushPressureStatus();
+    return;
+  }
+
+  if ((strcmp(args, "on") == 0) || (strcmp(args, "1") == 0))
+  {
+    s_telem_press_enabled = 1U;
+    Telem_PushAck(cmd);
+    return;
+  }
+  if ((strcmp(args, "off") == 0) || (strcmp(args, "0") == 0))
+  {
+    s_telem_press_enabled = 0U;
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  if (strcmp(args, "zero") == 0)
+  {
+    if (hamsPS.present == 0U)
+    {
+      Telem_PushErr("pressure sensor not responding");
+      return;
+    }
+    /* Handed to SensorTask so the tare uses a settled reading and cannot
+     * race the SPI harvest. */
+    g_press_zero_request = 1U;
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  if (strcmp(args, "clearzero") == 0)
+  {
+    AMS5935_ClearZero(&hamsPS);
+    Telem_PushAck(cmd);
+    Telem_PushPressureStatus();
+    return;
+  }
+
+  if (strncmp(args, "range ", 6U) == 0)
+  {
+    /* The -0050 part number does not by itself say whether the calibrated
+     * span is 0..50 or -50..+50 mbar. This is here so a wrong assumption
+     * can be corrected on the bench instead of in a rebuild. */
+    char lo_txt[16];
+    const char *hi_txt = Telem_SplitWord(&args[6], lo_txt, sizeof(lo_txt));
+    float lo, hi;
+    if ((hi_txt == NULL) || !Telem_ParseFloat(lo_txt, &lo) ||
+        !Telem_ParseFloat(hi_txt, &hi) || (hi <= lo))
+    {
+      Telem_PushErr("press range <min_mbar> <max_mbar>");
+      return;
+    }
+    hamsPS.p_min = lo;
+    hamsPS.p_max = hi;
+    Telem_PushAck(cmd);
+    Telem_PushPressureStatus();
+    return;
+  }
+
+  Telem_PushErr("press status|on|off|zero|clearzero|range <lo> <hi>");
+}
+
 static void Telem_CmdFoc(const char *cmd, const char *args)
 {
   char name[24];
@@ -681,6 +1018,10 @@ static void Telem_ProcessOneCommand(const char *cmd)
   if (strncmp(cmd, "sim table ", 10U) == 0)  { Telem_CmdTable(cmd, &cmd[10]);  return; }
   if (strncmp(cmd, "sim event ", 10U) == 0)  { Telem_CmdEvent(cmd, &cmd[10]);  return; }
   if (strncmp(cmd, "sim script ", 11U) == 0) { Telem_CmdScript(cmd, &cmd[11]); return; }
+  if (strncmp(cmd, "press ", 6U) == 0)       { Telem_CmdPress(cmd, &cmd[6]);   return; }
+  if (strcmp(cmd, "press") == 0)            { Telem_CmdPress(cmd, "");        return; }
+  if (strncmp(cmd, "flow ", 5U) == 0)        { Telem_CmdFlow(cmd, &cmd[5]);    return; }
+  if (strcmp(cmd, "flow") == 0)             { Telem_CmdFlow(cmd, "");         return; }
   if (strncmp(cmd, "foc set ", 8U) == 0)     { Telem_CmdFoc(cmd, &cmd[8]);     return; }
 
   Telem_PushErr("unknown command (try: sim help)");
@@ -716,11 +1057,40 @@ void Telem_PushBreathSample(const BreathSimStatus_t *st)
    * device-under-test's own log without inferring breath starts. */
   if ((s_have_last == 0U) || (st->breath_index != s_last_breath))
   {
-    const int m = snprintf(line, sizeof(line), "M,%lu,%lu\r\n",
+    int m = snprintf(line, sizeof(line), "M,%lu,%lu\r\n",
       (unsigned long)HAL_GetTick(), (unsigned long)st->breath_index);
     if (m > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)m); }
+
+    /* V: one line per completed breath - delivered volume and the pressure
+     * the device under test responded with. This is the test result; the
+     * B/Q sample streams are only there to explain it. */
+    m = snprintf(line, sizeof(line),
+      "V,%lu,%.1f,%.2f,%.2f,%.2f,%.1f,0x%04X\r\n",
+      (unsigned long)st->breath_index,
+      (double)st->last_tidal_ml,
+      (double)st->p_min_cmh2o,
+      (double)st->p_max_cmh2o,
+      (double)st->p_mean_cmh2o,
+      (double)st->q_peak_lpm,
+      (unsigned)st->flags);
+    if (m > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)m); }
+
     s_last_breath = st->breath_index;
     s_have_last = 1U;
+  }
+
+  if (st->control_mode == (uint8_t)BREATH_CTRL_FLOW)
+  {
+    const int q = snprintf(line, sizeof(line),
+      "Q,%lu,%.2f,%.2f,%.1f,%.2f,%u,%.0f\r\n",
+      (unsigned long)HAL_GetTick(),
+      (double)st->q_target_lpm,
+      (double)st->q_meas_lpm,
+      (double)st->volume_ml,
+      (double)st->p_cmh2o,
+      (unsigned)st->flow_valid,
+      (double)st->ctrl_integ_rpm);
+    if (q > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)q); }
   }
 
   const int n = snprintf(line, sizeof(line),

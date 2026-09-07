@@ -35,6 +35,8 @@
 #include "blower_ipc.h"
 #include "nfc_test.h"
 #include "sensirion_th.h"
+#include "sfm3300.h"
+#include "pressure_sensors.h"
 #include "dbg_log.h"
 #include "telemetry_stream.h"
 #include "humidifier.h"
@@ -183,7 +185,21 @@ BlowerIpcStatus_t g_blower_status;
  *                   servicing (10 ms) but each call is short.
  *  - ClimateTask  : SHT4x/STS4x I2C reads (~10 ms blocking each) + 1 Hz
  *                   humidifier PI loop. Slow plant -> 250 ms period at low
- *                   priority.
+ *                   priority. Compiled out by CLIMATE_SENSORS_ENABLED == 0
+ *                   (see main.h): the breath simulator does not need
+ *                   humidity or tube temperature, and dropping the STS4x
+ *                   read leaves I2C1 entirely to the flow sensor.
+ *  - SensorTask   : SFM3300 flow (I2C1) and the AMS5935 pressure sensor
+ *                   (SPI4) @ 100 Hz. The barometric part is compiled out
+ *                   by PRESSURE_AS_ENABLED == 0 while it is unpopulated. Kept off BreathSimTask so a
+ *                   blocking transfer can never jitter the 200 Hz waveform
+ *                   loop, and below it in priority for the same reason.
+ *                   Takes g_i2c1_mutex for I2C: uncontended while
+ *                   CLIMATE_SENSORS_ENABLED is 0, but the locking stays so
+ *                   re-enabling the STS4x is a one-line change rather than
+ *                   a correctness problem. SPI4 has no other owner, so the
+ *                   pressure path needs no lock - only the pipeline that
+ *                   keeps one conversion in flight at a time.
  *  - SystemTask   : Blower start/stop/speed edge commands from the debugger
  *                   globals, fault/state edge logging, USB CDC log pump.
  *  - SelfTestTask : SD card detect/self-test state machine + deferred
@@ -213,6 +229,12 @@ static const osThreadAttr_t climateTask_attributes = {
   .name = "climate",
   .stack_size = 1536,
   .priority = (osPriority_t) osPriorityBelowNormal,
+};
+static osThreadId_t sensorTaskHandle;
+static const osThreadAttr_t sensorTask_attributes = {
+  .name = "sensor",
+  .stack_size = 1536,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 static osThreadId_t systemTaskHandle;
 static const osThreadAttr_t systemTask_attributes = {
@@ -276,6 +298,7 @@ static void GuiTask(void *argument);
 static void BreathSimTask(void *argument);
 static void NfcTask(void *argument);
 static void ClimateTask(void *argument);
+static void SensorTask(void *argument);
 static void SystemTask(void *argument);
 static void SelfTestTask(void *argument);
 /* USER CODE END PFP */
@@ -1098,6 +1121,46 @@ SensirionTH_Handle_t hSts4x;  /* STS4x on I2C1 — temperature only       */
 volatile HAL_StatusTypeDef sht4x_init_status = HAL_ERROR;
 volatile HAL_StatusTypeDef sts4x_init_status = HAL_ERROR;
 
+/* SFM3300-250-D bidirectional flow sensor on I2C1 (address 0x40). */
+SFM3300_Handle_t hSfm3300;
+volatile HAL_StatusTypeDef sfm3300_init_status = HAL_ERROR;
+/* Set by the USB command handler, actioned by SensorTask: re-running init
+ * costs ~60 ms of blocking HAL_Delay and needs the bus, so it must not run
+ * in the command task. */
+volatile uint8_t g_flow_reinit_request = 0U;
+/* Counts cycles where the sensor task could not get the bus in time -
+ * non-zero means something else on I2C1 is stealing flow samples. */
+volatile uint32_t g_flow_bus_busy_count = 0U;
+
+/*
+ * AMS5935 pressure sensors on SPI4, software chip select. Same parts and
+ * same pins as CPAP_InitialCode, so the ported driver needs no changes:
+ *   hamsPS  U24  AMS5935-0050  CS2 = PG3   -50..+50 mbar   working pressure
+ *   hamsAS  U11  AMS5935-1200  CS1 = PE4   700..1200 mbar  barometric
+ * Both share the bus, so only one conversion is ever in flight.
+ */
+AMS5935_HandleTypeDef hamsPS;
+AMS5935_HandleTypeDef hamsAS;
+AMS5935_Data_t        g_measPS;
+AMS5935_Data_t        g_measAS;
+/* Zero-corrected working pressure, published for telemetry and the GUI. */
+float    g_press_mbar   = 0.0f;
+float    g_press_cmh2o  = 0.0f;
+float    g_baro_mbar    = 0.0f;
+volatile uint8_t g_press_zero_request = 0U;
+
+/*
+ * I2C1 carries both the STS4x tube-temperature sensor (0x44) and the
+ * SFM3300 flow sensor (0x40), driven from two different tasks. The HAL is
+ * not reentrant per handle, so every I2C1 transfer must hold this mutex.
+ * I2C2 (SHT4x) has a single owner and needs none.
+ */
+osMutexId_t g_i2c1_mutex;
+static const osMutexAttr_t i2c1_mutex_attributes = {
+  .name = "i2c1",
+  .attr_bits = osMutexPrioInherit,
+};
+
 /* USER CODE END 0 */
 
 /**
@@ -1262,6 +1325,14 @@ int main(void)
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
+  /* USER CODE BEGIN RTOS_MUTEX_CREATE */
+  g_i2c1_mutex = osMutexNew(&i2c1_mutex_attributes);
+  if (g_i2c1_mutex == NULL)
+  {
+    Error_Handler();
+  }
+  /* USER CODE END RTOS_MUTEX_CREATE */
+
   /* Create the thread(s) */
   /* creation of defaultTask — unused; project tasks created below. */
 
@@ -1270,10 +1341,12 @@ int main(void)
   breathSimTaskHandle = osThreadNew(BreathSimTask, NULL, &breathSimTask_attributes);
   nfcTaskHandle      = osThreadNew(NfcTask,      NULL, &nfcTask_attributes);
   climateTaskHandle  = osThreadNew(ClimateTask,  NULL, &climateTask_attributes);
+  sensorTaskHandle   = osThreadNew(SensorTask,   NULL, &sensorTask_attributes);
   systemTaskHandle   = osThreadNew(SystemTask,   NULL, &systemTask_attributes);
   selfTestTaskHandle = osThreadNew(SelfTestTask, NULL, &selfTestTask_attributes);
   if ((guiTaskHandle == NULL) || (breathSimTaskHandle == NULL) ||
       (nfcTaskHandle == NULL) || (climateTaskHandle == NULL) ||
+      (sensorTaskHandle == NULL) ||
       (systemTaskHandle == NULL) || (selfTestTaskHandle == NULL))
   {
     Error_Handler(); /* osThreadNew failed: raise configTOTAL_HEAP_SIZE */
@@ -2282,25 +2355,286 @@ static void ClimateTask(void *argument)
 {
   (void)argument;
 
+#if CLIMATE_SENSORS_ENABLED
   /* One-time bring-up: Sensirion init does blocking I2C with HAL timeouts. */
   /* Sensirion SHT4x (RH+T) on I2C2, STS4x (T-only) on I2C1, both at 0x44. */
   sht4x_init_status = SensirionTH_Init(&hSht4x, &hi2c2, SENSIRION_I2C_ADDR_44, 1U);
-  sts4x_init_status = SensirionTH_Init(&hSts4x, &hi2c1, SENSIRION_I2C_ADDR_44, 0U);
+
+  /* The STS4x init must take the bus mutex like every other I2C1 access:
+   * SensorTask brings the SFM3300 up at the same time, and the HAL is not
+   * reentrant on a shared handle. */
+  if (osMutexAcquire(g_i2c1_mutex, osWaitForever) == osOK)
+  {
+    sts4x_init_status = SensirionTH_Init(&hSts4x, &hi2c1, SENSIRION_I2C_ADDR_44, 0U);
+    (void)osMutexRelease(g_i2c1_mutex);
+  }
+#endif
 
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
 
   /* CH2 is unrelated to the humidifier; leave the existing test value. */
   TIM4->CCR2 = 65000;
-  /* CH1 is owned by the humidifier closed loop. Init forces CCR1 = 0. */
+  /* CH1 is owned by the humidifier closed loop. Init forces CCR1 = 0.
+   * Called even when the climate sensors are compiled out, because this is
+   * what drives the heater PWM to zero and leaves it there. */
   Humidifier_Init();
 
   for (;;)
   {
+#if CLIMATE_SENSORS_ENABLED
+    /* SHT4x is alone on I2C2. */
     (void)SensirionTH_ReadMeasurement(&hSht4x);
-    (void)SensirionTH_ReadMeasurement(&hSts4x);
+
+    /* STS4x shares I2C1 with the flow sensor, and this call blocks the bus
+     * for ~10 ms (1 byte out, HAL_Delay(10), 3 bytes back). SensorTask will
+     * miss a sample or two while we hold it - acceptable at 250 ms, but it
+     * is the first thing to move if the flow loop ever needs hard timing. */
+    if (osMutexAcquire(g_i2c1_mutex, 100U) == osOK)
+    {
+      (void)SensirionTH_ReadMeasurement(&hSts4x);
+      (void)osMutexRelease(g_i2c1_mutex);
+    }
+
+    /* The humidifier PI loop runs only when its SHT4x feedback is real.
+     * Without it the loop would trip HUMIDIFIER_FAULT_SENSOR anyway, but
+     * not running it at all is the honest expression of the intent. */
     Humidifier_Update();
+#endif
     osDelay(250U);
+  }
+}
+
+/**
+  * @brief Sensor task: SFM3300 flow (I2C1) + AMS5935 pressures (SPI4) @ 100 Hz.
+  *
+  * For now this only reads and publishes; the breath waveform is still
+  * open-loop on RPM. The rate is deliberately higher than anything the
+  * display needs so the recorded trace is usable for characterising the
+  * blower before the flow and pressure loops are closed around it.
+  *
+  * The AMS5935 has no EOC pin wired, so each conversion is pipelined across
+  * ticks: start at the end of tick N, harvest at tick N+1. A single
+  * conversion needs ~4 ms and the tick is 10 ms, so there is ~6 ms of
+  * margin - comfortably more than the 5 ms loop in the CPAP firmware, where
+  * the tight margin was a known source of torn reads.
+  */
+static void SensorTask(void *argument)
+{
+  (void)argument;
+
+  const uint32_t period_ms = 10U;   /* 100 Hz */
+#if PRESSURE_AS_ENABLED
+  /* Barometric pressure moves slowly; give it one slot in 20 (5 Hz here,
+   * costing the working sensor one sample in 20). */
+  const uint32_t AS_DECIMATE = 20U;
+#endif
+
+  /* One-time bring-up: soft reset, read serial, start continuous mode.
+   * Costs ~60 ms of blocking delay, so it happens here rather than in
+   * main() before the scheduler. */
+  if (osMutexAcquire(g_i2c1_mutex, osWaitForever) == osOK)
+  {
+    sfm3300_init_status = SFM3300_Init(&hSfm3300, &hi2c1, SFM3300_I2C_ADDR);
+    (void)osMutexRelease(g_i2c1_mutex);
+  }
+
+  if (sfm3300_init_status == HAL_OK)
+  {
+    if (hSfm3300.serial_ok != 0U)
+    {
+      DBG_I("FLOW", "SFM3300 ok, serial=0x%08lX", (unsigned long)hSfm3300.serial);
+    }
+    else
+    {
+      DBG_W("FLOW", "SFM3300 measuring, but serial read failed (hal=%d)",
+            (int)hSfm3300.last_status);
+    }
+  }
+  else
+  {
+    DBG_E("FLOW", "SFM3300 init failed, hal=%d (check I2C1 wiring / 0x40)",
+          (int)sfm3300_init_status);
+  }
+
+  /* ---- AMS5935 pressure sensors on SPI4 ------------------------------
+   * Both handles are initialised even when PRESSURE_AS_ENABLED is 0: the
+   * chip selects come out of MX_GPIO_Init driven LOW, and AMS5935_Init is
+   * what deasserts them. Skipping the unpopulated one would leave its CS
+   * asserted, which would matter the moment U11 is fitted. */
+  hamsPS.hspi     = &hspi4;
+  hamsPS.cs_port  = SPI4_CS2_GPIO_Port;   /* PG3 - U24 AMS5935-0050 */
+  hamsPS.cs_pin   = SPI4_CS2_Pin;
+  hamsPS.use_eoc  = 0U;
+  hamsPS.p_min    = -50.0f;
+  hamsPS.p_max    =  50.0f;
+  (void)AMS5935_Init(&hamsPS);
+
+  hamsAS.hspi     = &hspi4;
+  hamsAS.cs_port  = SPI4_CS1_GPIO_Port;   /* PE4 - U11 AMS5935-1200 */
+  hamsAS.cs_pin   = SPI4_CS1_Pin;
+  hamsAS.use_eoc  = 0U;
+  hamsAS.p_min    = 700.0f;
+  hamsAS.p_max    = 1200.0f;
+  (void)AMS5935_Init(&hamsAS);
+
+  /* One blocking read each, purely so the boot log can say whether the
+   * parts are actually there. From here on the reads are pipelined. */
+  if (AMS5935_ReadMeasurement(&hamsPS, &g_measPS, 0U) == HAL_OK)
+  {
+    DBG_I("PRS", "AMS5935-0050 ok: %.3f mbar (%.2f cmH2O) %.1fC raw=%lu",
+          (double)g_measPS.pressure,
+          (double)(g_measPS.pressure * AMS5935_MBAR_TO_CMH2O),
+          (double)g_measPS.temperature_c,
+          (unsigned long)g_measPS.pressure_raw);
+  }
+  else
+  {
+    DBG_E("PRS", "AMS5935-0050 (CS2/PG3) not responding");
+  }
+
+#if PRESSURE_AS_ENABLED
+  if (AMS5935_ReadMeasurement(&hamsAS, &g_measAS, 0U) == HAL_OK)
+  {
+    DBG_I("PRS", "AMS5935-1200 ok: %.1f mbar %.1fC",
+          (double)g_measAS.pressure, (double)g_measAS.temperature_c);
+  }
+  else
+  {
+    DBG_W("PRS", "AMS5935-1200 (CS1/PE4) not responding (not fitted?)");
+  }
+#endif
+
+  /* Prime the pipeline so the first loop tick has something to harvest. */
+  (void)AMS5935_StartSingleMeasurement(&hamsPS);
+  uint8_t ps_in_flight = 1U;
+  uint8_t as_in_flight = 0U;
+
+  /* Retry cadence while the sensor is not in continuous mode: 1 s. */
+  const uint32_t FLOW_RETRY_TICKS = 100U;
+  uint32_t retry_ticks = 0U;
+  uint32_t tick_n = 0U;
+  uint32_t next_wake = osKernelGetTickCount() + period_ms;
+
+  for (;;)
+  {
+    (void)osDelayUntil(next_wake);
+    next_wake += period_ms;
+
+    if (g_flow_reinit_request != 0U)
+    {
+      g_flow_reinit_request = 0U;
+      if (osMutexAcquire(g_i2c1_mutex, osWaitForever) == osOK)
+      {
+        sfm3300_init_status = SFM3300_Init(&hSfm3300, &hi2c1, SFM3300_I2C_ADDR);
+        (void)osMutexRelease(g_i2c1_mutex);
+      }
+      DBG_I("FLOW", "re-init hal=%d serial=0x%08lX",
+            (int)sfm3300_init_status, (unsigned long)hSfm3300.serial);
+    }
+
+    /* The transfer itself is well under a millisecond; the timeout only
+     * has to cover another owner holding the bus. Time out rather than
+     * slipping the schedule, and count it so contention is visible in
+     * 'flow status'. */
+    if (osMutexAcquire(g_i2c1_mutex, 20U) == osOK)
+    {
+      if (hSfm3300.measuring != 0U)
+      {
+        (void)SFM3300_Read(&hSfm3300);
+      }
+      else if (++retry_ticks >= FLOW_RETRY_TICKS)
+      {
+        /* Not measuring: the sensor was absent or refused the start command
+         * at boot. Keep trying rather than staying dead until a reset - the
+         * flow reading is a prerequisite for closed-loop breath control, so
+         * it must recover on its own once the sensor is available. */
+        retry_ticks = 0U;
+        sfm3300_init_status = SFM3300_StartContinuous(&hSfm3300);
+        if (sfm3300_init_status != HAL_OK)
+        {
+          /* A full re-init also re-runs the soft reset, which is what a
+           * sensor that browned out actually needs. */
+          sfm3300_init_status = SFM3300_Init(&hSfm3300, &hi2c1, SFM3300_I2C_ADDR);
+        }
+        if (sfm3300_init_status == HAL_OK)
+        {
+          DBG_I("FLOW", "SFM3300 recovered after %lu failed starts",
+                (unsigned long)hSfm3300.start_fail_count);
+        }
+      }
+      (void)osMutexRelease(g_i2c1_mutex);
+    }
+    else
+    {
+      g_flow_bus_busy_count++;
+    }
+
+    /* ---- SPI4: harvest whichever AMS5935 conversion was in flight ----
+     * Only one at a time - they share the bus and the pipeline slot. */
+    if (as_in_flight != 0U)
+    {
+      if (AMS5935_ReadRaw(&hamsAS, &g_measAS) == HAL_OK)
+      {
+        g_baro_mbar = g_measAS.pressure;
+      }
+      as_in_flight = 0U;
+    }
+    else if (ps_in_flight != 0U)  /* the only path while PRESSURE_AS_ENABLED is 0 */
+    {
+      if (AMS5935_ReadRaw(&hamsPS, &g_measPS) == HAL_OK)
+      {
+        g_press_mbar  = g_measPS.pressure - hamsPS.zero_offset_mbar;
+        g_press_cmh2o = g_press_mbar * AMS5935_MBAR_TO_CMH2O;
+      }
+      ps_in_flight = 0U;
+    }
+
+    /* Tare is actioned here rather than in the command task so it uses a
+     * settled reading and cannot race the harvest. */
+    if (g_press_zero_request != 0U)
+    {
+      g_press_zero_request = 0U;
+      AMS5935_ZeroNow(&hamsPS, g_press_mbar);
+      g_press_mbar  = 0.0f;
+      g_press_cmh2o = 0.0f;
+      DBG_I("PRS", "zeroed, offset now %.3f mbar",
+            (double)hamsPS.zero_offset_mbar);
+    }
+
+    /* ---- start the next conversion ---- */
+#if PRESSURE_AS_ENABLED
+    if ((tick_n % AS_DECIMATE) == 0U)
+    {
+      (void)AMS5935_StartSingleMeasurement(&hamsAS);
+      as_in_flight = 1U;
+    }
+    else
+#endif
+    {
+      (void)AMS5935_StartSingleMeasurement(&hamsPS);
+      ps_in_flight = 1U;
+    }
+
+    /* Hand both readings to the waveform generator. It runs at 200 Hz and
+     * holds the newest sample, and ages it out if this task stalls - see
+     * BREATH_FLOW_STALE_MS. The filtered flow is used deliberately: its
+     * ~40 ms time constant is short against a ~1.7 s inspiration but takes
+     * the blower's blade-pass noise out of the control error. */
+    BreathSim_SetSensorInputs(hSfm3300.flow_filt_slm,
+                              hSfm3300.last_sample_ok,
+                              g_press_cmh2o,
+                              (uint8_t)((hamsPS.present != 0U) &&
+                                        (hamsPS.held_last == 0U)));
+
+    /* 50 Hz to the host, matching the breath sample rate. */
+    if ((tick_n % 2U) == 0U)
+    {
+      Telem_PushFlowSample(&hSfm3300);
+      Telem_PushPressureSample(&hamsPS, g_press_mbar, g_press_cmh2o);
+    }
+
+    tick_n++;
   }
 }
 

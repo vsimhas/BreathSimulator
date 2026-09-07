@@ -32,6 +32,8 @@ int32_t stepRpmBase(int32_t v, int delta);
 int32_t stepRpmAmplitude(int32_t v, int delta);
 uint8_t stepWaveform(uint8_t v, int delta);
 uint8_t stepTimingMode(uint8_t v, int delta);
+uint8_t stepControlMode(uint8_t v, int delta);
+float   stepTidalMl(float v, int delta);
 float   stepInspPause(float v, int delta);
 float   stepExpPause(float v, int delta);
 float   stepExpTau(float v, int delta);

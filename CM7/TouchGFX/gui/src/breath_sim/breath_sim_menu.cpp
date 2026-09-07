@@ -6,6 +6,7 @@ extern "C" {
 }
 
 #include <stdio.h>
+#include <string.h>
 
 namespace breath_sim
 {
@@ -37,6 +38,8 @@ const ListItem k_home_items[] = {
 
 const ListItem k_settings_items[] = {
     { "<- Back",      Page::HOME,             Mode::LIST },
+    { "Control",      Page::VALUE_CONTROL,    Mode::VALUE_EDIT },
+    { "Tidal Vol",    Page::VALUE_TIDAL,      Mode::VALUE_EDIT },
     { "Timing Mode",  Page::VALUE_TIMING,     Mode::VALUE_EDIT },
     { "Breath Rate",  Page::VALUE_RATE,       Mode::VALUE_EDIT },
     { "Insp Time",    Page::VALUE_INSP_TIME,  Mode::VALUE_EDIT },
@@ -182,6 +185,8 @@ Page parentList(Page p)
         case Page::VALUE_INSP_PAUSE:
         case Page::VALUE_EXP_PAUSE:
         case Page::VALUE_TIMING:
+        case Page::VALUE_CONTROL:
+        case Page::VALUE_TIDAL:
         case Page::VALUE_EXP_TAU:
         case Page::VALUE_FLATTENING:
         case Page::VALUE_JITTER:
@@ -257,24 +262,39 @@ const char* MenuController::itemValue(uint8_t idx) const
     const bool rate_derived =
         (s.timing_mode == static_cast<uint8_t>(BREATH_TIMING_EXPLICIT));
 
+    /* In open-loop mode the amplitude knob sets the breath size and tidal
+     * volume is meaningless; in flow mode it is the other way round. Mark
+     * whichever one is not in charge so the operator is not tuning a knob
+     * that does nothing. */
+    const bool flow_mode =
+        (s.control_mode == static_cast<uint8_t>(BREATH_CTRL_FLOW));
+
     static char buf[24];
     switch (idx)
     {
-        case 1: snprintf(buf, sizeof(buf), "%s", timingModeName(s.timing_mode)); break;
-        case 2: snprintf(buf, sizeof(buf), "%s%.1f BPM",
+        case 1: snprintf(buf, sizeof(buf), "%s",
+                         BreathSim_ControlModeName(s.control_mode)); break;
+        case 2: snprintf(buf, sizeof(buf), "%s%d mL",
+                         flow_mode ? "" : "(", (int)s.tidal_ml);
+                if (!flow_mode) { strncat(buf, ")", sizeof(buf) - strlen(buf) - 1U); }
+                break;
+        case 3: snprintf(buf, sizeof(buf), "%s", timingModeName(s.timing_mode)); break;
+        case 4: snprintf(buf, sizeof(buf), "%s%.1f BPM",
                          rate_derived ? "=" : "", (double)t.rate_bpm); break;
-        case 3: snprintf(buf, sizeof(buf), "%s%.2f s",
+        case 5: snprintf(buf, sizeof(buf), "%s%.2f s",
                          rate_derived ? "" : "=", (double)t.insp_s); break;
-        case 4: snprintf(buf, sizeof(buf), "1:%.1f", (double)s.ie_ratio_exp); break;
-        case 5: snprintf(buf, sizeof(buf), "%ld%s", (long)s.rpm_base,
+        case 6: snprintf(buf, sizeof(buf), "1:%.1f", (double)s.ie_ratio_exp); break;
+        case 7: snprintf(buf, sizeof(buf), "%ld%s", (long)s.rpm_base,
                          (s.rpm_base < BREATH_RPM_OBS_MIN_RPM) ? " !" : ""); break;
-        case 6: snprintf(buf, sizeof(buf), "%ld", (long)s.rpm_amplitude); break;
-        case 7: snprintf(buf, sizeof(buf), "%s", BreathSim_WaveformName(s.waveform)); break;
-        case 8: snprintf(buf, sizeof(buf), "%.2f s", (double)s.exp_tau_s); break;
-        case 9: snprintf(buf, sizeof(buf), "%d %%", (int)(s.flattening * 100.0f)); break;
-        case 10: snprintf(buf, sizeof(buf), "%d %%", (int)s.jitter_pct); break;
-        case 11: snprintf(buf, sizeof(buf), "%.1f s", (double)s.insp_pause_s); break;
-        case 12: snprintf(buf, sizeof(buf), "%.1f s", (double)s.exp_pause_s); break;
+        case 8: snprintf(buf, sizeof(buf), "%s%ld%s",
+                         flow_mode ? "(" : "", (long)s.rpm_amplitude,
+                         flow_mode ? ")" : ""); break;
+        case 9: snprintf(buf, sizeof(buf), "%s", BreathSim_WaveformName(s.waveform)); break;
+        case 10: snprintf(buf, sizeof(buf), "%.2f s", (double)s.exp_tau_s); break;
+        case 11: snprintf(buf, sizeof(buf), "%d %%", (int)(s.flattening * 100.0f)); break;
+        case 12: snprintf(buf, sizeof(buf), "%d %%", (int)s.jitter_pct); break;
+        case 13: snprintf(buf, sizeof(buf), "%.1f s", (double)s.insp_pause_s); break;
+        case 14: snprintf(buf, sizeof(buf), "%.1f s", (double)s.exp_pause_s); break;
         default: return nullptr;
     }
     return buf;
@@ -292,6 +312,9 @@ const char* MenuController::editorValueText() const
     switch (current_page_)
     {
         case Page::VALUE_TIMING:     snprintf(b, n, "%s", timingModeName(s.timing_mode)); break;
+        case Page::VALUE_CONTROL:    snprintf(b, n, "%s",
+                                         BreathSim_ControlModeName(s.control_mode)); break;
+        case Page::VALUE_TIDAL:      snprintf(b, n, "%d mL", (int)s.tidal_ml); break;
         case Page::VALUE_RATE:       snprintf(b, n, "%.1f BPM", (double)s.rate_bpm); break;
         case Page::VALUE_INSP_TIME:  snprintf(b, n, "%.2f s", (double)s.insp_time_s); break;
         case Page::VALUE_IE_RATIO:   snprintf(b, n, "1:%.1f", (double)s.ie_ratio_exp); break;
@@ -324,6 +347,8 @@ const char* MenuController::editorTitle() const
         case Page::VALUE_INSP_PAUSE: return "Insp Pause";
         case Page::VALUE_EXP_PAUSE:  return "Exp Pause";
         case Page::VALUE_TIMING:     return "Timing Mode";
+        case Page::VALUE_CONTROL:    return "Control Mode";
+        case Page::VALUE_TIDAL:      return "Tidal Volume";
         case Page::VALUE_EXP_TAU:    return "Exp Tau";
         case Page::VALUE_FLATTENING: return "Flattening";
         case Page::VALUE_JITTER:     return "Jitter";
@@ -476,6 +501,8 @@ void MenuController::onRotaryDelta(int delta)
         switch (current_page_)
         {
             case Page::VALUE_TIMING:     s.timing_mode = stepTimingMode(s.timing_mode, delta); break;
+            case Page::VALUE_CONTROL:    s.control_mode = stepControlMode(s.control_mode, delta); break;
+            case Page::VALUE_TIDAL:      s.tidal_ml = stepTidalMl(s.tidal_ml, delta); break;
             case Page::VALUE_RATE:       s.rate_bpm = stepRateBpm(s.rate_bpm, delta); break;
             case Page::VALUE_INSP_TIME:  s.insp_time_s = stepInspTime(s.insp_time_s, delta); break;
             case Page::VALUE_IE_RATIO:   s.ie_ratio_exp = stepIeRatio(s.ie_ratio_exp, delta); break;

@@ -11,6 +11,8 @@
 #include <stdint.h>
 
 #include "breath_sim.h"
+#include "sfm3300.h"
+#include "pressure_sensors.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +32,9 @@ void Telem_Init(void);
 void Telem_Pump(void);
 void Telem_ProcessCommands(void);
 void Telem_PushBreathSample(const BreathSimStatus_t *status);
+void Telem_PushFlowSample(const SFM3300_Handle_t *flow);
+void Telem_PushPressureSample(const AMS5935_HandleTypeDef *ps,
+                              float mbar, float cmh2o);
 void Telem_OnRx(const uint8_t *data, uint32_t len);
 
 #else
@@ -38,6 +43,8 @@ void Telem_OnRx(const uint8_t *data, uint32_t len);
 #define Telem_Pump() ((void)0)
 #define Telem_ProcessCommands() ((void)0)
 #define Telem_PushBreathSample(s) ((void)0)
+#define Telem_PushFlowSample(f) ((void)0)
+#define Telem_PushPressureSample(p, m, c) ((void)0)
 
 #endif /* TELEM_ENABLED */
 

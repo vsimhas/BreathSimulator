@@ -57,7 +57,7 @@ protected:
     float run_hist_[kWaveBars];
     uint8_t run_hist_count_;
 
-    enum : int { kDiagRows = 8 };
+    enum : int { kDiagRows = 9 };
     touchgfx::TextAreaWithOneWildcard diag_label_[kDiagRows];
     touchgfx::TextAreaWithOneWildcard diag_value_[kDiagRows];
     touchgfx::Unicode::UnicodeChar diag_label_buf_[kDiagRows][16];

@@ -105,6 +105,26 @@ uint8_t stepTimingMode(uint8_t v, int delta)
     return stepEnum(v, delta, static_cast<uint8_t>(BREATH_TIMING_COUNT));
 }
 
+uint8_t stepControlMode(uint8_t v, int delta)
+{
+    uint8_t nv = stepEnum(v, delta, static_cast<uint8_t>(BREATH_CTRL_COUNT));
+    /* Closed-loop flow needs a working sensor. Offering the mode when the
+     * SFM3300 is not measuring would just hand the operator a run that
+     * silently falls back to open loop. */
+    if ((nv == static_cast<uint8_t>(BREATH_CTRL_FLOW)) &&
+        (BreathSim_FlowSensorReady() == false))
+    {
+        nv = static_cast<uint8_t>(BREATH_CTRL_OPEN_LOOP_RPM);
+    }
+    return nv;
+}
+
+float stepTidalMl(float v, int delta)
+{
+    return clampf(v + static_cast<float>(delta) * 25.0f,
+                  BREATH_TIDAL_MIN_ML, BREATH_TIDAL_MAX_ML);
+}
+
 float stepInspPause(float v, int delta)
 {
     return clampf(v + static_cast<float>(delta) * 0.1f,

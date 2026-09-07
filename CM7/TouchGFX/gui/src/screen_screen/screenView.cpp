@@ -38,6 +38,10 @@ constexpr int16_t kContentY = 70;
 constexpr int16_t kContentH = kScreenH - kContentY;
 constexpr int16_t kRowH     = 28;
 constexpr int16_t kRowsTopY = kContentY + 4;
+/* The diagnostics page packs more rows than the menu pages, so it uses its
+ * own pitch. At the shared kRowH of 28 only 7 rows fit in the 202 px content
+ * area - the 8th already started at y=270 and was clipped off-screen. */
+constexpr int16_t kDiagRowH = 22;
 
 void utf8ToBuf(const char* src, Unicode::UnicodeChar* dst, uint16_t buf_chars)
 {
@@ -186,8 +190,8 @@ void screenView::buildWidgets()
 
     for (int i = 0; i < kDiagRows; ++i)
     {
-        const int16_t y = kRowsTopY + static_cast<int16_t>(i * kRowH);
-        diag_label_[i].setPosition(16, y + 2, 180, kRowH - 4);
+        const int16_t y = kRowsTopY + static_cast<int16_t>(i * kDiagRowH);
+        diag_label_[i].setPosition(16, y + 2, 180, kDiagRowH - 4);
         diag_label_[i].setColor(kColTextDim);
         diag_label_[i].setTypedText(TypedText(T_DYN_M));
         utf8ToBuf("", diag_label_buf_[i], sizeof(diag_label_buf_[i]) / sizeof(diag_label_buf_[i][0]));
@@ -195,7 +199,7 @@ void screenView::buildWidgets()
         diag_label_[i].setVisible(false);
         add(diag_label_[i]);
 
-        diag_value_[i].setPosition(200, y + 2, 260, kRowH - 4);
+        diag_value_[i].setPosition(200, y + 2, 260, kDiagRowH - 4);
         diag_value_[i].setColor(kColText);
         diag_value_[i].setTypedText(TypedText(T_DYN_M));
         utf8ToBuf("", diag_value_buf_[i], sizeof(diag_value_buf_[i]) / sizeof(diag_value_buf_[i][0]));
@@ -449,6 +453,12 @@ void screenView::updateRunningGraph()
         snprintf(line, sizeof(line), "RPM %ld/%ld  ! 0x%04X",
                  (long)st.rpm_cmd, (long)st.rpm_act, (unsigned)st.flags);
     }
+    else if (st.control_mode == static_cast<uint8_t>(BREATH_CTRL_FLOW))
+    {
+        snprintf(line, sizeof(line), "Q %.1f/%.1f L/min  %ld rpm",
+                 (double)st.q_meas_lpm, (double)st.q_target_lpm,
+                 (long)st.rpm_cmd);
+    }
     else
     {
         snprintf(line, sizeof(line), "RPM %ld  (act %ld)",
@@ -463,6 +473,15 @@ void screenView::updateRunningGraph()
                  (unsigned long)st.breath_index,
                  BreathSim_SegmentName(st.segment),
                  BreathSim_EventName(st.event));
+    }
+    else if (st.control_mode == static_cast<uint8_t>(BREATH_CTRL_FLOW))
+    {
+        /* In flow mode the numbers that matter are what was delivered and
+         * how the device under test responded, not the commanded RPM. */
+        snprintf(line, sizeof(line), "#%lu  Vt %.0f mL  P %.1f/%.1f",
+                 (unsigned long)st.breath_index,
+                 (double)st.last_tidal_ml,
+                 (double)st.p_min_cmh2o, (double)st.p_max_cmh2o);
     }
     else
     {
@@ -530,13 +549,41 @@ void screenView::renderDiagnosticsPage()
     labels[5] = "RPM cmd";
     colors[5] = kColText;
 
-    snprintf(val[6], sizeof(val[6]), "%.0f%%", (double)(snap.phase * 100.0f));
-    labels[6] = "Phase";
-    colors[6] = kColText;
+    /* The Running page already shows breath index and segment, so this row
+     * is better spent on the pressure sensor than on repeating the phase. */
+    if (snap.press_present == 0U)
+    {
+        snprintf(val[6], sizeof(val[6]), "NO SENSOR");
+    }
+    else
+    {
+        snprintf(val[6], sizeof(val[6]), "%+.2f cmH2O", (double)snap.press_cmh2o);
+    }
+    labels[6] = "Pressure";
+    colors[6] = (snap.press_present && !snap.press_held) ? kColTestPass : kColText;
 
-    snprintf(val[7], sizeof(val[7]), "%.1f C", (double)snap.tube_temp_c);
+    if (snap.climate_enabled == 0U)
+    {
+        snprintf(val[7], sizeof(val[7]), "OFF");
+    }
+    else
+    {
+        snprintf(val[7], sizeof(val[7]), "%.1f C", (double)snap.tube_temp_c);
+    }
     labels[7] = "Tube temp";
     colors[7] = snap.tube_temp_valid ? kColText : kColTextDim;
+
+    if (snap.flow_present == 0U)
+    {
+        snprintf(val[8], sizeof(val[8]), "NO SENSOR");
+    }
+    else
+    {
+        snprintf(val[8], sizeof(val[8]), "%+.1f slm (%u)",
+                 (double)snap.flow_slm, (unsigned)snap.flow_raw);
+    }
+    labels[8] = "Flow";
+    colors[8] = (snap.flow_present && snap.flow_valid) ? kColTestPass : kColText;
 
     for (int i = 0; i < kDiagRows; ++i)
     {
