@@ -143,7 +143,13 @@ int main(void)
   while (1)
   {
 		BlowerIpc_CM4_ProcessCommands();
-		//BlowerBrake_Update();
+		/* Must stay called. This publishes bus_voltage_v / bus_voltage_mv as
+		 * well as driving the brake, and with it commented out BOTH regen
+		 * defences were inert - the brake by intent, the CM7 slew derate by
+		 * accident, because its input sat at 0 mV. That combination tripped
+		 * OVER_VOLT on the expiratory decel. To disable only the brake, set
+		 * BLOWER_BRAKE_ENABLE to 0 in blower_ipc_cm4.c. */
+		BlowerBrake_Update();
 		HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port,GREEN_LED_Pin);
     /* USER CODE END WHILE */
 

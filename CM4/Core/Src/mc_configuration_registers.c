@@ -42,7 +42,9 @@ const GlobalConfig_reg_t globalConfig_reg =
 
 static const ApplicationConfig_reg_t M1_ApplicationConfig_reg =
 {
-  .maxMechanicalSpeed = 36012,
+  /* From the macro, not a literal: this is what Motor Pilot reports, and a
+   * hardcoded copy silently goes stale the moment the ceiling moves. */
+  .maxMechanicalSpeed = MAX_APPLICATION_SPEED_RPM,
   .maxReadableCurrent = M1_MAX_READABLE_CURRENT,
   .nominalCurrent     = 1.345,
   .nominalVoltage     = 21,

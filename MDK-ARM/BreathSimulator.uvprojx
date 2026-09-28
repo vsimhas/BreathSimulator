@@ -1142,6 +1142,11 @@
               <FilePath>..\CM4\Core\Src\pwm_curr_fdbk.c</FilePath>
             </File>
             <File>
+              <FileName>pwm_curr_fdbk_ovm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CM4\Core\Src\pwm_curr_fdbk_ovm.c</FilePath>
+            </File>
+            <File>
               <FileName>regular_conversion_manager.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\CM4\Core\Src\regular_conversion_manager.c</FilePath>
@@ -4977,6 +4982,11 @@
               <FileName>pwm_curr_fdbk.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\CM4\Core\Src\pwm_curr_fdbk.c</FilePath>
+            </File>
+            <File>
+              <FileName>pwm_curr_fdbk_ovm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CM4\Core\Src\pwm_curr_fdbk_ovm.c</FilePath>
             </File>
             <File>
               <FileName>regular_conversion_manager.c</FileName>

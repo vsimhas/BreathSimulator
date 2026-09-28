@@ -42,7 +42,14 @@
 */
 
 #define MOTOR_VOLTAGE_CONSTANT  0.5 /*!< Volts RMS ph-ph /kRPM */
-#define MOTOR_MAX_SPEED_RPM     36012 /*!< Maximum rated speed  */
+/* Mechanical rating of the blower. NOT the speed this power stage can reach:
+ * back-EMF against the ~24 V bus limits that, which is what the 36012 here
+ * actually was - the ST profiler's measurement of the voltage-limited
+ * ceiling, recorded as if it were a property of the motor. Recording it that
+ * way is what made the limit look inherent. See the note on
+ * MAX_APPLICATION_SPEED_RPM in drive_parameters.h.
+ * Documentation only - nothing in CM4 consumes this macro. */
+#define MOTOR_MAX_SPEED_RPM     42500 /*!< Maximum rated speed  */
 #define NOMINAL_CURRENT_A       1.345
 
 #define ID_DEMAG_A              -1.345 /*!< Demagnetization current */

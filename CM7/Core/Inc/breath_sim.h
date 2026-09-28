@@ -96,9 +96,27 @@ extern "C" {
 #define BREATH_RPM_BASE_MIN              2000
 #define BREATH_RPM_BASE_MAX             20000
 #define BREATH_RPM_BASE_DEFAULT         14500
-#define BREATH_RPM_AMP_MAX              25000
-/** Absolute ceiling; MAX_APPLICATION_SPEED_RPM on CM4 is 36012. */
-#define BREATH_RPM_ABS_MAX              36000
+/*
+ * Amplitude is NOT independently limited any more. The binding constraint is
+ * rpm_base + rpm_amplitude <= BREATH_RPM_ABS_MAX, enforced in
+ * BreathSim_Resolve, and a second lower cap here only ever hid that.
+ *
+ * At the previous 25000 it was not even reachable: with rpm_base at its
+ * 14500 default the sum clamp already capped amplitude at 21500, so raising
+ * this alone did nothing. It is now set to the largest amplitude the sum
+ * clamp can ever allow (ABS_MAX - BASE_MIN), which keeps it honest: ask for
+ * more than the drive can give and Resolve reduces it and says so, rather
+ * than an arbitrary number deciding silently.
+ */
+#define BREATH_RPM_AMP_MAX              (BREATH_RPM_ABS_MAX - BREATH_RPM_BASE_MIN)
+/**
+  * Absolute ceiling. Must track MAX_APPLICATION_SPEED_RPM on CM4 (38500) and
+  * BLOWER_IPC_MAX_SPEED_RPM; commanding above it just saturates on CM4 and
+  * makes the mailbox disagree with the motor. Raised from 36000 on
+  * 2026-09-28 - see the note in CM4/Core/Inc/drive_parameters.h for why
+  * 38500 and what it costs in regen.
+  */
+#define BREATH_RPM_ABS_MAX              38500
 
 /**
   * Sensorless observer minimum from CM4 drive_parameters.h
@@ -222,6 +240,14 @@ typedef enum
 #define BREATH_FLAG_FLOW_SAT        0x0080U /**< Flow controller output hit a limit. */
 #define BREATH_FLAG_PRESSURE_LIMIT  0x0100U /**< Airway pressure limit tripped; run aborted. */
 #define BREATH_FLAG_VOLUME_SHORT    0x0200U /**< Delivered tidal volume missed target by >20%. */
+/**
+  * Flow barely moved while a real breath was commanded, for several breaths
+  * running. Either the sensor is not seeing the breath (mounted backwards,
+  * plumbed in a branch, not tared) or the blower cannot produce the demanded
+  * flow at all. Closed-loop control is abandoned for the rest of the run
+  * when this is raised - see the note in BreathSim_FlowControlRpm.
+  */
+#define BREATH_FLAG_FLOW_NO_RESPONSE 0x0400U
 
 /* ===========================================================================
  * Data
@@ -285,6 +311,14 @@ typedef struct
   int32_t  rpm_act;         /**< Measured mechanical RPM from CM4. */
   uint16_t bus_voltage_v;
   uint16_t mc_state;        /**< Raw MCI_State_t from CM4. */
+  /*
+   * Raw MC_* fault bits latched by CM4, captured at the moment the run was
+   * aborted. mc_state is NOT enough on its own: aborting sends a STOP, and
+   * the CM4 handler acknowledges in FAULT_OVER, so the drive is back in
+   * IDLE (0) by the time anyone reads it. This is the only field that says
+   * WHICH fault fired.
+   */
+  uint16_t mc_occurred_faults;
 
   /* --- closed-loop flow control --- */
   uint8_t  control_mode;
@@ -392,6 +426,8 @@ bool BreathSim_ScriptIsRunning(void);
 
 const char *BreathSim_WaveformName(uint8_t waveform);
 const char *BreathSim_ControlModeName(uint8_t mode);
+/** Human-readable MC_* fault bits, e.g. "SPEED_FDBK|DP_FAULT". */
+const char *BreathSim_McFaultName(uint16_t faults);
 const char *BreathSim_EventName(uint8_t event);
 const char *BreathSim_StateName(uint8_t state);
 const char *BreathSim_SegmentName(uint8_t segment);

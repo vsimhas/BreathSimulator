@@ -740,7 +740,15 @@ inline uint16_t FOC_CurrControllerM1(void)
 
   if (PWMC_GetPWMState(pwmcHandle[M1]) == true)
   {
+#if defined(FOC_OVERMODULATION_ENABLE) && (FOC_OVERMODULATION_ENABLE == 1)
+    /* Over-modulation. Same signature and the same lowDuty/midDuty/highDuty
+     * contract the 3-shunt driver reads, so it is a drop-in - but read the
+     * note on FOC_OVERMODULATION_ENABLE in drive_parameters.h first. Two real
+     * hazards, and one of them is the sensorless observer. */
+    hCodeError = PWMC_SetPhaseVoltage_OVM(pwmcHandle[M1], Valphabeta);
+#else
     hCodeError = PWMC_SetPhaseVoltage(pwmcHandle[M1], Valphabeta);
+#endif
   }
   else
   {

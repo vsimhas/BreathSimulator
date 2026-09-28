@@ -116,6 +116,10 @@ bool BlowerIpc_CM7_GetStatus(BlowerIpcStatus_t *status)
   status->brake_pwm_permille = g_blower_ipc.brake_pwm_permille;
   status->brake_active = (g_blower_ipc.brake_active != 0U);
   status->motor_running = (g_blower_ipc.motor_running != 0U);
+  status->restart_holdoff_ms = g_blower_ipc.restart_holdoff_ms;
+  status->bus_voltage_mv =
+      ((uint32_t)g_blower_ipc.bus_voltage_mv_high << 16) |
+       (uint32_t)g_blower_ipc.bus_voltage_mv_low;
   status->status_seq = g_blower_ipc.cm4_status_seq;
   status->cmd_ack_seq = g_blower_ipc.cm4_cmd_ack_seq;
   return true;

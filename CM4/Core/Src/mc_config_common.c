@@ -92,7 +92,15 @@ RDivider_Handle_t BusVoltageSensor_M1 =
   ._Super =
   {
     .SensorType               = REAL_SENSOR,
-    .ConversionFactor         = (uint16_t)(ADC_REFERENCE_VOLTAGE / VBUS_PARTITIONING_FACTOR),
+    /* Rounded, not truncated. 3.3 / 0.0625 = 52.8, and the cast to uint16
+     * made this 52 - so every bus voltage this firmware reported was 1.52%
+     * low (23.86 V read back as 23.50). The over-voltage trip was unaffected
+     * because OVERVOLTAGE_THRESHOLD_d evaluates the same expression in
+     * floating point, but anything that CONSUMED the reported value - the
+     * brake threshold, the CM7 slew derate - was working from a low number.
+     * 53 is 0.38% high, which is the best a uint16 can do here.
+     * Ported from CPAP_InitialCode d7fb050. */
+    .ConversionFactor         = (uint16_t)((ADC_REFERENCE_VOLTAGE / VBUS_PARTITIONING_FACTOR) + 0.5f),
   },
 
   .OverVoltageThreshold       = OVERVOLTAGE_THRESHOLD_d,

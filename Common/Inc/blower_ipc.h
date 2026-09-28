@@ -18,12 +18,13 @@ extern "C" {
 /*
  * Hard ceiling exposed to the CM7 caller. The MCWB-generated firmware on
  * CM4 saturates the speed reference at MAX_APPLICATION_SPEED_RPM, which is
- * 36012 in drive_parameters.h. This value must not exceed it: clamping at a
+ * 38500 in drive_parameters.h. This value must not exceed it: clamping at a
  * higher number on the CM7 side made the mailbox contents disagree with what
  * the motor actually targets, which is exactly what this clamp exists to
- * prevent. Keep the two in step if the motor profile is regenerated.
+ * prevent. Keep the two in step if the motor profile is regenerated or the
+ * ceiling moves again.
  */
-#define BLOWER_IPC_MAX_SPEED_RPM    36012
+#define BLOWER_IPC_MAX_SPEED_RPM    38500
 
 typedef enum
 {
@@ -68,7 +69,27 @@ typedef struct __attribute__((aligned(32)))
   volatile uint16_t brake_pwm_permille;
   volatile uint8_t  brake_active;
   volatile uint8_t  motor_running;
-  volatile uint16_t reserved;
+  /* Coast-down hold-off still to run, ms; 1 while a start is pending but the
+   * state machine has not reached IDLE yet; 0 = no start held off. Occupies
+   * the former `reserved` slot. */
+  volatile uint16_t restart_holdoff_ms;
+  /*
+   * Bus voltage in millivolts.
+   *
+   * bus_voltage_v above is whole volts, which is unusable as a control input
+   * on this board: the supply measures 23.86 V (V_MOT across R138 = 1.491 V
+   * on the as-drawn 180K/12K divider, 2026-09-28) and the over-voltage trip
+   * is at 24.9 V, so the ENTIRE protection band is about one integer count.
+   * Anything laddered on whole volts is therefore a step, not a ramp - the
+   * CM7 fall-slew derate collapsed from 25000 to 5000 RPM/s the moment the
+   * reading ticked from 23 to 24. This field gives that ladder resolution
+   * without touching any trip threshold.
+   *
+   * NOTE: this widens the shared mailbox, so CM4 and CM7 must be built and
+   * flashed together.
+   */
+  volatile uint16_t bus_voltage_mv_low;   /**< low 16 bits of the mV value */
+  volatile uint16_t bus_voltage_mv_high;  /**< high 16 bits                */
 
   /* CM4 FOC inner-loop PI gains (runtime tunable via CM7 / USB). */
   volatile uint32_t cm7_foc_tuning_seq;
@@ -93,6 +114,8 @@ typedef struct
   uint16_t brake_pwm_permille;
   bool     brake_active;
   bool     motor_running;
+  uint16_t restart_holdoff_ms;
+  uint32_t bus_voltage_mv;
   uint32_t status_seq;
   uint32_t cmd_ack_seq;
 } BlowerIpcStatus_t;

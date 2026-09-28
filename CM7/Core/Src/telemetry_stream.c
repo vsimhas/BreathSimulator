@@ -225,7 +225,8 @@ static int Telem_ParseLong(const char *text, long *out)
  *
  *  M, tick_ms, breath_index          <- emitted at each breath boundary
  *
- *  V, breath_index, tidal_ml, p_min, p_max, p_mean, q_peak_lpm, flags
+ *  V, breath_index, tidal_ml, p_min, p_max, p_mean, q_peak_lpm, flags,
+ *     mc_occurred_faults
  *                                    <- one per completed breath: the result
  *
  *  Q, tick_ms, q_target_lpm, q_meas_lpm, volume_ml, p_cmh2o, flow_valid,
@@ -271,6 +272,16 @@ static void Telem_PushStatus(void)
     (unsigned long)p.jitter_seed,
     (unsigned)st.flags);
   if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
+  if (st.mc_occurred_faults != 0U)
+  {
+    char fline[128];
+    const int nf = snprintf(fline, sizeof(fline),
+      "# motor faults since start: %s (0x%04X)\r\n",
+      BreathSim_McFaultName(st.mc_occurred_faults),
+      (unsigned)st.mc_occurred_faults);
+    if (nf > 0) { Telem_BufPush((const uint8_t *)fline, (uint32_t)nf); }
+  }
 
   char line2[192];
   const int n2 = snprintf(line2, sizeof(line2),
@@ -1065,14 +1076,15 @@ void Telem_PushBreathSample(const BreathSimStatus_t *st)
      * the device under test responded with. This is the test result; the
      * B/Q sample streams are only there to explain it. */
     m = snprintf(line, sizeof(line),
-      "V,%lu,%.1f,%.2f,%.2f,%.2f,%.1f,0x%04X\r\n",
+      "V,%lu,%.1f,%.2f,%.2f,%.2f,%.1f,0x%04X,0x%04X\r\n",
       (unsigned long)st->breath_index,
       (double)st->last_tidal_ml,
       (double)st->p_min_cmh2o,
       (double)st->p_max_cmh2o,
       (double)st->p_mean_cmh2o,
       (double)st->q_peak_lpm,
-      (unsigned)st->flags);
+      (unsigned)st->flags,
+      (unsigned)st->mc_occurred_faults);
     if (m > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)m); }
 
     s_last_breath = st->breath_index;

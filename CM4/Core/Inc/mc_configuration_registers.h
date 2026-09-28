@@ -24,6 +24,11 @@
 #define MC_CONFIGURATION_REGISTERS_H
 
 #include "mc_type.h"
+/* For FOC_OVERMODULATION_ENABLE, used by configurationFlag2_M1 below.
+ * Needed explicitly: mc_configuration_registers.c includes this header
+ * BEFORE parameters_conversion.h, so without it the #if would evaluate
+ * with the macro undefined and silently report the wrong mode. */
+#include "drive_parameters.h"
 
 typedef struct
 {
@@ -122,7 +127,15 @@ typedef struct
 #define FLAG_MCP_OVER_UARTB        0U
 
 #define configurationFlag1_M1     (VBUS_SENSING_FLAG|TEMP_SENSING_FLAG)
+/* Reported to ST Motor Pilot; this flag does not gate behaviour. The
+ * modulation strategy is chosen by FOC_OVERMODULATION_ENABLE in
+ * drive_parameters.h, and keeping the two in step means the tool reports what
+ * the firmware is actually doing rather than what it shipped with. */
+#if defined(FOC_OVERMODULATION_ENABLE) && (FOC_OVERMODULATION_ENABLE == 1)
+#define configurationFlag2_M1     (OVERMODULATION_FLAG)
+#else
 #define configurationFlag2_M1     (0U)
+#endif
 
 #define DRIVE_TYPE_M1              0
 #define PRIM_SENSOR_M1            EPLL

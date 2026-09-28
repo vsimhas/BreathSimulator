@@ -42,10 +42,125 @@
  * the CM4 brake instead of guessing independently of it.
  * ------------------------------------------------------------------------ */
 #define BREATH_SLEW_RISE_RPM_PER_S      150000.0f
+/* 2026-09-28: 25000 -> 60000, to make ~50 slm peak inspiratory flow
+ * reachable. A half-sine of amplitude A over T_insp demands A*pi/T_insp on
+ * BOTH flanks, and the falling flank is inside inspiration - so this limit
+ * shapes the breath, it does not just protect the decel at the end of it.
+ * At the full 24000 amplitude: 45k rpm/s for 900 mL at 12 bpm, 57k for
+ * 700 mL at 15 bpm. At 25000 those breaths were clipped 1.8-2.3x and the
+ * flow simply could not come back down in time, spilling into expiration.
+ *
+ * This is a real increase in regenerative energy per breath. It is allowed
+ * to be, because the Vbus derate below now has somewhere to arbitrate: the
+ * ladder was widened on the same day (brake 25.5 V, derate 26.0-27.2 V,
+ * OV trip 28.0 V) and it pulls this number back automatically when the bus
+ * actually climbs, raising BREATH_FLAG_VBUS_DERATE so the run says so.
+ * Faster breaths than the above will still clip and flag rather than
+ * silently distort. */
+/* 60000, raised deliberately on 2026-09-28 - the second time, and this time
+ * with the protection actually working underneath it.
+ *
+ * History worth keeping: it was raised to 60000 once before on the reasoning
+ * that "the Vbus derate now has somewhere to arbitrate". That was false. CM4
+ * was publishing 0 mV because BlowerBrake_Update() had been commented out, so
+ * the derate never engaged and neither did the brake, and the first fast
+ * deceleration tripped OVER_VOLT. It was put back to 25000 until that was
+ * fixed.
+ *
+ * It now is: CM4 publishes bus voltage unconditionally, and runs since show
+ * no VBUS_DERATE flag, which is the positive confirmation - the guard raises
+ * that flag whenever the reading is 0.
+ *
+ * Why 60000: a half-sine of amplitude A over Ti demands A*pi/Ti on both
+ * flanks, and the falling flank is INSIDE inspiration, so this limit shapes
+ * the breath rather than merely protecting the decel after it. At the full
+ * 24000 amplitude over a 1.667 s inspiration that is ~45200 rpm/s. 25000 was
+ * clipping it by 1.8x, which showed up as SLEW_LIMITED on every breath of
+ * every characterisation run. 60000 clears it with margin.
+ *
+ * The ladder still arbitrates if the bus actually climbs: brake at 25.5 V,
+ * this derate 26.0-27.2 V, OV trip 28.0 V. */
 #define BREATH_SLEW_FALL_RPM_PER_S       25000.0f
-#define BREATH_SLEW_FALL_MIN_RPM_PER_S    5000.0f
-#define BREATH_VBUS_DERATE_START_V          23U
-#define BREATH_VBUS_DERATE_FULL_V           24U
+/* ^ 25000, and the question is now settled by measurement. Do not raise it
+ * expecting more flow: it will not give any, and it costs bus margin.
+ *
+ * Paired runs at CPAP 4, healthy sensor, one constant changed:
+ *
+ *              25000              60000
+ *   volume     516.2 mL           521.8 mL
+ *   peak flow   43.7 slm           43.7 slm      <- identical
+ *   flags      SLEW_LIMITED       VBUS_DERATE
+ *
+ * The performance is the same; only the mechanism doing the limiting moves.
+ * At 25000 this constant binds. At 60000 it stops binding, the bus climbs
+ * into the derate band, and the derate pulls the effective rate back to
+ * roughly the same place. So the real limit is REGEN CAPACITY - how fast the
+ * bus can absorb the energy of a decelerating impeller - not this number.
+ *
+ * 25000 is preferred over 60000 at equal performance because the bus then
+ * stays below the 26 V derate band rather than sitting inside it, just under
+ * the 28 V trip. Same output, more margin.
+ *
+ * To actually decelerate faster the energy needs somewhere to go: a real
+ * brake resistor on the regen path, more over-voltage headroom, or a
+ * lower-inertia impeller (energy goes as omega squared, so this is the big
+ * lever). SLEW_LIMITED will stay set on every breath - that is the rig
+ * telling you the truth about the falling flank, not a fault.
+ *
+ * History, because two earlier attempts reached wrong conclusions:
+ *
+ * A half-sine of amplitude A over Ti demands A*pi/Ti on BOTH flanks, and the
+ * falling flank is inside inspiration - so this limit shapes the breath, it
+ * does not merely protect the decel after it. At the full 24000 amplitude
+ * over a 1.667 s inspiration that is ~45200 rpm/s, and at 25000 SLEW_LIMITED
+ * was set on every breath of every run.
+ *
+ * Attempt 1 (60000): tripped OVER_VOLT. Cause was not the slew rate - CM4 was
+ * publishing 0 mV because BlowerBrake_Update() had been commented out, so
+ * neither the brake nor this derate ever engaged. Reverted to 25000.
+ *
+ * Attempt 2 (60000, bus voltage fixed): no trip - the ladder held - but the
+ * bus reached the derate band and delivered volume read zero. The zero was
+ * later traced to a DEAD FLOW SENSOR, not the slew rate, so that run proved
+ * nothing about volume. A comment here previously claimed 25000 was the
+ * bus's measured regen limit; that claim rested on this invalid run and has
+ * been removed.
+ *
+ * Attempt 3 (60000, sensor verified healthy): the result recorded above.
+ * VBUS_DERATE set, performance unchanged, so 60000 buys nothing. Reverted. */
+/* Floor for the derate, NOT a safe-mode value. 5000 was too low to be
+ * useful: when the derate engaged, the blower could no longer return to
+ * baseline inside a breath (24000 rpm at 5000 rpm/s is 4.8 s against a 5 s
+ * period), so the waveform degenerated into constant RPM, the lung
+ * equilibrated and delivered volume collapsed to ZERO. Measured 2026-09-28.
+ *
+ * A derate should degrade the breath, not abolish it. 15000 still sheds
+ * 24000 rpm inside 1.6 s, so breaths continue - smaller and distorted, and
+ * flagged as such - while the bus is given relief. */
+#define BREATH_SLEW_FALL_MIN_RPM_PER_S   15000.0f
+
+/*
+ * Derate band, in MILLIVOLTS. These were 23 V / 24 V in whole volts, which
+ * was wrong twice over on this board:
+ *
+ *  - The supply measures 23.86 V (V_MOT across R138 = 1.491 V on the
+ *    as-drawn 180K/12K divider, measured 2026-09-28). A band starting at
+ *    23 V therefore starts BELOW the idle bus.
+ *  - bus_voltage_v is whole volts, so the band spanned one integer count:
+ *    the fall limit was not a ramp but a step from 25000 to 5000 RPM/s the
+ *    instant the reading ticked to 24. Shedding 20000 RPM at 5000 RPM/s
+ *    takes 4 s, which distorts any breath faster than about 7 BPM - a
+ *    strong candidate for why fast, deep breaths have been hard to get.
+ *
+ * The band sits above the CM4 brake (25.5 V on, 24.5 V off) so the brake
+ * dissipates first and backing off the commanded waveform is the second
+ * line of defence, and below the over-voltage trip, which was raised from
+ * 24.9 V to 28.0 V on 2026-09-28 precisely to make room for this ladder.
+ * Full ladder: supply 23.86 -> brake 25.5 -> derate 26.0..27.2 -> trip 28.0
+ * -> lowest-rated caps on the regen path 35.
+ */
+#define BREATH_VBUS_DERATE_START_MV      26000U
+#define BREATH_VBUS_DERATE_FULL_MV       27200U
 
 /* ---------------------------------------------------------------------------
  * Motor supervision
@@ -105,11 +220,17 @@ static int32_t  g_target_rpm;
 static int32_t  g_rpm_act;
 static uint16_t g_bus_voltage_v;
 static uint16_t g_mc_state;
+/* CM4 holds a start off while the rotor coasts down after a stop. */
+static uint16_t g_restart_holdoff_ms;
+static uint32_t g_bus_voltage_mv;
+static uint16_t g_occurred_faults;
+static uint16_t g_current_faults;
 static uint16_t g_flags;
 static BreathSegment_t g_segment;
 static int32_t  g_last_posted_rpm;
 static uint8_t  g_have_posted;
 static float    g_track_err_s;
+static uint8_t  g_holdoff_logged;
 
 /* Per-breath modifiers, latched at each breath boundary. */
 static float    g_amp_scale;
@@ -154,6 +275,12 @@ static float    g_q_target_lpm;
 static float    g_q_peak_lpm;      /* peak this breath needs for tidal_ml */
 static float    g_shape_area;      /* mean/peak of the inspiratory shape */
 static float    g_ctrl_integ_rpm;  /* PI integrator, RPM */
+static uint32_t g_sat_ticks;       /* ticks spent at the rail this breath */
+static uint32_t g_insp_ticks;      /* inspiratory ticks this breath       */
+static float    g_q_target_peak;   /* highest flow commanded this breath   */
+static float    g_q_meas_peak;     /* highest flow actually seen this breath */
+static uint8_t  g_no_response_strikes;
+static uint8_t  g_ctrl_disabled;   /* closed loop abandoned for this run   */
 static float    g_volume_ml;       /* inspired volume so far this breath */
 static float    g_last_tidal_ml;
 /* RPM as inspiration ended; the passive decay starts from here so
@@ -576,13 +703,18 @@ static int32_t BreathSim_FlowControlRpm(float dt_s, BreathSegment_t seg)
     return (int32_t)lroundf(clampf(out, rpm_base_f, rpm_max_f));
   }
 
-  if (BreathSim_FlowUsable() == 0U)
+  if (g_q_target_lpm > g_q_target_peak) { g_q_target_peak = g_q_target_lpm; }
+  if (g_q_meas_lpm   > g_q_meas_peak)   { g_q_meas_peak   = g_q_meas_lpm; }
+
+  if ((BreathSim_FlowUsable() == 0U) || (g_ctrl_disabled != 0U))
   {
-    /* No usable feedback. Fall back to the open-loop RPM shape rather than
-     * integrating against a stale or bad sample - a flow controller driven
-     * by a dead sensor is the one failure mode that could drive the blower
-     * to a limit and hold it there. */
-    g_flags |= BREATH_FLAG_FLOW_INVALID;
+    /* No usable feedback, or closed loop has been abandoned because the flow
+     * never responded. Fall back to the open-loop RPM shape rather than
+     * integrating against a sample that is stale, bad, or simply not
+     * describing this breath - a flow controller chasing a flow it cannot
+     * see is precisely the failure mode that drives the blower to its limit
+     * and holds it there. */
+    if (g_ctrl_disabled == 0U) { g_flags |= BREATH_FLAG_FLOW_INVALID; }
     const float out = rpm_base_f +
                       ((float)g_params.rpm_amplitude * g_envelope);
     return (int32_t)lroundf(clampf(out, rpm_base_f, rpm_max_f));
@@ -597,10 +729,12 @@ static int32_t BreathSim_FlowControlRpm(float dt_s, BreathSegment_t seg)
 
   /* Conditional integration: while saturated, integrate only in the
    * direction that walks the output back into the linear region. */
+  g_insp_ticks++;
   uint8_t may_integrate = 1U;
   if (sat != unsat)
   {
     g_flags |= BREATH_FLAG_FLOW_SAT;
+    g_sat_ticks++;
     may_integrate = (((sat < unsat) && (err < 0.0f)) ||
                      ((sat > unsat) && (err > 0.0f))) ? 1U : 0U;
   }
@@ -619,19 +753,38 @@ static int32_t BreathSim_FlowControlRpm(float dt_s, BreathSegment_t seg)
 
 static float BreathSim_FallSlewLimit(void)
 {
-  if (g_bus_voltage_v <= BREATH_VBUS_DERATE_START_V)
+  /* Fall back to the whole-volt reading only if CM4 has not published mV
+   * yet (older CM4 image against a newer CM7). Scaling the volts up keeps
+   * the comparison meaningful rather than reading as 0 mV and disabling
+   * the derate entirely. */
+  uint32_t mv = (g_bus_voltage_mv != 0U)
+                    ? g_bus_voltage_mv
+                    : ((uint32_t)g_bus_voltage_v * 1000U);
+
+  if (mv == 0U)
+  {
+    /* CM4 is not publishing a bus voltage at all, so this derate is blind.
+     * Do not pretend the bus is healthy: fall back to the most conservative
+     * limit and flag it, rather than allowing the fastest decel with no
+     * protection behind it. That combination tripped OVER_VOLT once. */
+    g_flags |= BREATH_FLAG_VBUS_DERATE;
+    return BREATH_SLEW_FALL_MIN_RPM_PER_S;
+  }
+
+  if (mv <= BREATH_VBUS_DERATE_START_MV)
   {
     return BREATH_SLEW_FALL_RPM_PER_S;
   }
-  if (g_bus_voltage_v >= BREATH_VBUS_DERATE_FULL_V)
+  if (mv >= BREATH_VBUS_DERATE_FULL_MV)
   {
     g_flags |= BREATH_FLAG_VBUS_DERATE;
     return BREATH_SLEW_FALL_MIN_RPM_PER_S;
   }
 
   g_flags |= BREATH_FLAG_VBUS_DERATE;
-  const float span = (float)(BREATH_VBUS_DERATE_FULL_V - BREATH_VBUS_DERATE_START_V);
-  const float k = (float)(g_bus_voltage_v - BREATH_VBUS_DERATE_START_V) / span;
+  const float span =
+      (float)(BREATH_VBUS_DERATE_FULL_MV - BREATH_VBUS_DERATE_START_MV);
+  const float k = (float)(mv - BREATH_VBUS_DERATE_START_MV) / span;
   return BREATH_SLEW_FALL_RPM_PER_S +
          ((BREATH_SLEW_FALL_MIN_RPM_PER_S - BREATH_SLEW_FALL_RPM_PER_S) * k);
 }
@@ -913,9 +1066,17 @@ static void BreathSim_EnterFault(const char *why)
 {
   g_flags |= BREATH_FLAG_MOTOR_FAULT;
   g_state = BREATH_STATE_FAULT;
-  DBG_E("SIM", "run aborted: %s (mc_state=%u rpm_cmd=%ld rpm_act=%ld vbus=%u)",
-        why, (unsigned)g_mc_state, (long)g_target_rpm,
-        (long)g_rpm_act, (unsigned)g_bus_voltage_v);
+  /* Log occurred_faults, and log it BEFORE the stop below. Aborting sends a
+   * STOP, the CM4 handler acknowledges in FAULT_OVER, and the drive is back
+   * in IDLE by the time anyone looks - so mc_state on its own reads 0 and
+   * says nothing about what happened. */
+  DBG_E("SIM", "run aborted: %s (mc=%u faults=%s cur=0x%04X occ=0x%04X)",
+        why, (unsigned)g_mc_state,
+        BreathSim_McFaultName(g_occurred_faults),
+        (unsigned)g_current_faults, (unsigned)g_occurred_faults);
+  DBG_E("SIM", "  at rpm_cmd=%ld rpm_act=%ld vbus=%lu mV flags=0x%04X",
+        (long)g_target_rpm, (long)g_rpm_act,
+        (unsigned long)g_bus_voltage_mv, (unsigned)g_flags);
   (void)BlowerIpc_CM7_Stop();
   g_have_posted = 0U;
 }
@@ -927,9 +1088,13 @@ static void BreathSim_Supervise(float dt_s)
 
   if (!BlowerIpc_CM7_GetStatus(&st)) { return; }
 
-  g_mc_state       = st.mc_state;
-  g_rpm_act        = st.mech_speed_rpm;
-  g_bus_voltage_v  = st.bus_voltage_v;
+  g_mc_state           = st.mc_state;
+  g_rpm_act            = st.mech_speed_rpm;
+  g_bus_voltage_v      = st.bus_voltage_v;
+  g_restart_holdoff_ms = st.restart_holdoff_ms;
+  g_bus_voltage_mv     = st.bus_voltage_mv;
+  g_occurred_faults    = st.occurred_faults;
+  g_current_faults     = st.current_faults;
 
   if ((g_state == BREATH_STATE_PRIMING) && (g_prime_t_s < BREATH_FAULT_GRACE_S))
   {
@@ -996,6 +1161,7 @@ static void BreathSim_PublishStatus(void)
   s.rpm_act       = g_rpm_act;
   s.bus_voltage_v = g_bus_voltage_v;
   s.mc_state      = g_mc_state;
+  s.mc_occurred_faults = g_occurred_faults;
 
   s.control_mode   = g_params.control_mode;
   s.flow_valid     = BreathSim_FlowUsable();
@@ -1063,6 +1229,7 @@ void BreathSim_Init(void)
   g_t_s             = 0.0f;
   g_prime_t_s       = 0.0f;
   g_prime_settle_s  = 0.0f;
+  g_holdoff_logged  = 0U;
   g_breath_index    = 0U;
   g_envelope        = 0.0f;
   g_env_raw         = 0.0f;
@@ -1101,6 +1268,12 @@ void BreathSim_Init(void)
   g_q_peak_lpm     = 0.0f;
   g_shape_area     = 0.637f;
   g_ctrl_integ_rpm = 0.0f;
+  g_sat_ticks      = 0U;
+  g_insp_ticks     = 0U;
+  g_q_target_peak  = 0.0f;
+  g_q_meas_peak    = 0.0f;
+  g_no_response_strikes = 0U;
+  g_ctrl_disabled  = 0U;
   g_volume_ml      = 0.0f;
   g_last_tidal_ml  = 0.0f;
   g_rpm_insp_end   = 0;
@@ -1202,6 +1375,12 @@ void BreathSim_Start(void)
   g_target_rpm      = g_params.rpm_base;
   g_have_posted     = 0U;
   g_ctrl_integ_rpm  = 0.0f;
+  g_sat_ticks       = 0U;
+  g_insp_ticks      = 0U;
+  g_q_target_peak   = 0.0f;
+  g_q_meas_peak     = 0.0f;
+  g_no_response_strikes = 0U;
+  g_ctrl_disabled   = 0U;
   g_volume_ml       = 0.0f;
   g_last_tidal_ml   = 0.0f;
   g_q_target_lpm    = 0.0f;
@@ -1286,6 +1465,29 @@ void BreathSim_Update(float dt_s)
    * begin with several breaths of garbage. ---------------------------- */
   if (g_state == BREATH_STATE_PRIMING)
   {
+    /* CM4 refuses to start while the rotor is still coasting down from the
+     * previous run, and publishes the remaining wait. That is deliberate -
+     * restarting into a spinning rotor gives a "false RUN" with no pressure
+     * and, after an over-voltage trip, repeated DP_FAULTs.
+     *
+     * It is up to ~9 s from full speed, which is longer than
+     * BREATH_PRIME_TIMEOUT_S on its own, so charging it against the prime
+     * timeout would abort every restart as "motor never reached RUN". Wait
+     * it out without counting it, and say so once. */
+    if (g_restart_holdoff_ms > 0U)
+    {
+      if (g_holdoff_logged == 0U)
+      {
+        g_holdoff_logged = 1U;
+        DBG_I("SIM", "waiting %u ms for rotor coast-down before start",
+              (unsigned)g_restart_holdoff_ms);
+      }
+      g_target_rpm = g_params.rpm_base;
+      BreathSim_PostRpm(g_target_rpm);
+      BreathSim_PublishStatus();
+      return;
+    }
+
     g_prime_t_s += dt_s;
     g_target_rpm = g_params.rpm_base;
     BreathSim_PostRpm(g_target_rpm);
@@ -1368,6 +1570,66 @@ void BreathSim_Update(float dt_s)
         g_flags |= BREATH_FLAG_VOLUME_SHORT;
       }
     }
+    /* Anti-latch. Conditional integration stops the integrator GROWING while
+     * saturated, but nothing brought it back down, and it is deliberately
+     * frozen through expiration so it keeps the operating point it learned.
+     * Against a target the blower cannot reach that combination is a trap:
+     * the integrator parks at its clamp, and every subsequent inspiration
+     * starts already pinned at the ceiling. The half-sine then degenerates
+     * into a square pulse at maximum RPM - which is both the wrong waveform
+     * and sustained operation at the very edge of where the drive is stable.
+     *
+     * So if a breath spent most of its inspiration on the rail, bleed the
+     * integrator. A reachable target is unaffected (it never saturates for
+     * long); an unreachable one settles at the best the drive can actually
+     * do instead of welding itself to the limit. FLOW_SAT still reports it. */
+    if ((g_insp_ticks > 0U) &&
+        ((g_sat_ticks * 2U) > g_insp_ticks))   /* saturated >50% of inspiration */
+    {
+      g_ctrl_integ_rpm *= 0.85f;
+    }
+
+    /* Did the flow actually respond to the breath we commanded?
+     *
+     * If a real flow was asked for and almost none came back, closing a loop
+     * around it is worse than useless: the error never falls, the integrator
+     * walks to its clamp, and the blower is commanded to maximum RPM for
+     * every inspiration from then on. That is the same command whether the
+     * cause is a sensor mounted backwards, a sensor plumbed somewhere the
+     * breath does not pass, or a blower that simply cannot make this flow -
+     * and in all three cases it is the worst thing to do to the drive.
+     *
+     * Three consecutive unresponsive breaths and closed-loop is abandoned
+     * for the rest of the run. The waveform continues open-loop so the rig
+     * keeps working; the flag and the log say why. */
+    if ((g_params.control_mode == (uint8_t)BREATH_CTRL_FLOW) &&
+        (g_ctrl_disabled == 0U) && (g_q_target_peak > 5.0f))
+    {
+      if (g_q_meas_peak < (0.25f * g_q_target_peak))
+      {
+        g_no_response_strikes++;
+        if (g_no_response_strikes >= 3U)
+        {
+          g_flags |= BREATH_FLAG_FLOW_NO_RESPONSE;
+          g_ctrl_disabled = 1U;
+          g_ctrl_integ_rpm = 0.0f;
+          DBG_E("SIM", "flow never responded: asked %d L/min, saw %d L/min",
+                (int)g_q_target_peak, (int)g_q_meas_peak);
+          DBG_E("SIM", "  closed loop OFF. Check the sensor direction and"
+                       " that the breath passes through it, then 'flow status'.");
+        }
+      }
+      else
+      {
+        g_no_response_strikes = 0U;
+      }
+    }
+
+    g_q_target_peak = 0.0f;
+    g_q_meas_peak   = 0.0f;
+    g_sat_ticks     = 0U;
+    g_insp_ticks    = 0U;
+
     g_volume_ml = 0.0f;
     g_p_min_acc = 1.0e9f;
     g_p_max_acc = -1.0e9f;
@@ -1589,6 +1851,44 @@ const char *BreathSim_WaveformName(uint8_t waveform)
     case BREATH_WAVE_SINE:
     default:                 return "Sine";
   }
+}
+
+const char *BreathSim_McFaultName(uint16_t faults)
+{
+  /* Static buffer: this is only ever called from logging and the USB status
+   * reply, both of which consume it immediately. */
+  static char buf[96];
+  size_t n = 0U;
+
+  buf[0] = '\0';
+  if (faults == 0U)
+  {
+    return "none";
+  }
+
+  static const struct { uint16_t bit; const char *name; } k_bits[] = {
+    { 0x0001U, "DURATION"   },  /* FOC rate too high          */
+    { 0x0002U, "OVER_VOLT"  },
+    { 0x0004U, "UNDER_VOLT" },
+    { 0x0008U, "OVER_TEMP"  },
+    { 0x0010U, "START_UP"   },
+    { 0x0020U, "SPEED_FDBK" },  /* observer lost the rotor    */
+    { 0x0040U, "OVER_CURR"  },
+    { 0x0080U, "SW_ERROR"   },
+    { 0x0400U, "DP_FAULT"   },  /* STSPIN driver protection   */
+  };
+
+  for (size_t i = 0U; i < (sizeof(k_bits) / sizeof(k_bits[0])); i++)
+  {
+    if ((faults & k_bits[i].bit) == 0U) { continue; }
+    const size_t len = strlen(k_bits[i].name);
+    if ((n + len + 2U) >= sizeof(buf)) { break; }
+    if (n > 0U) { buf[n++] = '|'; }
+    (void)memcpy(&buf[n], k_bits[i].name, len);
+    n += len;
+    buf[n] = '\0';
+  }
+  return (n > 0U) ? buf : "unknown";
 }
 
 const char *BreathSim_ControlModeName(uint8_t mode)

@@ -140,10 +140,30 @@ HAL_StatusTypeDef SFM3300_Init(SFM3300_Handle_t *h,
 {
     if ((h == NULL) || (hi2c == NULL)) { return HAL_ERROR; }
 
+    /* Preserve the health counters across a re-init. SensorTask calls this
+     * once a second while the sensor is not measuring, and a plain memset
+     * zeroed the very counters that say how long it has been failing - so a
+     * sensor that had been dead for ten minutes still reported err=1,
+     * startfail=1, which reads like a one-off glitch rather than a hard
+     * fault. Keep the history; reset only the live measurement state. */
+    const uint32_t keep_err    = h->error_count;
+    const uint32_t keep_crc    = h->crc_error_count;
+    const uint32_t keep_range  = h->range_error_count;
+    const uint32_t keep_recov  = h->recover_count;
+    const uint32_t keep_start  = h->start_fail_count;
+    const uint32_t keep_reads  = h->read_count;
+
     memset(h, 0, sizeof(*h));
     h->hi2c         = hi2c;
     h->addr         = addr_shifted;
     h->filter_alpha = 0.2f;   /* mild smoothing; caller may override */
+
+    h->error_count       = keep_err;
+    h->crc_error_count   = keep_crc;
+    h->range_error_count = keep_range;
+    h->recover_count     = keep_recov;
+    h->start_fail_count  = keep_start;
+    h->read_count        = keep_reads;
 
     /* Reading the serial is a useful presence check - it exercises a write,
      * a read and two CRCs - but it is only identification. If the command
