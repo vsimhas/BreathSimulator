@@ -94,7 +94,18 @@ extern "C" {
 #define BREATH_JITTER_MAX_PCT          25.0f
 
 #define BREATH_RPM_BASE_MIN              2000
-#define BREATH_RPM_BASE_MAX             20000
+/*
+ * 20000 made sense while rpm_base only ever meant "the floor between
+ * breaths". It also caps constant-speed running (amplitude 0), which is how
+ * the blower is characterised against a calibrated orifice and how a CPAP
+ * actually runs one - both want the full speed range. The binding limit is
+ * still rpm_base + rpm_amplitude <= BREATH_RPM_ABS_MAX, enforced in
+ * BreathSim_Resolve, so this does not let anything exceed the drive ceiling.
+ *
+ * Note the consequence for breathing use: a high base leaves little room for
+ * amplitude, and pushes hard into the lung throughout expiration.
+ */
+#define BREATH_RPM_BASE_MAX             BREATH_RPM_ABS_MAX
 #define BREATH_RPM_BASE_DEFAULT         14500
 /*
  * Amplitude is NOT independently limited any more. The binding constraint is
@@ -119,15 +130,30 @@ extern "C" {
 #define BREATH_RPM_ABS_MAX              38500
 
 /**
-  * Sensorless observer minimum from CM4 drive_parameters.h
-  * (OBS_MINIMUM_SPEED_RPM). Below this the STO/PLL estimate degrades and
-  * MC_SPEED_FDBK faults become likely, so a commanded RPM under this value
-  * raises BREATH_FLAG_BELOW_OBS_MIN rather than being silently trusted.
-  * It is deliberately NOT a clamp: the limit is a motor-tuning property, and
-  * lowering it (retuning GAIN1/GAIN2/PLL gains) is the correct long-term fix
-  * for letting the blower stand further out of the way during expiration.
+  * Speed below which a commanded RPM raises BREATH_FLAG_BELOW_OBS_MIN.
+  * Deliberately NOT a clamp - it is a warning, so the real floor could be
+  * measured by simply commanding below it.
+  *
+  * It was CM4's OBS_MINIMUM_SPEED_RPM (12965), on the assumption that the ST
+  * profiler's figure was the hardware limit. It is not. Stepping rpm_base
+  * down at constant speed on 2026-09-28, the drive held cleanly to 6500 rpm
+  * - the lowest tested - with no MOTOR_FAULT and no MC_SPEED_FDBK at any
+  * step. The profiler's value is roughly 2x conservative, and no observer
+  * retune (GAIN1/GAIN2/PLL) is needed to run well below it.
+  *
+  * 7000 here so the flag means something again. CM4's OBS_MINIMUM_SPEED_RPM
+  * is deliberately left alone: it gates the rev-up switch-over, so lowering
+  * it changes STARTING behaviour, which is a separate question from how low
+  * the drive can hold once it is running.
+  *
+  * Worth knowing before lowering rpm_base to exploit this: peak speed is
+  * base + swing, and the swing is limited by motor torque against impeller
+  * inertia to roughly 24000 rpm over a 1.667 s inspiration. Lowering the
+  * base therefore costs peak speed unless the inspiratory time grows with
+  * it - at Ti 3.0 s (ISO 10 BPM) a 30500 rpm swing tracks cleanly, at
+  * 1.667 s it does not and TRACK_ERROR is set.
   */
-#define BREATH_RPM_OBS_MIN_RPM          12965
+#define BREATH_RPM_OBS_MIN_RPM           7000
 
 /** Fraction of the cycle inspiration may occupy (physiologic sanity cap). */
 #define BREATH_MAX_INSP_DUTY            0.60f
