@@ -466,14 +466,18 @@ void MenuController::enterSelectedItem()
             for (uint8_t i = 0U; i < pr.count; i++)
             {
                 BreathScriptStep_t st;
+                /* Not a plain declaration: the step carries override
+                 * fields whose "inherit" sentinels are not all zero. */
+                BreathSim_ScriptStepInit(&st);
                 st.duration_s = pr.steps[i].duration_s;
                 st.event      = pr.steps[i].event;
                 st.severity   = pr.steps[i].severity;
                 if (!BreathSim_ScriptAppend(&st)) { break; }
             }
-            /* Loop so an overnight-style run needs no attendance, and so the
-             * device under test sees the baseline restored between bouts. */
-            (void)BreathSim_ScriptStart(true);
+            /* Zero passes = run for ever, so an overnight-style run needs
+             * no attendance and the device under test sees the baseline
+             * restored between bouts. */
+            (void)BreathSim_ScriptStart(0U);
         }
         needs_redraw_ = true;
         return;

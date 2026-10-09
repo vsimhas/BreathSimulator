@@ -13,12 +13,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include <math.h>
 
 #include "stm32h7xx_hal.h"
 #include "main.h"
 #include "cmsis_compiler.h"
 #include "breath_sim.h"
 #include "blower_ipc.h"
+#include "dbg_log.h"
+#include "sys_diag.h"
+#include "FreeRTOS.h"
 #include "sfm3300.h"
 #include "pressure_sensors.h"
 
@@ -78,6 +82,7 @@ static volatile uint8_t s_cmd_head;
 static volatile uint8_t s_cmd_tail;
 
 static void Telem_BufPush(const uint8_t *data, uint32_t len);
+static int  Telem_ParseLong(const char *text, long *out);
 static void Telem_PushRaw(const char *text);
 static void Telem_PushAck(const char *cmd);
 static void Telem_PushErr(const char *reason);
@@ -95,17 +100,44 @@ void Telem_Init(void)
 
 static void Telem_BufPush(const uint8_t *data, uint32_t len)
 {
-  for (uint32_t i = 0U; i < len; i++)
+  if ((data == NULL) || (len == 0U)) { return; }
+
+  /* Every caller pushes exactly one complete line, so this has to be
+   * atomic in two senses or the host cannot parse what comes out.
+   *
+   * 1. Against other producers. The breath task, the sensor task and
+   *    command handling all push here, and the byte-at-a-time loop this
+   *    replaces held no lock: a preemption part way through one line
+   *    spliced the next line into its middle. On the wire that looked
+   *    like  B,2460,0,Insp,NonB,65280,0,Insp,None,...  - a single line
+   *    with a plausible field count and no marker saying it is wrong.
+   *
+   * 2. Against overflow. The old loop wrote as much as would fit and
+   *    then returned, leaving a truncated line that the next push ran
+   *    straight on from. Dropping the WHOLE line instead costs a line
+   *    and keeps every line that does arrive trustworthy - a missing
+   *    sample is recoverable, a silently wrong one is not.
+   */
+  const uint32_t primask = __get_PRIMASK();
+  __disable_irq();
+
+  const uint32_t used   = (s_telem_head - s_telem_tail) & TELEM_BUF_MASK;
+  const uint32_t free_n = TELEM_BUF_MASK - used;
+
+  if (len > free_n)
   {
-    uint32_t next = (s_telem_head + 1U) & TELEM_BUF_MASK;
-    if (next == s_telem_tail)
-    {
-      g_telem_dropped_count++;
-      return;
-    }
-    s_telem_buf[s_telem_head] = data[i];
-    s_telem_head = next;
+    g_telem_dropped_count++;
   }
+  else
+  {
+    for (uint32_t i = 0U; i < len; i++)
+    {
+      s_telem_buf[s_telem_head] = data[i];
+      s_telem_head = (s_telem_head + 1U) & TELEM_BUF_MASK;
+    }
+  }
+
+  if (primask == 0U) { __enable_irq(); }
 }
 
 static uint32_t Telem_BufPopChunk(uint8_t *dst, uint32_t maxLen)
@@ -144,6 +176,7 @@ static void Telem_QueueCommand(const char *cmd)
 
 static void Telem_HandleCommand(const char *cmd)
 {
+
   if ((strcmp(cmd, "telem on") == 0) || (strcmp(cmd, "telem 1") == 0))
   {
     g_telem_enabled = 1U;
@@ -251,7 +284,7 @@ static void Telem_PushStatus(void)
 
   char line[224];
   const int n = snprintf(line, sizeof(line),
-    "S,%lu,%s,%u,%s,%.2f,%.3f,%.3f,%.2f,%.2f,%.3f,%.2f,%ld,%ld,%s,%.2f,%.2f,%.1f,%lu,0x%04X\r\n",
+    "S,%lu,%s,%u,%s,%.2f,%.3f,%.3f,%.2f,%.2f,%.3f,%.2f,%ld,%ld,%s,%.2f,%.2f,%.1f,%lu,0x%04X,%u,%.2f,%s,%s\r\n",
     (unsigned long)HAL_GetTick(),
     BreathSim_StateName(st.state),
     (unsigned)(BreathSim_IsRunning() ? 1U : 0U),
@@ -270,7 +303,11 @@ static void Telem_PushStatus(void)
     (double)p.flattening,
     (double)p.jitter_pct,
     (unsigned long)p.jitter_seed,
-    (unsigned)st.flags);
+    (unsigned)st.flags,
+    (unsigned)p.recovery_breaths,
+    (double)p.recovery_gain,
+    BreathSim_FlShapeName(p.fl_shape),
+    BreathSim_FfModeName(p.ff_mode));
   if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
 
   if (st.mc_occurred_faults != 0U)
@@ -303,7 +340,7 @@ static void Telem_PushStatus(void)
  * TouchGFX settings editor; three copies that were free to drift.
  * ------------------------------------------------------------------------ */
 
-typedef enum { TP_FLOAT = 0, TP_INT } TelemParamType_t;
+typedef enum { TP_FLOAT = 0, TP_INT, TP_U8 } TelemParamType_t;
 
 typedef struct
 {
@@ -330,6 +367,13 @@ static const TelemParamDef_t k_param_defs[] = {
   { "flow_ki",    TP_FLOAT, 0.0f,                 BREATH_FLOW_KI_MAX,      offsetof(BreathSimParams_t, flow_ki)       },
   { "flow_ff",    TP_FLOAT, 0.0f,                 BREATH_FLOW_FF_MAX,      offsetof(BreathSimParams_t, flow_ff_rpm_per_lpm) },
   { "plimit",     TP_FLOAT, 0.0f,  BREATH_PRESSURE_LIMIT_MAX_CMH2O,        offsetof(BreathSimParams_t, pressure_limit_cmh2o) },
+  { "recovery",   TP_U8,    0.0f,  (float)BREATH_RECOVERY_BREATHS_MAX,     offsetof(BreathSimParams_t, recovery_breaths) },
+  { "recovery_gain", TP_FLOAT, BREATH_RECOVERY_GAIN_MIN, BREATH_RECOVERY_GAIN_MAX, offsetof(BreathSimParams_t, recovery_gain) },
+  { "snore_hz",   TP_FLOAT, 0.0f,                 BREATH_SNORE_HZ_MAX,     offsetof(BreathSimParams_t, snore_hz)      },
+  { "ff_a",       TP_FLOAT, BREATH_FF_A_MIN,      BREATH_FF_A_MAX,         offsetof(BreathSimParams_t, ff_a)          },
+  { "ff_b",       TP_FLOAT, BREATH_FF_B_MIN,      BREATH_FF_B_MAX,         offsetof(BreathSimParams_t, ff_b)          },
+  { "ff_c",       TP_FLOAT, -BREATH_FF_C_MAX,     BREATH_FF_C_MAX,         offsetof(BreathSimParams_t, ff_c)          },
+  { "snore_rpm",  TP_INT,   0.0f,  (float)BREATH_SNORE_RPM_MAX,            offsetof(BreathSimParams_t, snore_rpm)     },
 };
 #define TELEM_PARAM_COUNT  (sizeof(k_param_defs) / sizeof(k_param_defs[0]))
 
@@ -374,16 +418,27 @@ static void Telem_PushHelp(void)
   Telem_PushRaw("#   rate insp ie insp_pause exp_pause exp_tau flattening jitter\r\n");
   Telem_PushRaw("#   rpm_base amplitude seed\r\n");
   Telem_PushRaw("#   tidal flow_kp flow_ki flow_ff plimit\r\n");
+  Telem_PushRaw("#   ff static|pressure   ff_a ff_b ff_c  (pressure-compensated feed-forward)\r\n");
+  Telem_PushRaw("#   recovery <breaths> recovery_gain <x>  (arousal breaths)\r\n");
+  Telem_PushRaw("#   snore_hz <10..60, 0=off> snore_rpm <0..3000>\r\n");
   Telem_PushRaw("# sim set control openrpm|flow\r\n");
   Telem_PushRaw("# sim set waveform sine|ramp|square|table\r\n");
+  Telem_PushRaw("# sim set fl_shape plateau|chair|m|late   (flow-limited morphology)\r\n");
   Telem_PushRaw("# sim set timing rate_ie|explicit\r\n");
   Telem_PushRaw("# sim table clear | add <v>.. | show   (values 0..1)\r\n");
   Telem_PushRaw("# sim event <apnea|hypopnea|flowlimit|csr> <secs> [severity%]\r\n");
   Telem_PushRaw("# sim event cancel\r\n");
-  Telem_PushRaw("# sim script clear | add <event> <secs> [severity%] | start [loop] | stop\r\n");
+  Telem_PushRaw("# sim script clear | show | stop\r\n");
+  Telem_PushRaw("# sim script add <event> <secs> [severity%] [xN] [rate=R] [tidal=T] [amp=A]\r\n");
+  Telem_PushRaw("# sim script start [loop | <passes>]\r\n");
   Telem_PushRaw("# flow status|on|off|zero|clearzero|reinit|filter <a>\r\n");
   Telem_PushRaw("# press status|on|off|zero|clearzero|range <lo> <hi>\r\n");
   Telem_PushRaw("# foc set <gain> <value>\r\n");
+  Telem_PushRaw("# log <0..4>   0 = off; run scored captures with the log OFF\r\n");
+  Telem_PushRaw("# sys diag    task stacks (least free since boot), heap, SensorTask stage\r\n");
+  Telem_PushRaw("# telemetry: V,breath,tidal,pmin,pmax,pmean,qpk_cmd,flags,"
+                "mcflt,qpk_meas,Ti,flat,event\r\n");
+  Telem_PushRaw("#            E,tick,breath,START|END,event,severity%\r\n");
 }
 
 /* --------------------------------------------------------------------- */
@@ -421,6 +476,39 @@ static void Telem_CmdSet(const char *cmd, const char *args)
       Telem_PushErr("waveform sine|ramp|square|table");
       return;
     }
+    Telem_ApplyParams(&p, cmd);
+    return;
+  }
+
+  if (strcmp(name, "ff") == 0)
+  {
+    if (strcmp(rest, "static") == 0)
+    {
+      p.ff_mode = (uint8_t)BREATH_FF_STATIC;
+    }
+    else if (strcmp(rest, "pressure") == 0)
+    {
+      /* Same courtesy as 'control flow' without a flow sensor: refuse up
+       * front rather than run a model whose main input is missing. */
+      if (hamsPS.present == 0U)
+      {
+        Telem_PushErr("pressure sensor not present; see 'press status'");
+        return;
+      }
+      p.ff_mode = (uint8_t)BREATH_FF_PRESSURE;
+    }
+    else { Telem_PushErr("ff static|pressure"); return; }
+    Telem_ApplyParams(&p, cmd);
+    return;
+  }
+
+  if (strcmp(name, "fl_shape") == 0)
+  {
+    if      (strcmp(rest, "plateau") == 0) { p.fl_shape = (uint8_t)BREATH_FL_PLATEAU; }
+    else if (strcmp(rest, "chair") == 0)   { p.fl_shape = (uint8_t)BREATH_FL_CHAIR; }
+    else if (strcmp(rest, "m") == 0)       { p.fl_shape = (uint8_t)BREATH_FL_M; }
+    else if (strcmp(rest, "late") == 0)    { p.fl_shape = (uint8_t)BREATH_FL_LATE; }
+    else { Telem_PushErr("fl_shape plateau|chair|m|late"); return; }
     Telem_ApplyParams(&p, cmd);
     return;
   }
@@ -484,6 +572,10 @@ static void Telem_CmdSet(const char *cmd, const char *args)
     if (d->type == TP_FLOAT)
     {
       *(float *)(void *)(base + d->offset) = v;
+    }
+    else if (d->type == TP_U8)
+    {
+      *(uint8_t *)(base + d->offset) = (uint8_t)v;
     }
     else
     {
@@ -638,12 +730,82 @@ static void Telem_CmdScript(const char *cmd, const char *args)
     Telem_PushAck(cmd);
     return;
   }
-  if ((strcmp(args, "start") == 0) || (strcmp(args, "start loop") == 0))
+  if (strncmp(args, "start", 5U) == 0)
   {
-    if (!BreathSim_ScriptStart(strcmp(args, "start loop") == 0))
+    /* start        - one pass
+     * start loop   - for ever
+     * start <N>    - N passes */
+    const char *rest = &args[5];
+    while (*rest == ' ') { rest++; }
+
+    uint16_t passes = 1U;
+    if (*rest != '\0')
+    {
+      if (strcmp(rest, "loop") == 0)
+      {
+        passes = 0U;
+      }
+      else
+      {
+        long n;
+        if (!Telem_ParseLong(rest, &n) || (n < 1L) || (n > 65535L))
+        {
+          Telem_PushErr("script start [loop | <passes 1..65535>]");
+          return;
+        }
+        passes = (uint16_t)n;
+      }
+    }
+
+    if (!BreathSim_ScriptStart(passes))
     {
       Telem_PushErr("script empty");
       return;
+    }
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  if (strcmp(args, "show") == 0)
+  {
+    const uint8_t n = BreathSim_ScriptLength();
+    char line[112];
+    if (n == 0U) { Telem_PushRaw("# script empty\r\n"); Telem_PushAck(cmd); return; }
+
+    for (uint8_t i = 0U; i < n; i++)
+    {
+      BreathScriptStep_t s;
+      if (!BreathSim_ScriptGet(i, &s)) { break; }
+
+      char   ov[48];
+      size_t k = 0U;
+      ov[0] = '\0';
+      if (s.rate_bpm > 0.0f)
+      {
+        const int w = snprintf(&ov[k], sizeof(ov) - k, " rate=%.1f",
+                               (double)s.rate_bpm);
+        if ((w > 0) && ((size_t)w < (sizeof(ov) - k))) { k += (size_t)w; }
+      }
+      if (s.tidal_ml > 0.0f)
+      {
+        const int w = snprintf(&ov[k], sizeof(ov) - k, " tidal=%.0f",
+                               (double)s.tidal_ml);
+        if ((w > 0) && ((size_t)w < (sizeof(ov) - k))) { k += (size_t)w; }
+      }
+      if (s.rpm_amplitude >= 0)
+      {
+        (void)snprintf(&ov[k], sizeof(ov) - k, " amp=%ld",
+                       (long)s.rpm_amplitude);
+      }
+
+      /* lroundf, not a cast: severity 0.6 is stored as a float slightly
+       * below 0.6, so truncating printed a 60%% step as 59%%. */
+      const int m = snprintf(line, sizeof(line),
+        "# %2u: %-9s sev=%3d%% %6.1fs x%u%s\r\n",
+        (unsigned)i, BreathSim_EventName(s.event),
+        (int)lroundf(s.severity * 100.0f), (double)s.duration_s,
+        (unsigned)s.repeat, ov);
+      if (m > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)m); }
     }
     Telem_PushAck(cmd);
     return;
@@ -655,6 +817,7 @@ static void Telem_CmdScript(const char *cmd, const char *args)
     const char *rest = Telem_SplitWord(&args[4], name, sizeof(name));
 
     BreathScriptStep_t step;
+    BreathSim_ScriptStepInit(&step);
     if (!Telem_ParseEventName(name, &step.event))
     {
       Telem_PushErr("script event none|apnea|hypopnea|flowlimit|csr");
@@ -662,12 +825,12 @@ static void Telem_CmdScript(const char *cmd, const char *args)
     }
     if (rest == NULL)
     {
-      Telem_PushErr("sim script add <event> <secs> [severity%]");
+      Telem_PushErr("sim script add <event> <secs> [severity%] [xN] [k=v]");
       return;
     }
 
     char dur_txt[16];
-    const char *sev_txt = Telem_SplitWord(rest, dur_txt, sizeof(dur_txt));
+    const char *tail = Telem_SplitWord(rest, dur_txt, sizeof(dur_txt));
     float dur;
     if (!Telem_ParseFloat(dur_txt, &dur) || (dur <= 0.0f) || (dur > 3600.0f))
     {
@@ -675,7 +838,85 @@ static void Telem_CmdScript(const char *cmd, const char *args)
       return;
     }
     float sev_pct = 100.0f;
-    if ((sev_txt != NULL) && !Telem_ParseFloat(sev_txt, &sev_pct))
+    if (tail != NULL)
+    {
+      /* Severity stays positional for compatibility, but only when the
+       * next word is a bare number - otherwise it is one of the optional
+       * tokens below and severity keeps its default. */
+      char first[24];
+      const char *after = Telem_SplitWord(tail, first, sizeof(first));
+      if ((first[0] >= '0') && (first[0] <= '9'))
+      {
+        if (!Telem_ParseFloat(first, &sev_pct))
+        {
+          Telem_PushErr("severity 0..100");
+          return;
+        }
+        tail = after;
+      }
+    }
+
+    /* Optional trailing tokens, in any order:
+     *   xN         repeat the step N times
+     *   rate=R     breaths per minute for this step
+     *   tidal=T    target tidal volume, mL
+     *   amp=A      open-loop RPM amplitude */
+    while (tail != NULL)
+    {
+      char tok[32];
+      const char *next = Telem_SplitWord(tail, tok, sizeof(tok));
+      float v;
+
+      if ((tok[0] == 'x') && (tok[1] != '\0'))
+      {
+        long n;
+        if (!Telem_ParseLong(&tok[1], &n) || (n < 1L) ||
+            (n > (long)BREATH_SCRIPT_REPEAT_MAX))
+        {
+          Telem_PushErr("repeat x1..x255");
+          return;
+        }
+        step.repeat = (uint8_t)n;
+      }
+      else if (strncmp(tok, "rate=", 5U) == 0)
+      {
+        if (!Telem_ParseFloat(&tok[5], &v) ||
+            (v < BREATH_RATE_MIN_BPM) || (v > BREATH_RATE_MAX_BPM))
+        {
+          Telem_PushErr("rate out of range");
+          return;
+        }
+        step.rate_bpm = v;
+      }
+      else if (strncmp(tok, "tidal=", 6U) == 0)
+      {
+        if (!Telem_ParseFloat(&tok[6], &v) ||
+            (v < BREATH_TIDAL_MIN_ML) || (v > BREATH_TIDAL_MAX_ML))
+        {
+          Telem_PushErr("tidal out of range");
+          return;
+        }
+        step.tidal_ml = v;
+      }
+      else if (strncmp(tok, "amp=", 4U) == 0)
+      {
+        if (!Telem_ParseFloat(&tok[4], &v) || (v < 0.0f) ||
+            (v > (float)BREATH_RPM_AMP_MAX))
+        {
+          Telem_PushErr("amp out of range");
+          return;
+        }
+        step.rpm_amplitude = (int32_t)v;
+      }
+      else
+      {
+        Telem_PushErr("expected xN | rate= | tidal= | amp=");
+        return;
+      }
+      tail = next;
+    }
+
+    if ((sev_pct < 0.0f) || (sev_pct > 100.0f))
     {
       Telem_PushErr("severity 0..100");
       return;
@@ -696,7 +937,7 @@ static void Telem_CmdScript(const char *cmd, const char *args)
     return;
   }
 
-  Telem_PushErr("sim script clear|add|start [loop]|stop");
+  Telem_PushErr("sim script clear|add|show|start|stop");
 }
 
 /* ---------------------------------------------------------------------------
@@ -999,6 +1240,67 @@ static void Telem_CmdFoc(const char *cmd, const char *args)
 
 static void Telem_ProcessOneCommand(const char *cmd)
 {
+  if (strncmp(cmd, "log ", 4U) == 0)
+  {
+    /* The debug log and the telemetry stream are two independent
+     * producers on one CDC endpoint, each transmitting its own packets,
+     * so a log line emitted mid-stream lands inside a telemetry line:
+     *   [1.515] I [SYS] CM7 boB,65860,0,ExpPause,...ot reached USER CODE
+     * Fixing that properly means giving one of them ownership of the
+     * endpoint. Until then a scored capture must be run with the log off,
+     * and there was no way to do that from the host.
+     *
+     * Handled here in SystemTask, not in Telem_HandleCommand: that runs in
+     * the USB receive interrupt, on the main stack, and this formats an
+     * ack with snprintf. Only flag-flips belong in the ISR. */
+    long lvl;
+    if (!Telem_ParseLong(&cmd[4], &lvl) || (lvl < 0L) || (lvl > 4L))
+    {
+      Telem_PushErr("log <0=off 1=err 2=warn 3=info 4=debug>");
+      return;
+    }
+    Dbg_SetRuntimeLevel((uint8_t)lvl);
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  if (strcmp(cmd, "sys diag") == 0)
+  {
+    /* Integers only, one short line at a time: this runs on SystemTask, the
+     * prime suspect for a stack overflow, so the report must not add much
+     * depth of its own. */
+    char line[96];
+    int n;
+
+    n = snprintf(line, sizeof(line), "# sys heap free=%lu min_ever=%lu bytes\r\n",
+                 (unsigned long)xPortGetFreeHeapSize(),
+                 (unsigned long)xPortGetMinimumEverFreeHeapSize());
+    if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
+    const uint32_t now = HAL_GetTick();
+    n = snprintf(line, sizeof(line),
+                 "# sys sensor stage=%s in_stage_ms=%lu loops=%lu\r\n",
+                 SysDiag_SensorStageName(g_sensor_stage),
+                 (unsigned long)(now - g_sensor_stage_tick),
+                 (unsigned long)g_sensor_loops);
+    if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
+    for (uint8_t i = 0U; i < SysDiag_TaskCount(); i++)
+    {
+      const char *name;
+      uint32_t size, free_b;
+      int32_t state;
+      if (!SysDiag_Task(i, &name, &size, &free_b, &state)) { continue; }
+      n = snprintf(line, sizeof(line),
+                   "# sys task %-9s stack %4lu/%4lu free  state %ld%s\r\n",
+                   name, (unsigned long)free_b, (unsigned long)size,
+                   (long)state, (free_b == 0U) ? "  !! OVERRUN" : "");
+      if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+    }
+    Telem_PushAck(cmd);
+    return;
+  }
+
   if (strcmp(cmd, "sim start") == 0)
   {
     BreathSim_Start();
@@ -1074,9 +1376,20 @@ void Telem_PushBreathSample(const BreathSimStatus_t *st)
 
     /* V: one line per completed breath - delivered volume and the pressure
      * the device under test responded with. This is the test result; the
-     * B/Q sample streams are only there to explain it. */
+     * B/Q sample streams are only there to explain it.
+     *
+     *   V,breath,tidal_ml,p_min,p_max,p_mean,q_peak_cmd,flags,mc_faults,
+     *     q_peak_meas,Ti,flat_index,event
+     *
+     * Note the two peak-flow fields. q_peak_cmd is what the breath was
+     * ASKED to deliver for its tidal volume; in open loop that is the same
+     * number every breath and says nothing about what happened.
+     * q_peak_meas is what the sensor saw. The fields from q_peak_meas
+     * onward are the ground truth a scoring script needs, and are appended
+     * rather than inserted so existing parsers - all of which test
+     * len(fields) >= N - keep working. */
     m = snprintf(line, sizeof(line),
-      "V,%lu,%.1f,%.2f,%.2f,%.2f,%.1f,0x%04X,0x%04X\r\n",
+      "V,%lu,%.1f,%.2f,%.2f,%.2f,%.1f,0x%04X,0x%04X,%.1f,%.3f,%.3f,%s\r\n",
       (unsigned long)st->breath_index,
       (double)st->last_tidal_ml,
       (double)st->p_min_cmh2o,
@@ -1084,8 +1397,54 @@ void Telem_PushBreathSample(const BreathSimStatus_t *st)
       (double)st->p_mean_cmh2o,
       (double)st->q_peak_lpm,
       (unsigned)st->flags,
-      (unsigned)st->mc_occurred_faults);
+      (unsigned)st->mc_occurred_faults,
+      (double)st->last_q_peak_lpm,
+      (double)st->last_insp_s,
+      (double)st->last_flat_index,
+      BreathSim_EventName(st->last_event));
     if (m > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)m); }
+
+    /* E: ground-truth event markers, emitted at the breath boundary where
+     * the event actually began or stopped shaping breaths rather than
+     * where its seconds timer expired - the two are up to a breath apart,
+     * which is enough to mis-score every detection the device under test
+     * makes. An event whose whole duration fell inside one breath shaped
+     * nothing and is deliberately absent.
+     *
+     *   E,tick,breath,START|END,event,severity_pct
+     *
+     * `breath` is the boundary index, matching the V line above - but
+     * START and END sit on opposite sides of it, so a scoring script must
+     * not treat them symmetrically. At a boundary numbered N the V line
+     * labelled N describes the breath that just FINISHED, so:
+     *
+     *   E,...,N,END,...    breath N was the LAST affected breath
+     *   E,...,N,START,...  breath N+1 is the FIRST affected breath
+     *
+     * Confirmed on the bench 2026-10-09: START Apnea at 16 with V16 still
+     * None and V17 the first Apnea breath; END Apnea at 19 with V19 the
+     * last one. */
+    if (st->last_event != st->event_applied)
+    {
+      if (st->last_event != (uint8_t)BREATH_EVENT_NONE)
+      {
+        m = snprintf(line, sizeof(line), "E,%lu,%lu,END,%s,%.0f\r\n",
+          (unsigned long)HAL_GetTick(),
+          (unsigned long)st->breath_index,
+          BreathSim_EventName(st->last_event),
+          (double)(st->last_event_severity * 100.0f));
+        if (m > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)m); }
+      }
+      if (st->event_applied != (uint8_t)BREATH_EVENT_NONE)
+      {
+        m = snprintf(line, sizeof(line), "E,%lu,%lu,START,%s,%.0f\r\n",
+          (unsigned long)HAL_GetTick(),
+          (unsigned long)st->breath_index,
+          BreathSim_EventName(st->event_applied),
+          (double)(st->event_severity * 100.0f));
+        if (m > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)m); }
+      }
+    }
 
     s_last_breath = st->breath_index;
     s_have_last = 1U;
@@ -1094,14 +1453,17 @@ void Telem_PushBreathSample(const BreathSimStatus_t *st)
   if (st->control_mode == (uint8_t)BREATH_CTRL_FLOW)
   {
     const int q = snprintf(line, sizeof(line),
-      "Q,%lu,%.2f,%.2f,%.1f,%.2f,%u,%.0f\r\n",
+      "Q,%lu,%.2f,%.2f,%.1f,%.2f,%u,%.0f,%.0f,%.2f,%u\r\n",
       (unsigned long)HAL_GetTick(),
       (double)st->q_target_lpm,
       (double)st->q_meas_lpm,
       (double)st->volume_ml,
       (double)st->p_cmh2o,
       (unsigned)st->flow_valid,
-      (double)st->ctrl_integ_rpm);
+      (double)st->ctrl_integ_rpm,
+      (double)st->ff_rpm,
+      (double)st->ff_p_inlet,
+      (unsigned)st->ff_p_inlet_valid);
     if (q > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)q); }
   }
 

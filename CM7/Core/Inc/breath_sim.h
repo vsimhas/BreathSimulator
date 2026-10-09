@@ -172,11 +172,127 @@ extern "C" {
 /** A flow sample older than this is not usable as feedback. */
 #define BREATH_FLOW_STALE_MS              50U
 
+/* ---------------------------------------------------------------------------
+ * Pressure-compensated flow feed-forward (BREATH_FF_PRESSURE)
+ * ---------------------------------------------------------------------------
+ * Plant model fitted on the bench 2026-10-09 from 3086 inspiratory samples
+ * (pure feed-forward runs, 2 L lung, CPAP off, 12 bpm I:E 1:1):
+ *
+ *     q = a*N^2 - b*(P - P_inlet) + c       N in krpm, P in cmH2O, q in slm
+ *
+ * R^2 0.80, against 0.31 for a straight flow-vs-rpm line. Lung pressure is
+ * the input a static flow_ff cannot see, and it is why the integrator had to
+ * carry a 22900 rpm constant: holding a target flow needs MORE speed as the
+ * lung fills, so a flat-topped breath needs rpm rising through inspiration -
+ * the opposite of the half-sine a static slope commands. Inverted, the model
+ * gives the rpm for the target flow at the pressure the lung is at right now.
+ *
+ * Fitted with the CPAP OFF, so P_inlet was atmosphere. With the CPAP on the
+ * blower inlet sits at CPAP pressure, and absolute P in this model would
+ * over-command badly, so P_inlet is estimated every breath (BREATH_FF_PREF_*).
+ * That estimate and these coefficients are UNVERIFIED with the CPAP running:
+ * refit before trusting this in an APAP run. All three are settable at
+ * runtime (sim set ff_a / ff_b / ff_c) so a refit needs no reflash.
+ */
+#define BREATH_FF_A_DEFAULT            0.0550f  /**< slm per krpm^2 */
+#define BREATH_FF_B_DEFAULT            2.812f   /**< slm per cmH2O */
+#define BREATH_FF_C_DEFAULT            0.26f    /**< slm */
+#define BREATH_FF_A_MIN                0.005f
+#define BREATH_FF_A_MAX                0.5f
+#define BREATH_FF_B_MIN                0.1f     /**< also guards a divide */
+#define BREATH_FF_B_MAX               10.0f
+#define BREATH_FF_C_MAX               20.0f
+/**
+  * Inlet-pressure estimate. At the end of expiration the lung has stopped
+  * moving (q ~ 0) and the blower is back at rpm_base, so the model gives
+  *     P_inlet = P_end - (a*Nb^2 + c) / b
+  * P_end is averaged over the last BREATH_FF_PREF_TAIL_S of expiration, and
+  * the estimate is only taken if no flow above BREATH_FF_PREF_MAX_FLOW_LPM
+  * moved in that window: a lung still emptying breaks the q ~ 0 premise, and
+  * the previous estimate is kept instead.
+  */
+#define BREATH_FF_PREF_TAIL_S          0.30f
+#define BREATH_FF_PREF_MAX_FLOW_LPM    3.0f
+
+/**
+  * Depth of the flow-limitation shape variants, as a fraction of the
+  * plateau at full severity. TILT is how far the chair/late-peak shapes
+  * slope across inspiration; DIP is how deep the mid-inspiratory notch of
+  * the M shape cuts. Both scale with severity, so at zero flattening every
+  * variant collapses back to the unflattened waveform.
+  */
+#define BREATH_FL_TILT                  0.35f
+#define BREATH_FL_DIP                   0.45f
+
+/**
+  * Snore: a high-frequency modulation of the blower command through
+  * inspiration, so the device under test sees ripple on the inspiratory
+  * flow in the band its snore detector listens to (above 20 Hz).
+  *
+  * Read this before trusting a snore result. The modulation is COMMANDED,
+  * and there is good reason to doubt the rig reproduces it:
+  *
+  *  - The breath task runs at 200 Hz, so 60 Hz is 3.3 samples per cycle.
+  *    What reaches the motor is a coarse staircase, not a sine.
+  *  - The impeller carries 14 g/cm2 of inertia (blower datasheet). Its
+  *    mechanical response rolls off far below 30 Hz, so most of the
+  *    commanded ripple will never appear as flow.
+  *  - NOTHING on the rig can measure 60 Hz. The simulator's SFM3300 and
+  *    the external sensor at the patient port both sample at ~100 Hz, so
+  *    both stop at a ~50 Hz Nyquist. Test in the 30-45 Hz band, where the
+  *    external sensor can actually see the ripple, and read the device's
+  *    own snore metric (residual above 20 Hz against a 0.35 L/min
+  *    threshold) - that detector is the thing that has to fire, and it is
+  *    the only check that does not depend on the rig resolving the
+  *    modulation itself.
+  *
+  * The range below still reaches 60 Hz because that is a real snore
+  * frequency and the limit belongs to the instrumentation, not to the
+  * stimulus - but a run above ~45 Hz cannot be verified here.
+  *
+  * The useful outcome of a snore run is therefore a measurement of how far
+  * short the blower falls, not a detection. Treat a negative result as a
+  * fact about the actuator, not about the detector.
+  */
+#define BREATH_SNORE_HZ_MIN            10.0f
+#define BREATH_SNORE_HZ_MAX            60.0f
+#define BREATH_SNORE_RPM_MAX             3000
+
+/* Post-event recovery ("arousal") breaths. */
+#define BREATH_RECOVERY_BREATHS_MAX        5
+#define BREATH_RECOVERY_GAIN_MIN        1.0f
+#define BREATH_RECOVERY_GAIN_MAX        3.0f
+
+/**
+  * Ceiling on the amplitude-scaled inspiratory envelope.
+  *
+  * Deliberately NOT 1.0. A recovery breath and a positive jitter draw both
+  * scale demand above the nominal peak, and clipping there does not merely
+  * cap the breath - it flat-tops it, which is a flow-limited SHAPE, the
+  * very thing the device under test is being asked to score. (Positive
+  * jitter has been silently clipped this way all along, which also made
+  * jitter asymmetric: it could shrink a breath but never grow one.)
+  *
+  * Nothing downstream relies on the envelope being <= 1: the open-loop
+  * command is clamped to BREATH_RPM_ABS_MAX and the flow target to
+  * BREATH_Q_PEAK_MAX_LPM, so those limits still bound what actually runs.
+  */
+#define BREATH_ENV_MAX                                                          (BREATH_RECOVERY_GAIN_MAX * (1.0f + (BREATH_JITTER_MAX_PCT * 0.01f)))
+
 /** Arbitrary-waveform table size (normalised inspiratory flow, 0..1). */
 #define BREATH_TABLE_POINTS             64U
 
-/** Maximum steps in a scripted test protocol. */
-#define BREATH_SCRIPT_MAX_STEPS         16U
+/**
+  * Maximum steps in a scripted test protocol.
+  *
+  * 64 rather than 16 so a realistic night - repeated obstructive cycles,
+  * positional changes, a CSR bout - fits in one script instead of being
+  * driven from the host, which would put PC scheduling jitter inside the
+  * stimulus. At 24 bytes a step this costs about 1.5 kB of RAM.
+  */
+#define BREATH_SCRIPT_MAX_STEPS         64U
+/** Times one step may repeat before the script moves on. */
+#define BREATH_SCRIPT_REPEAT_MAX       255U
 
 /* ===========================================================================
  * Enumerations
@@ -194,6 +310,34 @@ typedef enum
   BREATH_WAVE_TABLE,
   BREATH_WAVE_COUNT
 } BreathWaveform_t;
+
+/**
+  * Inspiratory morphology of a flow-limited breath.
+  *
+  * All of these hold tidal volume: the peak flow needed for the target
+  * volume is recomputed from the shape's own area every breath, so
+  * changing the shape changes the MORPHOLOGY and not the dose. That is the
+  * point - a breath that delivers more air than an unobstructed one is not
+  * flow limited by any definition, and an APAP will rightly score nothing
+  * for it.
+  *
+  * They differ in flattening index (inspiratory mean/peak), which is what
+  * the device under test actually thresholds on, so the shape label is not
+  * interchangeable with the index. The per-breath telemetry reports the
+  * measured index for exactly this reason.
+  */
+typedef enum
+{
+  /** Symmetric plateau: the classic flattened limb. */
+  BREATH_FL_PLATEAU = 0,
+  /** Early peak falling to a lower plateau - partial airway give-way. */
+  BREATH_FL_CHAIR,
+  /** Mid-inspiratory dip; the double-humped "M" of a fluttering airway. */
+  BREATH_FL_M,
+  /** Peak at end-inspiration - the airway opens late. */
+  BREATH_FL_LATE,
+  BREATH_FL_COUNT
+} BreathFlShape_t;
 
 typedef enum
 {
@@ -213,6 +357,19 @@ typedef enum
   BREATH_CTRL_FLOW,
   BREATH_CTRL_COUNT
 } BreathControlMode_t;
+
+/** Feed-forward used by BREATH_CTRL_FLOW. */
+typedef enum
+{
+  /** rpm = rpm_base + flow_ff * q_target. flow_ff defaults to 0, so the
+    * integrator carries the whole operating point. The original behaviour,
+    * and the default until the pressure model is proven on the bench. */
+  BREATH_FF_STATIC = 0,
+  /** rpm from the bench-fitted plant model against the measured lung
+    * pressure; the PI is left to trim the model's error. */
+  BREATH_FF_PRESSURE,
+  BREATH_FF_COUNT
+} BreathFfMode_t;
 
 typedef enum
 {
@@ -250,6 +407,15 @@ typedef enum
   BREATH_EVENT_FLOW_LIMIT,
   /** Cheyne-Stokes: crescendo-decrescendo with central apnea at the nadir. */
   BREATH_EVENT_CSR,
+  /**
+    * Post-event recovery (arousal) breath. Not user-triggerable: the
+    * waveform generator raises it by itself for @ref recovery_breaths
+    * breaths after an amplitude-reducing event ends, so that the markers
+    * in the telemetry distinguish an arousal breath from a normal one.
+    * An APAP's baseline tracker sees these, and a scoring script must be
+    * able to exclude them.
+    */
+  BREATH_EVENT_RECOVERY,
   BREATH_EVENT_COUNT
 } BreathEventType_t;
 
@@ -274,6 +440,9 @@ typedef enum
   * when this is raised - see the note in BreathSim_FlowControlRpm.
   */
 #define BREATH_FLAG_FLOW_NO_RESPONSE 0x0400U
+/** Pressure feed-forward selected, but the pressure sample was unusable, so
+  * the controller fell back to the static path for those ticks. */
+#define BREATH_FLAG_FF_NO_PRESSURE   0x0800U
 
 /* ===========================================================================
  * Data
@@ -297,17 +466,32 @@ typedef struct
   uint8_t  waveform;        /**< BreathWaveform_t — inspiratory flow shape. */
   float    exp_tau_s;       /**< Passive expiratory decay time constant (0.1..2.0 s). */
   float    flattening;      /**< 0 = normal, 1 = fully flow-limited inspiratory plateau. */
+  uint8_t  fl_shape;        /**< BreathFlShape_t - morphology of the limitation. */
 
   /* --- realism --- */
   float    jitter_pct;      /**< Breath-to-breath variability, 0..25 %. */
   uint32_t jitter_seed;     /**< PRNG seed; a fixed seed makes runs reproducible. */
+  /**
+    * Large breaths after an apnea or hypopnea ends, as an arousal produces
+    * clinically. 0 disables them, which is the old behaviour: events then
+    * end into an abruptly normal breath, and an APAP that tracks a
+    * baseline never sees the overshoot it would see on a patient.
+    */
+  uint8_t  recovery_breaths;  /**< 0..BREATH_RECOVERY_BREATHS_MAX. */
+  float    recovery_gain;     /**< Amplitude multiplier, 1.0..3.0. */
+  float    snore_hz;          /**< 0 = off, else 10..60 Hz. */
+  int32_t  snore_rpm;         /**< Peak RPM of the modulation, 0..3000. */
 
   /* --- closed-loop flow control (BREATH_CTRL_FLOW) --- */
   uint8_t  control_mode;    /**< BreathControlMode_t */
   float    tidal_ml;        /**< Target inspired volume per breath. */
   float    flow_kp;         /**< RPM per (L/min) of flow error. */
   float    flow_ki;         /**< RPM per (L/min) per second. */
-  float    flow_ff_rpm_per_lpm; /**< Feed-forward slope; 0 until characterised. */
+  float    flow_ff_rpm_per_lpm; /**< Static feed-forward slope (BREATH_FF_STATIC). */
+  uint8_t  ff_mode;         /**< BreathFfMode_t. */
+  float    ff_a;            /**< Plant model - see BREATH_FF_A_DEFAULT. */
+  float    ff_b;
+  float    ff_c;
   float    pressure_limit_cmh2o; /**< Abort above this. 0 = disabled. */
 } BreathSimParams_t;
 
@@ -333,7 +517,16 @@ typedef struct
   uint32_t breath_index;    /**< Breaths completed since the run started. */
   float    phase;           /**< 0..1 within the current breath. */
   float    envelope;        /**< 0..1 normalised inspiratory flow demand. */
-  int32_t  rpm_cmd;         /**< RPM actually posted to CM4 (post slew limit). */
+  /**
+    * Slew-limited RPM command. This is what CM4 is posted, EXCEPT while
+    * snore modulation is active: that is added after the slew limiter, on
+    * the way to the mailbox, and deliberately does not appear here. The
+    * slew limiter and the tracking supervisor both reason about this
+    * value, and feeding an oscillation back into either would make the
+    * limiter chase itself and the supervisor raise TRACK_ERROR for a
+    * ripple the motor was never going to follow.
+    */
+  int32_t  rpm_cmd;
   int32_t  rpm_act;         /**< Measured mechanical RPM from CM4. */
   uint16_t bus_voltage_v;
   uint16_t mc_state;        /**< Raw MCI_State_t from CM4. */
@@ -354,6 +547,10 @@ typedef struct
   float    q_peak_lpm;      /**< Peak flow this breath implies for tidal_ml. */
   float    volume_ml;       /**< Inspired volume so far in this breath. */
   float    ctrl_integ_rpm;  /**< Integrator state, for tuning visibility. */
+  uint8_t  ff_mode;         /**< BreathFfMode_t in use. */
+  uint8_t  ff_p_inlet_valid; /**< 0 until the first end-expiratory estimate. */
+  float    ff_rpm;          /**< Feed-forward part of the command, rpm. */
+  float    ff_p_inlet;      /**< Estimated blower inlet pressure, cmH2O. */
 
   /* --- last completed breath: this is the test result --- */
   float    last_tidal_ml;   /**< Delivered inspired volume. */
@@ -361,6 +558,31 @@ typedef struct
   float    p_min_cmh2o;     /**< Minimum over the last breath (~EPAP). */
   float    p_max_cmh2o;     /**< Maximum over the last breath (~IPAP). */
   float    p_mean_cmh2o;    /**< Mean over the last breath. */
+  float    last_insp_s;     /**< Ti actually used, after jitter. */
+  float    last_q_peak_lpm; /**< MEASURED peak inspiratory flow. */
+  /**
+    * Measured inspiratory mean/peak over the completed breath - the same
+    * quantity the APAP under test thresholds on (> 0.78 scores as flow
+    * limited). Reported because the event LABEL is not ground truth: the
+    * flow-limitation shapes differ in mean/peak, and what the device
+    * responds to is this number, not the name of the shape behind it.
+    * 0 when the breath had no usable flow feedback.
+    */
+  float    last_flat_index;
+  /**
+    * The event that actually SHAPED a breath, as distinct from @ref event,
+    * which is whatever the event timer holds right now. Modifiers are
+    * latched at the breath boundary (see BreathSim_LatchBreathModifiers),
+    * so events only ever apply to whole breaths - and one that starts and
+    * ends inside a single breath shapes nothing and is never reported.
+    * Marking event boundaries from @ref event instead would place them up
+    * to a breath early, which is enough to mis-score every detection the
+    * device under test makes.
+    */
+  uint8_t  event_applied;       /**< ...for the breath in progress. */
+  uint8_t  last_event;          /**< ...for the breath just completed. */
+  float    event_severity;      /**< Severity of @ref event_applied. */
+  float    last_event_severity; /**< Severity of @ref last_event. */
 } BreathSimStatus_t;
 
 typedef struct
@@ -370,11 +592,30 @@ typedef struct
   float   severity;         /**< 0..1 */
 } BreathEvent_t;
 
+/**
+  * One step of a scripted protocol.
+  *
+  * The override fields let a step change the breathing pattern as well as
+  * the event - a positional change, a different depth of sleep - without
+  * needing a host in the loop. Each is applied on top of the parameters as
+  * they were when the script STARTED, never on top of the previous step,
+  * so a step means the same thing wherever it appears in the script.
+  *
+  * Overrides land at the next breath boundary like any other parameter
+  * change, so a step shorter than one breath may not show its override at
+  * all. Use BreathSim_ScriptStepInit() to get the "inherit everything"
+  * defaults rather than zeroing the struct by hand: the sentinels are not
+  * all zero.
+  */
 typedef struct
 {
   float   duration_s;
   uint8_t event;            /**< BreathEventType_t */
   float   severity;
+  uint8_t repeat;           /**< Run this step this many times; 0 means 1. */
+  float   rate_bpm;         /**< Override; <= 0 inherits. */
+  float   tidal_ml;         /**< Override; <= 0 inherits. */
+  int32_t rpm_amplitude;    /**< Override; < 0 inherits (0 is a valid value). */
 } BreathScriptStep_t;
 
 /* ===========================================================================
@@ -444,14 +685,24 @@ void BreathSim_CancelEvent(void);
 
 /* Scripted test protocols: a sequence of timed segments run back to back. */
 void BreathSim_ScriptClear(void);
+/** Fill @p step with the "inherit everything, run once" defaults. */
+void BreathSim_ScriptStepInit(BreathScriptStep_t *step);
 bool BreathSim_ScriptAppend(const BreathScriptStep_t *step);
 uint8_t BreathSim_ScriptLength(void);
-bool BreathSim_ScriptStart(bool loop);
+/** Read back step @p idx; false if it is past the end. */
+bool BreathSim_ScriptGet(uint8_t idx, BreathScriptStep_t *out);
+/**
+  * @brief Run the loaded script.
+  * @param passes  Number of times to run it through; 0 runs for ever.
+  */
+bool BreathSim_ScriptStart(uint16_t passes);
 void BreathSim_ScriptStop(void);
 bool BreathSim_ScriptIsRunning(void);
 
 const char *BreathSim_WaveformName(uint8_t waveform);
+const char *BreathSim_FlShapeName(uint8_t shape);
 const char *BreathSim_ControlModeName(uint8_t mode);
+const char *BreathSim_FfModeName(uint8_t mode);
 /** Human-readable MC_* fault bits, e.g. "SPEED_FDBK|DP_FAULT". */
 const char *BreathSim_McFaultName(uint16_t faults);
 const char *BreathSim_EventName(uint8_t event);

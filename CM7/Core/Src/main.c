@@ -20,6 +20,7 @@
 #include "main.h"
 #include "FreeRTOS.h"
 #include "cmsis_os2.h"
+#include "sys_diag.h"
 #include "cm7_cpu_config.h"
 #include "app_touchgfx.h"
 #include "usb_device.h"
@@ -213,9 +214,20 @@ static const osThreadAttr_t guiTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 static osThreadId_t breathSimTaskHandle;
+/* Stack sizes for breathsim and system were raised on 2026-10-09 after
+ * `sys diag` measured them on the bench (see sys_diag.h). breathsim sat at
+ * 296 of 1024 bytes free while IDLE - before the per-breath V/E lines push
+ * it deeper. SystemTask runs every USB command handler, and a single
+ * `sim stop` took it from 1368 to 164 bytes free; the next command overran
+ * it. Because SystemTask is created straight after SensorTask, its overrun
+ * landed on SensorTask's TCB: a small one stopped the sensor loop silently
+ * (two hangs that day), a larger one took the board off USB. The structs
+ * those handlers copy and the status line they format had all grown that
+ * day, which is what tipped it over. Heap had 17 KB free, so both were
+ * sized generously rather than to the measured minimum. */
 static const osThreadAttr_t breathSimTask_attributes = {
   .name = "breathsim",
-  .stack_size = 1024,
+  .stack_size = 3072,
   .priority = (osPriority_t) osPriorityAboveNormal,
 };
 static osThreadId_t nfcTaskHandle;
@@ -239,7 +251,7 @@ static const osThreadAttr_t sensorTask_attributes = {
 static osThreadId_t systemTaskHandle;
 static const osThreadAttr_t systemTask_attributes = {
   .name = "system",
-  .stack_size = 2048,
+  .stack_size = 4096,                   /* was 2048 - see the note above */
   .priority = (osPriority_t) osPriorityBelowNormal,
 };
 static osThreadId_t selfTestTaskHandle;
@@ -248,6 +260,74 @@ static const osThreadAttr_t selfTestTask_attributes = {
   .stack_size = 2048,
   .priority = (osPriority_t) osPriorityLow,
 };
+
+/* ---- Runtime diagnostics - see sys_diag.h for why these exist ---------- */
+volatile uint8_t  g_sensor_stage;
+volatile uint32_t g_sensor_stage_tick;
+volatile uint32_t g_sensor_loops;
+
+#define SENSOR_STAGE(s)                         \
+  do {                                          \
+    g_sensor_stage      = (uint8_t)(s);         \
+    g_sensor_stage_tick = HAL_GetTick();        \
+  } while (0)
+
+const char *SysDiag_SensorStageName(uint8_t stage)
+{
+  switch ((SensorStage_t)stage)
+  {
+    case SENSOR_STAGE_DELAY:      return "delay";
+    case SENSOR_STAGE_REINIT:     return "flow_reinit";
+    case SENSOR_STAGE_FLOW_MUTEX: return "flow_mutex";
+    case SENSOR_STAGE_FLOW_IO:    return "flow_io";
+    case SENSOR_STAGE_PRESS:      return "press";
+    case SENSOR_STAGE_INPUTS:     return "inputs";
+    case SENSOR_STAGE_TELEM:      return "telem";
+    default:                      return "?";
+  }
+}
+
+/* Names come from this table, not osThreadGetName(): if a TCB has been
+ * corrupted - the very thing under investigation - its name pointer cannot
+ * be trusted. SensorTask is deliberately last, so whatever reading its TCB
+ * does, everything else has already been reported. */
+typedef struct
+{
+  osThreadId_t          *handle;
+  const osThreadAttr_t  *attr;
+  const char            *name;
+} SysDiagTask_t;
+
+static const SysDiagTask_t k_diag_tasks[] = {
+  { &systemTaskHandle,    &systemTask_attributes,    "system"    },
+  { &breathSimTaskHandle, &breathSimTask_attributes, "breathsim" },
+  { &guiTaskHandle,       &guiTask_attributes,       "gui"       },
+  { &nfcTaskHandle,       &nfcTask_attributes,       "nfc"       },
+  { &climateTaskHandle,   &climateTask_attributes,   "climate"   },
+  { &selfTestTaskHandle,  &selfTestTask_attributes,  "selftest"  },
+  { &defaultTaskHandle,   &defaultTask_attributes,   "default"   },
+  { &sensorTaskHandle,    &sensorTask_attributes,    "sensor"    },
+};
+
+uint8_t SysDiag_TaskCount(void)
+{
+  return (uint8_t)(sizeof(k_diag_tasks) / sizeof(k_diag_tasks[0]));
+}
+
+bool SysDiag_Task(uint8_t idx, const char **name, uint32_t *stack_size_bytes,
+                  uint32_t *stack_free_bytes, int32_t *state)
+{
+  if (idx >= SysDiag_TaskCount()) { return false; }
+  const SysDiagTask_t *t = &k_diag_tasks[idx];
+  const osThreadId_t h = *t->handle;
+  if (h == NULL) { return false; }
+
+  *name             = t->name;
+  *stack_size_bytes = t->attr->stack_size;
+  *stack_free_bytes = osThreadGetStackSpace(h);  /* high-water mark, bytes */
+  *state            = (int32_t)osThreadGetState(h);
+  return true;
+}
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -2518,11 +2598,14 @@ static void SensorTask(void *argument)
 
   for (;;)
   {
+    SENSOR_STAGE(SENSOR_STAGE_DELAY);
     (void)osDelayUntil(next_wake);
     next_wake += period_ms;
+    g_sensor_loops++;
 
     if (g_flow_reinit_request != 0U)
     {
+      SENSOR_STAGE(SENSOR_STAGE_REINIT);
       g_flow_reinit_request = 0U;
       if (osMutexAcquire(g_i2c1_mutex, osWaitForever) == osOK)
       {
@@ -2537,8 +2620,10 @@ static void SensorTask(void *argument)
      * has to cover another owner holding the bus. Time out rather than
      * slipping the schedule, and count it so contention is visible in
      * 'flow status'. */
+    SENSOR_STAGE(SENSOR_STAGE_FLOW_MUTEX);
     if (osMutexAcquire(g_i2c1_mutex, 20U) == osOK)
     {
+      SENSOR_STAGE(SENSOR_STAGE_FLOW_IO);
       if (hSfm3300.measuring != 0U)
       {
         (void)SFM3300_Read(&hSfm3300);
@@ -2570,6 +2655,7 @@ static void SensorTask(void *argument)
       g_flow_bus_busy_count++;
     }
 
+    SENSOR_STAGE(SENSOR_STAGE_PRESS);
     /* ---- SPI4: harvest whichever AMS5935 conversion was in flight ----
      * Only one at a time - they share the bus and the pipeline slot. */
     if (as_in_flight != 0U)
@@ -2621,6 +2707,7 @@ static void SensorTask(void *argument)
      * BREATH_FLOW_STALE_MS. The filtered flow is used deliberately: its
      * ~40 ms time constant is short against a ~1.7 s inspiration but takes
      * the blower's blade-pass noise out of the control error. */
+    SENSOR_STAGE(SENSOR_STAGE_INPUTS);
     BreathSim_SetSensorInputs(hSfm3300.flow_filt_slm,
                               hSfm3300.last_sample_ok,
                               g_press_cmh2o,
@@ -2630,6 +2717,7 @@ static void SensorTask(void *argument)
     /* 50 Hz to the host, matching the breath sample rate. */
     if ((tick_n % 2U) == 0U)
     {
+      SENSOR_STAGE(SENSOR_STAGE_TELEM);
       Telem_PushFlowSample(&hSfm3300);
       Telem_PushPressureSample(&hamsPS, g_press_mbar, g_press_cmh2o);
     }
