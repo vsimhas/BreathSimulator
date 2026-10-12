@@ -175,28 +175,39 @@ extern "C" {
 /* ---------------------------------------------------------------------------
  * Pressure-compensated flow feed-forward (BREATH_FF_PRESSURE)
  * ---------------------------------------------------------------------------
- * Plant model fitted on the bench 2026-10-09 from 3086 inspiratory samples
- * (pure feed-forward runs, 2 L lung, CPAP off, 12 bpm I:E 1:1):
+ * Plant model:
  *
  *     q = a*N^2 - b*(P - P_inlet) + c       N in krpm, P in cmH2O, q in slm
  *
- * R^2 0.80, against 0.31 for a straight flow-vs-rpm line. Lung pressure is
- * the input a static flow_ff cannot see, and it is why the integrator had to
- * carry a 22900 rpm constant: holding a target flow needs MORE speed as the
- * lung fills, so a flat-topped breath needs rpm rising through inspiration -
- * the opposite of the half-sine a static slope commands. Inverted, the model
- * gives the rpm for the target flow at the pressure the lung is at right now.
+ * Lung pressure is the input a static flow_ff cannot see, and it is why the
+ * integrator had to carry a 22900 rpm constant: holding a target flow needs
+ * MORE speed as the lung fills, so a flat-topped breath needs rpm rising
+ * through inspiration - the opposite of the half-sine a static slope
+ * commands. Inverted, the model gives the rpm for the target flow at the
+ * pressure the lung is at right now.
  *
- * Fitted with the CPAP OFF, so P_inlet was atmosphere. With the CPAP on the
- * blower inlet sits at CPAP pressure, and absolute P in this model would
- * over-command badly, so P_inlet is estimated every breath (BREATH_FF_PREF_*).
- * That estimate and these coefficients are UNVERIFIED with the CPAP running:
- * refit before trusting this in an APAP run. All three are settable at
- * runtime (sim set ff_a / ff_b / ff_c) so a refit needs no reflash.
+ * Coefficients: the 2026-10-09 refit with the collapsible chamber bypassed
+ * (2204 inspiratory samples spanning static, pressure-FF and plateau
+ * breaths; R^2 0.972, best at a 40 ms lag matching the flow sensor's
+ * filter). One set fits all three breath types, mean residual within 0.5 slm.
+ *
+ * The FIRST fit (a 0.0550 / b 2.812 / c 0.26, R^2 0.80) is superseded and
+ * should not come back. It was made with the CPAP off, when the collapsible
+ * tube sits partly collapsed and the blower sucks through it on inspiration,
+ * so it partly modelled the tube instead of the blower and lung - it
+ * over-commanded by thousands of rpm once the tube was out of the way.
+ *
+ * Validated in closed loop in the configuration APAP tests use - chamber in,
+ * CPAP on at 10 cmH2O, which holds the tube open - over two sessions
+ * (2026-10-09 and -12): inlet estimate 9.4 cmH2O, integrator only a few
+ * hundred rpm, Vt on target, measured flattening 0.56-0.59 normal, 0.73
+ * M 0.9, 0.81-0.83 plateau 0.9-1.0 at 500 mL. Fitted on one rig, one 2 L
+ * lung, Ti 2.5 s: refit if any of those change. All three are settable at
+ * runtime (sim set ff_a / ff_b / ff_c), so trying a refit needs no reflash.
  */
-#define BREATH_FF_A_DEFAULT            0.0550f  /**< slm per krpm^2 */
-#define BREATH_FF_B_DEFAULT            2.812f   /**< slm per cmH2O */
-#define BREATH_FF_C_DEFAULT            0.26f    /**< slm */
+#define BREATH_FF_A_DEFAULT            0.1887f  /**< slm per krpm^2 */
+#define BREATH_FF_B_DEFAULT            8.176f   /**< slm per cmH2O */
+#define BREATH_FF_C_DEFAULT            0.51f    /**< slm */
 #define BREATH_FF_A_MIN                0.005f
 #define BREATH_FF_A_MAX                0.5f
 #define BREATH_FF_B_MIN                0.1f     /**< also guards a divide */

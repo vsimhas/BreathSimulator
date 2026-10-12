@@ -1277,7 +1277,19 @@ static void BreathSim_LatchBreathModifiers(void)
        * widening the breath, which is what a limited airway actually does.
        * This is a first-order correction in RPM-envelope space; RPM->flow is
        * not perfectly linear, so trim Amplitude against measured Vt when the
-       * exact volume matters. */
+       * exact volume matters.
+       *
+       * OPEN LOOP ONLY. In flow mode the target peak is already recomputed
+       * from the flattened shape's own area (g_shape_area, latched below),
+       * which holds Vt by itself - applying this as well scaled the breath
+       * by mean_base/mean_flat a SECOND time. At severity 1.0 that is
+       * 0.637/0.952 = 0.67: ~335 mL instead of 500, and a plateau at ~45%
+       * of the normal breath's peak, which an APAP's hypopnea rule (peak
+       * < 50% of baseline) scores as a hypopnea rather than flow
+       * limitation. Found 2026-10-12 while setting up the first AutoSet
+       * trial; the earlier flattening tests set `flattening` directly and
+       * never went through this event path. */
+      if (g_params.control_mode != (uint8_t)BREATH_CTRL_FLOW)
       {
         const float mean_flat = BreathSim_EnvelopeMean(&g_params, g_flat_eff,
                                                       g_fl_shape_eff);
