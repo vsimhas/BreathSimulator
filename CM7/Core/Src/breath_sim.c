@@ -301,6 +301,9 @@ static uint8_t  g_ff_p_inlet_valid;
 static float    g_ff_pacc_sum;     /* end-expiratory pressure, summed   */
 static uint32_t g_ff_pacc_n;
 static float    g_ff_pacc_qmax;    /* largest |flow| in that window     */
+static float    g_ff_pacc_qsum;    /* signed flow in that window, summed */
+static uint32_t g_ff_no_est_breaths; /* pressure-mode breaths with no estimate */
+static uint8_t  g_ff_fallback;     /* breathing on the static path for want of one */
 static uint32_t g_sat_ticks;       /* ticks spent at the rail this breath */
 static uint32_t g_insp_ticks;      /* inspiratory ticks this breath       */
 static float    g_q_target_peak;   /* highest flow commanded this breath   */
@@ -897,8 +900,15 @@ static int32_t BreathSim_FlowControlRpm(float dt_s, BreathSegment_t seg)
    * inspiration, and the next breath would then stack it on top of a ~27000
    * rpm model command. The held breath also gives the end-expiratory window
    * a still lung to estimate from, so the estimate is ready by breath two.
-   * The cost is one quiet breath at the start of every pressure-mode run. */
-  if ((want_pressure != 0U) && (g_ff_p_inlet_valid == 0U))
+   * The cost is one quiet breath at the start of every pressure-mode run.
+   *
+   * But only for BREATH_FF_PREF_HOLD_BREATHS breaths. Holding until an
+   * estimate arrives deadlocked against a CPAP oscillating (FOT) from the
+   * start of a run: no still lung, so no estimate, so no breath, so the CPAP
+   * never stopped oscillating. After that, breathe on the static path below
+   * (FfPressureRpm returns -1 and FF_NO_PRESSURE is flagged). */
+  if ((want_pressure != 0U) && (g_ff_p_inlet_valid == 0U) &&
+      (g_ff_no_est_breaths < BREATH_FF_PREF_HOLD_BREATHS))
   {
     g_ff_rpm = rpm_base_f;
     return (int32_t)lroundf(rpm_base_f);
@@ -915,12 +925,22 @@ static int32_t BreathSim_FlowControlRpm(float dt_s, BreathSegment_t seg)
     {
       ff_cmd = n;
       pressure_ff = 1U;
+      if (g_ff_fallback != 0U)
+      {
+        /* The estimate arrived after a fallback. On the static path the
+         * integrator carried the whole operating point; stacked on the
+         * model's command it would overshoot, so start the trim afresh. */
+        g_ctrl_integ_rpm = 0.0f;
+        g_ff_fallback = 0U;
+      }
     }
     else
     {
-      /* Sample unusable mid-run. The static path under-commands with an
-       * integrator near zero, which is the safe direction to fail. */
+      /* Sample unusable mid-run, or no estimate yet after the hold. The
+       * static path under-commands with an integrator near zero, which is
+       * the safe direction to fail. */
       g_flags |= BREATH_FLAG_FF_NO_PRESSURE;
+      if (g_ff_p_inlet_valid == 0U) { g_ff_fallback = 1U; }
     }
   }
   g_ff_rpm = ff_cmd;
@@ -1690,6 +1710,9 @@ void BreathSim_Init(void)
   g_ff_pacc_sum    = 0.0f;
   g_ff_pacc_n      = 0U;
   g_ff_pacc_qmax   = 0.0f;
+  g_ff_pacc_qsum   = 0.0f;
+  g_ff_no_est_breaths = 0U;
+  g_ff_fallback    = 0U;
   g_sat_ticks      = 0U;
   g_insp_ticks     = 0U;
   g_q_target_peak  = 0.0f;
@@ -1816,6 +1839,9 @@ void BreathSim_Start(void)
   g_ff_pacc_sum     = 0.0f;
   g_ff_pacc_n       = 0U;
   g_ff_pacc_qmax    = 0.0f;
+  g_ff_pacc_qsum    = 0.0f;
+  g_ff_no_est_breaths = 0U;
+  g_ff_fallback     = 0U;
   g_sat_ticks       = 0U;
   g_insp_ticks      = 0U;
   g_q_target_peak   = 0.0f;
@@ -2092,7 +2118,7 @@ void BreathSim_Update(float dt_s)
      * an estimate waiting. Halved toward each new reading rather than
      * replaced, so one odd breath cannot jerk the whole next inspiration. */
     if ((g_ff_pacc_n > 0U) &&
-        (g_ff_pacc_qmax <= BREATH_FF_PREF_MAX_FLOW_LPM))
+        (fabsf(g_ff_pacc_qsum / (float)g_ff_pacc_n) <= BREATH_FF_PREF_MAX_FLOW_LPM))
     {
       const float nb   = (float)g_params.rpm_base * 0.001f;
       const float head = ((g_params.ff_a * nb * nb) + g_params.ff_c) /
@@ -2101,10 +2127,18 @@ void BreathSim_Update(float dt_s)
       g_ff_p_inlet = (g_ff_p_inlet_valid != 0U)
                      ? (0.5f * (g_ff_p_inlet + est)) : est;
       g_ff_p_inlet_valid = 1U;
+      g_ff_no_est_breaths = 0U;
+    }
+    else if ((g_params.ff_mode == (uint8_t)BREATH_FF_PRESSURE) &&
+             (g_ff_p_inlet_valid == 0U) &&
+             (g_ff_no_est_breaths < 255U))
+    {
+      g_ff_no_est_breaths++;      /* see BREATH_FF_PREF_HOLD_BREATHS */
     }
     g_ff_pacc_sum  = 0.0f;
     g_ff_pacc_n    = 0U;
     g_ff_pacc_qmax = 0.0f;
+    g_ff_pacc_qsum = 0.0f;
 
     g_q_target_peak = 0.0f;
     g_q_meas_peak   = 0.0f;
@@ -2210,6 +2244,7 @@ void BreathSim_Update(float dt_s)
   {
     const float aq = fabsf(g_q_meas_lpm);
     g_ff_pacc_sum += g_p_cmh2o;
+    g_ff_pacc_qsum += g_q_meas_lpm;
     g_ff_pacc_n++;
     if (aq > g_ff_pacc_qmax) { g_ff_pacc_qmax = aq; }
   }

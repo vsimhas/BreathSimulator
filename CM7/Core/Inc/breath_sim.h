@@ -218,12 +218,26 @@ extern "C" {
   * moving (q ~ 0) and the blower is back at rpm_base, so the model gives
   *     P_inlet = P_end - (a*Nb^2 + c) / b
   * P_end is averaged over the last BREATH_FF_PREF_TAIL_S of expiration, and
-  * the estimate is only taken if no flow above BREATH_FF_PREF_MAX_FLOW_LPM
-  * moved in that window: a lung still emptying breaks the q ~ 0 premise, and
-  * the previous estimate is kept instead.
+  * the estimate is only taken if the MEAN flow over that window is within
+  * BREATH_FF_PREF_MAX_FLOW_LPM: a lung still emptying breaks the q ~ 0
+  * premise, and the previous estimate is kept instead.
+  *
+  * Mean, not peak (2026-10-19). The first version required every sample in
+  * the window to be under 3 L/min. A CPAP running its 4 Hz forced-oscillation
+  * probe (FOT) swings the lung flow by 3-6 L/min around zero, so that test
+  * never passed; with no estimate the pressure model holds rpm_base, the
+  * simulator never breathed, and the CPAP - seeing no breath - never stopped
+  * oscillating. A 16 min AutoSet trial deadlocked that way. Over 0.3 s (1.2
+  * cycles at 4 Hz) the oscillation averages to well under 3 L/min, while a
+  * lung that is still emptying does not.
+  *
+  * And if there is still no estimate after BREATH_FF_PREF_HOLD_BREATHS
+  * breaths, stop holding and breathe on the static feed-forward + integrator
+  * (flagged FF_NO_PRESSURE) rather than refuse to breathe at all.
   */
 #define BREATH_FF_PREF_TAIL_S          0.30f
 #define BREATH_FF_PREF_MAX_FLOW_LPM    3.0f
+#define BREATH_FF_PREF_HOLD_BREATHS    2U
 
 /**
   * Depth of the flow-limitation shape variants, as a fraction of the
