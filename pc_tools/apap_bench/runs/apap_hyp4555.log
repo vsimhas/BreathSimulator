@@ -1,0 +1,176 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.02  APAP range 5.0-20.0   Vbus 23.74 V
+  liveness before flow 748491 -> 748597   press 748499 -> 748605   OK
+  CPAP firmware probe: # ack apap set hyp_rearm_ratio 0.7
+
+  simulator breathing (static FF, CPAP off) - priming 20 s...
+  CPAP running AutoSet 8-12, target 8.00, measured -0.20
+  simulator -> pressure FF; settling 30 s (past the APAP's 15 s start-up grace)
+  APAP at script start: state 1 | OA 0 CA 0 Hyp 0 FL 0 Snore 0   polarity 1 (bad 0)
+  script start: none 90 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60  (690 s)
+
+  t= 30s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 60s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 90s  CPAP target 8.0 meas 8.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 95s  SIM  E START Hypopnea  (breath 30)
+  t=120s  CPAP target 8.1 meas 8.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 1 hyp 0
+  t=135s  SIM  E END   Hypopnea  (breath 38)
+  t=150s  CPAP target 8.2 meas 8.3 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=180s  CPAP target 8.2 meas 8.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=195s  SIM  E START Hypopnea  (breath 50)
+  t=210s  CPAP target 8.2 meas 8.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 2 | fl 1 hyp 0
+  t=235s  SIM  E END   Hypopnea  (breath 58)
+  t=240s  CPAP target 8.4 meas 8.4 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 2 | fl 1 hyp 0
+  t=270s  CPAP target 8.4 meas 8.4 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 2 | fl 0 hyp 0
+  t=295s  SIM  E START Hypopnea  (breath 70)
+  t=300s  CPAP target 8.4 meas 8.5 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 2 | fl 0 hyp 0
+  t=330s  CPAP target 8.6 meas 8.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 3 | fl 1 hyp 0
+  t=335s  SIM  E END   Hypopnea  (breath 78)
+  t=360s  CPAP target 8.7 meas 8.5 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 3 | fl 0 hyp 0
+  t=390s  CPAP target 8.7 meas 8.3 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 3 | fl 0 hyp 0
+  t=395s  SIM  E START Hypopnea  (breath 90)
+  t=420s  CPAP target 9.0 meas 8.8 apap_st 1 osc 0 | OA 0 CA 0 Hyp 1 FL 4 | fl 1 hyp 1
+  t=435s  SIM  E END   Hypopnea  (breath 98)
+  t=450s  CPAP target 9.5 meas 9.4 apap_st 1 osc 0 | OA 0 CA 0 Hyp 1 FL 4 | fl 0 hyp 0
+  t=480s  CPAP target 9.5 meas 9.4 apap_st 1 osc 0 | OA 0 CA 0 Hyp 1 FL 4 | fl 0 hyp 0
+  t=495s  SIM  E START Hypopnea  (breath 110)
+  t=510s  CPAP target 9.8 meas 9.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 5 | fl 1 hyp 1
+  t=535s  SIM  E END   Hypopnea  (breath 118)
+  t=540s  CPAP target 10.3 meas 10.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 5 | fl 1 hyp 0
+  t=570s  CPAP target 10.3 meas 10.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 5 | fl 0 hyp 0
+  t=595s  SIM  E START Hypopnea  (breath 130)
+  t=600s  CPAP target 10.3 meas 10.4 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 5 | fl 0 hyp 0
+  t=630s  CPAP target 10.4 meas 10.3 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 6 | fl 1 hyp 0
+  t=635s  SIM  E END   Hypopnea  (breath 138)
+  t=660s  CPAP target 10.6 meas 10.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 6 | fl 0 hyp 0
+  t=690s  CPAP target 10.6 meas 10.7 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 6 | fl 0 hyp 0
+  [ramp-down] stopped at measured 7998 rpm
+  liveness after  flow 827666 -> 827772   press 827674 -> 827780   OK
+  raw capture saved: apap_hyp4555_raw.pkl (40072 T lines, 378 PH lines)
+
+==============================================================================
+SIMULATOR - what was delivered, by event label (V lines)
+==============================================================================
+  None        95 breaths  Vt   500  peak  20.3  flat 0.591
+  Hypopnea    48 breaths  Vt   250  peak  11.1  flat 0.565
+
+==============================================================================
+TIMELINE  (host seconds from script start; CPAP lines ~2 s late)
+==============================================================================
+  --    0-90   none
+  --   90-130  hypopnea 45%
+       94.9  SIM   E START Hypopnea
+      108.9  CPAP  FL count 0 -> 1
+      108.9  CPAP  FL flag ON
+  --  130-190  none
+      134.7  SIM   E END Hypopnea
+      144.2  CPAP  FL flag off
+  --  190-230  hypopnea 45%
+      194.7  SIM   E START Hypopnea
+      209.7  CPAP  FL count 1 -> 2
+      209.7  CPAP  FL flag ON
+  --  230-290  none
+      234.7  SIM   E END Hypopnea
+      244.9  CPAP  FL flag off
+  --  290-330  hypopnea 45%
+      294.7  SIM   E START Hypopnea
+      310.4  CPAP  FL count 2 -> 3
+      310.4  CPAP  FL flag ON
+  --  330-390  none
+      334.7  SIM   E END Hypopnea
+      345.7  CPAP  FL flag off
+  --  390-430  hypopnea 55%
+      394.7  SIM   E START Hypopnea
+      411.2  CPAP  FL count 3 -> 4
+      411.2  CPAP  FL flag ON
+      416.2  CPAP  Hyp count 0 -> 1
+      416.2  CPAP  Hyp flag ON
+  --  430-490  none
+      434.7  SIM   E END Hypopnea
+      436.4  CPAP  Hyp flag off
+      441.4  CPAP  FL flag off
+  --  490-530  hypopnea 55%
+      494.7  SIM   E START Hypopnea
+      501.9  CPAP  Hyp count 1 -> 2
+      501.9  CPAP  Hyp flag ON
+      506.9  CPAP  FL count 4 -> 5
+      506.9  CPAP  FL flag ON
+      522.1  CPAP  Hyp flag off
+  --  530-590  none
+      534.7  SIM   E END Hypopnea
+      542.4  CPAP  FL flag off
+  --  590-630  hypopnea 55%
+      594.8  SIM   E START Hypopnea
+      608.4  CPAP  FL count 5 -> 6
+      608.4  CPAP  FL flag ON
+  --  630-690  none
+      634.8  SIM   E END Hypopnea
+      654.1  CPAP  FL flag off
+
+  CPAP target 8.0 -> 10.6 cmH2O (max 10.6)
+
+  hypopnea delivery (normal peak 20.3 slm):
+    hypopnea 45%   Vt  276 mL  peak  11.4 slm ( 56%)  breaths 11.2-11.8
+    hypopnea 45%   Vt  276 mL  peak  11.4 slm ( 56%)  breaths 11.2-12.0
+    hypopnea 45%   Vt  275 mL  peak  11.5 slm ( 57%)  breaths 11.2-11.7
+    hypopnea 55%   Vt  226 mL  peak   9.6 slm ( 47%)  breaths 9.4-9.9
+    hypopnea 55%   Vt  226 mL  peak   9.8 slm ( 48%)  breaths 9.2-9.9
+    hypopnea 55%   Vt  225 mL  peak  10.1 slm ( 50%)  breaths 9.5-11.1
+
+  apneas (oscillation times from S lines: ~4 s resolution, ~2 s late):
+    segment       FOT onset    FOT for    CA/OA +  scored?
+
+  CPAP supply current (17706 samples over the script):
+    oscillation windows: none
+    ordinary breathing : max 0.82 A   (3 samples > 0.8 A)
+    top peaks:
+       175.2 s  0.81 A  CPAP 20484 rpm  none           breathing
+       436.2 s  0.74 A  CPAP 22920 rpm  none           breathing
+       460.2 s  0.82 A  CPAP 22062 rpm  none           breathing
+       555.9 s  0.81 A  CPAP 23268 rpm  none           breathing
+       561.1 s  0.72 A  CPAP 23454 rpm  none           breathing
+
+==============================================================================
+R5 CAPTURE - CPAP patient flow (T, 50 Hz) during each apnea
+==============================================================================
+  T samples 40073 (50.2 Hz over the run), PH lines 380
+
+  SUMMARY (times from sim apnea onset; S-line times arrive ~1-2 s late)
+    #   segment       dur    q max  q max at     NO_BR early exit      FOT  physio
+
+==============================================================================
+APAP DIAG (R11) - 143 apap / 143 epr lines
+==============================================================================
+  EPR flow baseline over the run: min -1.89  max +2.05 slm (R11: should stay near 0)
+  breath candidates: rejects 4 at start -> 4 at end; volume median 251 -> 293 mL
+  at script start  apap: st=1 ep_ms=0 recent=1 recov=1 need=10.0 ref=0.0 flbase=16.6 seen=5 lkfrz=0 apnea_nr=0 hyp_nr=0 rearm=4 notch=0 f0=4.0
+  at script start  epr: cand_ms=1250 cand_ml=273 cand_pk=17.3 stamped=1 rej=4 med_ml=251 since_ms=949 stamp_pk=17.3 base=-0.13 fsm=4 pol=1
+  last (t=473467 s)  apap: st=1 ep_ms=0 recent=1 recov=1 need=10.0 ref=0.0 flbase=18.4 seen=148 lkfrz=0 apnea_nr=0 hyp_nr=0 rearm=16 notch=0 f0=4.0
+  last (t=473467 s)  epr: cand_ms=1250 cand_ml=297 cand_pk=18.5 stamped=1 rej=4 med_ml=293 since_ms=3213 stamp_pk=18.5 base=-1.49 fsm=0 pol=1
+
+==============================================================================
+SCORECARD vs the R4/R5 build
+==============================================================================
+  hyp   hypopnea 45% : NO Hyp  [Hyp events 0]; FL 14.0 s in
+  hyp   hypopnea 45% : NO Hyp  [Hyp events 0]; FL 14.9 s in
+  hyp   hypopnea 45% : NO Hyp  [Hyp events 0]; FL 15.7 s in
+  hyp   hypopnea 55% : Hyp 21.5 s in  [Hyp events 1]; FL 16.4 s in
+  hyp   hypopnea 55% : Hyp 7.1 s in  [Hyp events 1]; FL 12.2 s in
+  hyp   hypopnea 55% : NO Hyp  [Hyp events 0]; FL 13.7 s in
+  AHI   9.56   (OA 0 + CA 0 + Hyp 2) / 0.209 h = 9.56  -> includes CA
+
+  totals: OA 0 CA 0 Hyp 2 FL 6 Snore 0  AHI 9.56   polarity 1 (bad 0)   leak-blocked raises seen: no
+  OSA-likely calls during the run: 0 samples
+  longest continuous FOT 0 s (watchdog 60 s)
+  peak CPAP supply current 0.82 A   simulator sensors OK
+  logs: apap_hyp4555_cpap.csv / _status.csv / _sim.csv (scratchpad)
+  [ramp-down] stopped at measured 7980 rpm
+
+  [CPAP stop] setpoint -> 4 cmH2O
+  [CPAP stop] blower at 13968 rpm - therapy stop
+  [CPAP stop] state 0
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 0
+
+simulator stopped. CPAP handled above.

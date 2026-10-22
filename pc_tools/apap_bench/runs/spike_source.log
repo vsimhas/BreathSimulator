@@ -1,0 +1,89 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.02 target 8.0  APAP range 5.0-20.0  Vbus 23.75 V
+  liveness before flow 1024978 -> 1025084   press 1025906 -> 1026012   OK
+  external sensor live: 200 samples in the last 2 s
+  CPAP firmware probe: # ack apap set breath_min_insp_ms 400
+  CPAP running fixed 8.0 cmH2O, measured -0.02
+
+  simulator priming (30 s)...
+  script start: none 60 | apnea 300 | none 180  (540 s)
+
+  t= 30s  CPAP meas 7.91 leak 11.5 | T 3757  F 1095  ext 6933
+  t= 60s  CPAP meas 7.99 leak 11.5 | T 5257  F 2224  ext 9913
+  t= 65s  SIM  E START Apnea
+  t= 90s  CPAP meas 8.01 leak 9.8 | T 6757  F 3361  ext 12893
+  t=120s  CPAP meas 8.00 leak 9.8 | T 8258  F 4536  ext 15881
+  t=150s  CPAP meas 8.01 leak 10.0 | T 9758  F 5712  ext 18845
+  t=180s  CPAP meas 8.00 leak 9.8 | T 11259  F 6905  ext 21818
+  t=210s  CPAP meas 8.02 leak 10.0 | T 12759  F 8071  ext 24804
+  t=240s  CPAP meas 8.02 leak 10.0 | T 14259  F 9257  ext 27782
+  t=270s  CPAP meas 8.02 leak 9.8 | T 15760  F 10410  ext 30769
+  t=300s  CPAP meas 7.86 leak 10.0 | T 17259  F 11568  ext 33744
+  t=330s  CPAP meas 8.02 leak 10.1 | T 18760  F 12721  ext 36732
+  t=360s  CPAP meas 7.96 leak 10.1 | T 20261  F 13939  ext 39713
+  t=365s  SIM  E END   Apnea
+  t=390s  CPAP meas 7.99 leak 11.8 | T 21761  F 15036  ext 42697
+  t=420s  CPAP meas 8.06 leak 11.7 | T 23261  F 16148  ext 45680
+  t=450s  CPAP meas 8.01 leak 11.7 | T 24761  F 17169  ext 48663
+  t=480s  CPAP meas 8.02 leak 11.8 | T 26261  F 18296  ext 51644
+  t=510s  CPAP meas 7.93 leak 11.6 | T 27762  F 19331  ext 54618
+  t=540s  CPAP meas 8.01 leak 11.8 | T 29262  F 20415  ext 57593
+  [ramp-down] stopped at measured 7998 rpm
+  liveness after  flow 1084143 -> 1084249   press 1085071 -> 1085177   OK
+
+  raw saved: spike_raw.pkl  (T 30141, ext 59340, sim F 20573, sim P 7646)
+  peak CPAP supply current 0.70 A   simulator sensors OK
+
+==============================================================================
+SPIKE SOURCE - three flow sensors on one clock
+==============================================================================
+  CPAP T   30141 samples  45.5 Hz
+  sim F    20573 samples  37.7 Hz
+  ext      59340 samples  99.3 Hz
+  sim F samples flagged not-ok: 0   ext CRC errors: 0
+  alignment to external: CPAP -0.08 s (r 0.994), simulator -0.24 s (r 0.993)
+
+  transients (rise >= 4 slm in 40 ms, back down within 0.4 s):
+          t seg     seen by                          CPAP      ext      sim  ext P dip
+     -23.86 after   CPAP                             7.1*      1.7      nan  -0.09
+      11.70 none    CPAP                             5.3*      0.1      1.4  -0.02
+      29.46 none    CPAP                             7.6*      1.9      1.9  -0.19
+      47.20 none    CPAP                             4.1*     -0.7      1.3  -0.09
+      64.94 apnea   CPAP                             7.1*      1.5      1.7  -0.04
+     135.90 apnea   CPAP                             4.9*      0.3      0.5  -0.01
+     153.64 apnea   CPAP                             7.8*      1.9      2.5  -0.05
+     224.68 apnea   CPAP                             7.0*      1.4      2.0  -0.03
+     295.72 apnea   CPAP                             5.6*      0.9      0.8  -0.03
+     313.46 apnea   CPAP                             8.4*      2.3      1.6  -0.06
+     331.20 apnea   CPAP                             5.6*      1.1      1.3  -0.06
+     348.96 apnea   CPAP                             5.2*      1.2      1.1  -0.01
+     366.70 none    CPAP                             4.2*      0.8      1.7  -0.03
+     371.73 none    simulator                        -0.4     -0.1     4.6*  -0.10
+     385.85 none    simulator                         0.7      1.0     4.4*  -0.07
+     421.39 none    simulator                        -0.1     -0.0     4.3*  -0.03
+     451.55 none    simulator                        -0.0     -0.0     4.4*  -0.04
+     455.46 none    CPAP                             9.2*      2.1      2.8  +0.01
+     461.37 none    simulator                         0.4      0.5     4.6*  -0.07
+     521.37 none    simulator                        -0.1     -0.1     6.0*  -0.13
+     526.50 none    CPAP                             5.4*      1.0      3.7  -0.11
+     530.81 none    simulator                         0.5      0.9     4.7*  -0.19
+     544.24 after   CPAP                             5.1*      0.2      0.9  -0.02
+    (columns = largest 40 ms rise within +/-0.25 s in each stream; * = detected as a transient there)
+
+  SUMMARY by which sensors saw it:
+    CPAP                            16   (mostly in apnea)
+    simulator                        7   (mostly in none)
+
+  Of 16 CPAP-side transients: external also saw 0, simulator also saw 0.
+  VERDICT: CPAP ONLY -> between the CPAP sensor and the external sensor (hose/vent), or a CPAP flow-sensor artefact
+  events: spike_events.csv   plots: spike_source.png
+  [ramp-down] stopped at measured 7980 rpm
+
+  [CPAP stop] setpoint -> 4 cmH2O
+  [CPAP stop] blower at 13638 rpm - therapy stop
+  [CPAP stop] state 0
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 0
+
+simulator stopped. CPAP handled above.

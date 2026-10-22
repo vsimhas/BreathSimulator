@@ -1,0 +1,86 @@
+==============================================================================
+AIRSENSE REFERENCE RUN - script '8c' (955 s)
+==============================================================================
+  liveness before flow 1446414 -> 1446526   press 1446428 -> 1446534   OK
+  external sensor live (196 samples in 2 s), pressure 2.33 cmH2O
+  simulator breathing (static FF) - priming 20 s
+
+  >>> START THE AIRSENSE THERAPY NOW (waiting up to 5 min) <<<
+  therapy detected: 7.77 cmH2O at the external sensor
+  simulator -> pressure FF; settling 60 s
+  script start: none 90 | apnea 5 100% | none 45 | apnea 10 100% | none 45 | apnea 10 100% | none 45 | apnea 10 100% | none 45 | apnea 20 100% | none 60 | apnea 20 100% | none 60 | apnea 20 100% | none 60 | hypopnea 40 50% | none 60 | hypopnea 40 55% | none 60 | hypopnea 40 60% | none 60 | apnea 20 100% | none 90
+
+  t= 30s  external pressure 7.80 cmH2O
+  t= 61s  external pressure 7.78 cmH2O
+  t= 91s  external pressure 7.78 cmH2O
+  t= 91s  SIM  E START Apnea
+  t= 96s  SIM  E END   Apnea
+  t=121s  external pressure 7.78 cmH2O
+  t=141s  SIM  E START Apnea
+  t=151s  SIM  E END   Apnea
+  t=152s  external pressure 7.75 cmH2O
+  t=182s  external pressure 7.77 cmH2O
+  t=196s  SIM  E START Apnea
+  t=206s  SIM  E END   Apnea
+  t=212s  external pressure 7.70 cmH2O
+  t=242s  external pressure 7.70 cmH2O
+  t=251s  SIM  E START Apnea
+  t=261s  SIM  E END   Apnea
+  t=273s  external pressure 7.69 cmH2O
+  t=303s  external pressure 7.70 cmH2O
+  t=306s  SIM  E START Apnea
+  t=326s  SIM  E END   Apnea
+  t=333s  external pressure 7.74 cmH2O
+  t=364s  external pressure 7.79 cmH2O
+  t=386s  SIM  E START Apnea
+  t=394s  external pressure 7.79 cmH2O
+  t=406s  SIM  E END   Apnea
+  t=424s  external pressure 7.80 cmH2O
+  t=455s  external pressure 7.80 cmH2O
+  t=466s  SIM  E START Apnea
+  t=485s  external pressure 7.76 cmH2O
+  t=486s  SIM  E END   Apnea
+  t=515s  external pressure 7.80 cmH2O
+  t=545s  external pressure 7.79 cmH2O
+  t=546s  SIM  E START Hypopnea
+  t=576s  external pressure 7.77 cmH2O
+  t=586s  SIM  E END   Hypopnea
+  t=606s  external pressure 7.78 cmH2O
+  t=636s  external pressure 7.78 cmH2O
+  t=646s  SIM  E START Hypopnea
+  t=667s  external pressure 7.76 cmH2O
+  t=686s  SIM  E END   Hypopnea
+  t=697s  external pressure 7.70 cmH2O
+  t=727s  external pressure 7.70 cmH2O
+  t=746s  SIM  E START Hypopnea
+  t=758s  external pressure 7.73 cmH2O
+  t=786s  SIM  E END   Hypopnea
+  t=788s  external pressure 7.69 cmH2O
+  t=818s  external pressure 7.76 cmH2O
+  t=837s  SIM  recovery breaths ON for the last apnea
+  t=846s  SIM  E START Apnea
+  t=848s  external pressure 7.76 cmH2O
+  t=866s  SIM  E END   Apnea
+  t=876s  SIM  E END   Recovery
+  t=879s  external pressure 7.80 cmH2O
+  t=909s  external pressure 7.81 cmH2O
+  t=939s  external pressure 7.81 cmH2O
+  [ramp-down] stopped at measured 5946 rpm
+  liveness after  flow 1553590 -> 1553696   press 1553598 -> 1553704   OK
+
+  >>> STOP THE AIRSENSE THERAPY NOW (logging 30 s more) <<<
+
+==============================================================================
+GROUND TRUTH - what the simulator delivered (V lines)
+==============================================================================
+  None       143 breaths  Vt   500  peak  20.0  flat 0.599
+  Apnea       22 breaths  Vt    20  peak   1.6  flat 0.292
+  Hypopnea    24 breaths  Vt   225  peak   9.1  flat 0.593
+  Recovery     2 breaths  Vt   752  peak  29.6  flat 0.611
+
+  saved C:/Users/vsimh/AppData/Local/Temp/claude/D--Github-BreathSimulator/62661ef7-9d18-4a34-b327-f7503a81cc9a/scratchpad/airsense_8c_1637_raw.pkl
+  PC clock at script start: 2026-10-20 16:37:16
+  next: copy the SD card's DATALOG/<date> folder, then airsense_compare.py
+  [ramp-down] stopped at measured 5928 rpm
+
+simulator stopped. Stop the AirSense by hand if it is still running.

@@ -1,0 +1,58 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.02 target 8.0  APAP range 5.0-20.0  Vbus 23.72 V
+  liveness before flow 397414 -> 397520   press 397422 -> 397528   OK
+  external sensor live: 201 samples in the last 2 s
+  CPAP firmware probe: # ack apap set breath_min_insp_ms 400
+  CPAP running fixed 8.0 cmH2O, measured -0.02
+
+  simulator priming (30 s)...
+  script start: none 60 | hypopnea 60 | none 60 | hypopnea 60 | none 60  (300 s)
+
+  t= 30s  CPAP meas 7.98 leak 12.6 | T 3754  F 934  ext 6982
+  t= 60s  CPAP meas 7.95 leak 12.5 | T 5254  F 1828  ext 9963
+  t= 65s  SIM  E START Hypopnea
+  t= 90s  CPAP meas 7.94 leak 11.7 | T 6754  F 2627  ext 12942
+  t=120s  CPAP meas 8.07 leak 11.9 | T 8254  F 3450  ext 15907
+  t=125s  SIM  E END   Hypopnea
+  t=150s  CPAP meas 8.03 leak 12.6 | T 9754  F 4366  ext 18895
+  t=180s  CPAP meas 7.97 leak 12.5 | T 11254  F 5261  ext 21878
+  t=185s  SIM  E START Hypopnea
+  t=210s  CPAP meas 8.03 leak 11.9 | T 12754  F 6036  ext 24854
+  t=240s  CPAP meas 8.13 leak 12.0 | T 14255  F 6817  ext 27823
+  t=245s  SIM  E END   Hypopnea
+  t=270s  CPAP meas 7.95 leak 12.4 | T 15755  F 7720  ext 30802
+  t=300s  CPAP meas 8.01 leak 12.5 | T 17255  F 8613  ext 33778
+  [ramp-down] stopped at measured 7998 rpm
+  liveness after  flow 432573 -> 432678   press 432581 -> 432686   OK
+
+  raw saved: leak_raw.pkl  (T 18125, ext 35499, sim F 8761, sim P 0)
+  peak CPAP supply current 0.66 A   simulator sensors OK
+
+==============================================================================
+LEAK SOURCE - per-breath means on one clock
+==============================================================================
+  alignment to external: CPAP -0.10 s (r 0.994), simulator -0.26 s (r 0.993)
+  59 breaths (simulator inspiration starts)
+
+  per segment (medians over its breaths):
+    segment                  n sim Vt |  sim pk  ext pk | BOX LEAK | CPAP mn CPAP pk pk ratio
+                                   mL |     slm   -mean |  ext-sim |     slm     slm CPAP/sim
+    none 0-60 s             12    500 |    21.2    19.0 |    10.13 |   +0.19    17.9    0.84
+    hypopnea 60% 60-120 s   12    200 |     8.3     7.7 |     9.47 |   -2.24     4.3    0.52
+    none 120-180 s          12    501 |    21.3    19.0 |    10.18 |   +0.16    17.8    0.83
+    hypopnea 50% 180-240 s  12    250 |    11.4    10.4 |     9.33 |   -1.17     7.9    0.69
+    none 240-300 s          11    500 |    21.1    19.0 |    10.16 |   +0.14    17.7    0.84
+
+  hypopnea minus normal:  box leak -0.76 slm   CPAP patient-flow mean -1.87 slm
+  VERDICT: CPAP LEAK ESTIMATE - the real box leak is flat but the CPAP's patient flow drops: the CPAP over-reads leak when breaths shrink (R9 cause 1)
+  per breath: leak_breaths.csv   plot: leak_source.png
+  [ramp-down] stopped at measured 7998 rpm
+
+  [CPAP stop] setpoint -> 4 cmH2O
+  [CPAP stop] blower at 13638 rpm - therapy stop
+  [CPAP stop] state 0
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 0
+
+simulator stopped. CPAP handled above.

@@ -1,0 +1,65 @@
+==============================================================================
+AIRSENSE REFERENCE RUN - script 'flshape' (810 s)
+==============================================================================
+  liveness before flow 1961449 -> 1961555   press 1961457 -> 1961563   OK
+  external sensor live (199 samples in 2 s), pressure 0.09 cmH2O
+  simulator breathing (static FF) - priming 20 s
+
+  >>> START THE AIRSENSE THERAPY NOW (waiting up to 5 min) <<<
+  therapy detected: 7.74 cmH2O at the external sensor
+  simulator -> pressure FF; settling 60 s
+  script start: none 90 | flowlimit 120 90% | none 120 | flowlimit 120 90% | none 120 | flowlimit 120 60% | none 120
+
+  t= 30s  SIM  fl_shape -> plateau
+  t= 30s  external pressure 7.78 cmH2O
+  t= 61s  external pressure 7.77 cmH2O
+  t= 91s  external pressure 7.77 cmH2O
+  t= 91s  SIM  E START FlowLimit
+  t=121s  external pressure 8.94 cmH2O
+  t=152s  external pressure 10.51 cmH2O
+  t=182s  external pressure 11.68 cmH2O
+  t=211s  SIM  E END   FlowLimit
+  t=212s  external pressure 11.60 cmH2O
+  t=243s  external pressure 11.57 cmH2O
+  t=270s  SIM  fl_shape -> m
+  t=273s  external pressure 11.48 cmH2O
+  t=303s  external pressure 11.43 cmH2O
+  t=331s  SIM  E START FlowLimit
+  t=334s  external pressure 11.35 cmH2O
+  t=364s  external pressure 11.67 cmH2O
+  t=394s  external pressure 11.63 cmH2O
+  t=425s  external pressure 11.63 cmH2O
+  t=451s  SIM  E END   FlowLimit
+  t=455s  external pressure 11.72 cmH2O
+  t=485s  external pressure 11.66 cmH2O
+  t=510s  SIM  fl_shape -> plateau
+  t=516s  external pressure 11.56 cmH2O
+  t=546s  external pressure 11.45 cmH2O
+  t=571s  SIM  E START FlowLimit
+  t=576s  external pressure 11.38 cmH2O
+  t=607s  external pressure 11.28 cmH2O
+  t=637s  external pressure 11.18 cmH2O
+  t=667s  external pressure 11.09 cmH2O
+  t=691s  SIM  E END   FlowLimit
+  t=698s  external pressure 11.11 cmH2O
+  t=728s  external pressure 11.01 cmH2O
+  t=758s  external pressure 10.99 cmH2O
+  t=789s  external pressure 10.95 cmH2O
+  t=819s  external pressure 10.90 cmH2O
+  [ramp-down] stopped at measured 6186 rpm
+  liveness after  flow 2053912 -> 2054018   press 2053920 -> 2054026   OK
+
+  >>> STOP THE AIRSENSE THERAPY NOW (logging 30 s more) <<<
+
+==============================================================================
+GROUND TRUTH - what the simulator delivered (V lines)
+==============================================================================
+  None        92 breaths  Vt   500  peak  20.6  flat 0.584
+  FlowLimit   72 breaths  Vt   500  peak  15.9  flat 0.754
+
+  saved C:/Users/vsimh/AppData/Local/Temp/claude/D--Github-BreathSimulator/62661ef7-9d18-4a34-b327-f7503a81cc9a/scratchpad/airsense_flshape_1803_raw.pkl
+  PC clock at script start: 2026-10-20 18:03:05
+  next: copy the SD card's DATALOG/<date> folder, then airsense_compare.py
+  [ramp-down] stopped at measured 5910 rpm
+
+simulator stopped. Stop the AirSense by hand if it is still running.

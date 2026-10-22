@@ -117,6 +117,27 @@ def best_lag(ga, a, gb, b, lags):
     return best
 
 
+def probe_amp(t, q, t0, t1, fmin=2.5, fmax=6.0):
+    """Peak-to-peak amplitude and frequency of the strongest 2.5-6 Hz component
+    (the forced-oscillation probe) of q between t0 and t1."""
+    sel = (t >= t0) & (t <= t1)
+    if sel.sum() < 50 or t1 - t0 < 3.0:
+        return float("nan"), float("nan")
+    fs = 100.0
+    g = np.arange(t0, t1, 1.0 / fs)
+    x = np.interp(g, t[sel], q[sel])
+    x = x - np.polyval(np.polyfit(g - g[0], x, 1), g - g[0])
+    win = np.hanning(len(x))
+    X = np.fft.rfft(x * win)
+    f = np.fft.rfftfreq(len(x), 1.0 / fs)
+    band = (f >= fmin) & (f <= fmax)
+    if not band.any():
+        return float("nan"), float("nan")
+    i = np.argmax(np.abs(X) * band)
+    amp = 2.0 * np.abs(X[i]) / win.sum()          # sine amplitude
+    return 2.0 * amp, f[i]                           # peak-to-peak, Hz
+
+
 def ground_truth(raw):
     t0 = raw["t_script"]
     # V tuples: (host, breath, vt, qpk[, flat], event) - flat only in newer runs
@@ -144,7 +165,9 @@ def ground_truth(raw):
         if i < len(sevs):
             kind, sev, dur = sevs[i]
             if kind == "apnea":
-                e["label"] = "apnea %d s" % dur
+                n_ap = sum(1 for x in events[:i + 1] if x["type"] == "Apnea")
+                e["squeezed"] = n_ap in set(raw.get("squeeze_apneas", []))
+                e["label"] = "apnea %d s%s" % (dur, " SQZ" if e["squeezed"] else "")
             elif kind == "hypopnea":
                 e["label"] = "hyp %d %%" % sev
             else:
@@ -256,6 +279,23 @@ def main(argv):
             pf += " / %.2f" % (flim[1][sel].max() if sel.any() else float("nan"))
         print("  %-14s %6.0f %4.0f%% | %-34s | %-16s | %s"
               % (e["label"], e["onset"], 100 * e["pk_ratio"], txt, pf, ours_seg.get(i, "")))
+    ap_events = [e for e in events if e["type"] == "Apnea" and e["end"] - e["onset"] >= 15.0]
+    if ap_events:
+        print("\n  forced-oscillation probe flow during each apnea (onset + 8 s .. end - 3 s):")
+        print("    %-18s | %-28s | %-28s" % ("apnea", "at the external sensor", "as the AirSense recorded it"))
+        for e in ap_events:
+            a, z = e["onset"] + 8.0, e["end"] - 3.0
+            pe, fe = probe_amp(t_e - w0, q_e, a, z)
+            pb, fb = (probe_amp(brp[0] - lag - w0, brp[1], a, z) if brp is not None
+                      else (float("nan"), float("nan")))
+            print("    %-18s | %6.2f L/min p-p at %4.1f Hz | %6.2f L/min p-p at %4.1f Hz"
+                  % (e["label"], pe, fe, pb, fb))
+        sq = [probe_amp(t_e - w0, q_e, e["onset"] + 8.0, e["end"] - 3.0)[0] for e in ap_events if e.get("squeezed")]
+        op = [probe_amp(t_e - w0, q_e, e["onset"] + 8.0, e["end"] - 3.0)[0] for e in ap_events if not e.get("squeezed")]
+        if sq and op:
+            print("    squeezed / open probe flow at the external sensor: %.0f %% (tube %s)"
+                  % (100 * np.nanmean(sq) / np.nanmean(op),
+                     "closing" if np.nanmean(sq) < 0.5 * np.nanmean(op) else "NOT closing much"))
     fl_events = [e for e in events if e["type"] == "FlowLimit"]
     if fl_events and (press is not None or flim is not None):
         print("\n  flattened breaths (normal-breath flatness %.2f; the APAP's flat rule is > 0.78):"

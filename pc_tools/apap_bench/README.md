@@ -34,7 +34,7 @@ Ports and requirements:
 | `apap_trial8b.py` | the same script with the R11-build probe | `runs/apap_trial8b_*` |
 | `apap_hyp4555.py` | 3 × 45 % and 3 × 55 % hypopneas (hypopnea threshold test) | `runs/apap_hyp4555_*` |
 | `apap_flshape.py` | flattened breaths at full volume: plateau 90 %, M 90 %, plateau 60 % | `runs/apap_flshape_*` |
-| `airsense_run.py 8c\|threshold\|flshape` | the same scripts with an **AirSense 11** in place of the CPAP | `runs/airsense_<script>_<HHMM>_raw.pkl` |
+| `airsense_run.py 8c\|threshold\|flshape\|obstruct` | the same scripts with an **AirSense 11** in place of the CPAP; `obstruct` = five 30 s apneas, 2/4/5 with the chamber squeezed by hand on PC beeps (low = get ready, long high = squeeze MAX, two short = OFF) | `runs/airsense_<script>_<HHMM>_raw.pkl` |
 | `spike_source.py` | 3-sensor capture: CPAP / external / simulator flow (found the R6 needles) | `runs/spike_*` |
 | `leak_source.py` | 3-sensor capture of normal / hypopnea breathing (R9) | `runs/leak_*` |
 | `total_source.py` | as `leak_source.py`, plus the CPAP's total flow (R10) | `runs/total_*` |

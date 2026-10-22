@@ -1,0 +1,50 @@
+==============================================================================
+AIRSENSE REFERENCE RUN - script 'obstruct' (570 s)
+==============================================================================
+  liveness before flow 2490673 -> 2490778   press 2490681 -> 2490786   OK
+  external sensor live (200 samples in 2 s), pressure 7.76 cmH2O  - AirSense already running
+
+  squeeze cues - listen (apneas [2, 4, 5] will be squeezed):
+    short low tone  = squeeze in 5 s
+    long high tone  = squeeze blower to MAX now
+    two short tones = squeeze blower OFF now
+  simulator breathing (static FF) - priming 20 s
+
+  >>> START THE AIRSENSE THERAPY NOW (waiting up to 5 min) <<<
+  therapy detected: 7.75 cmH2O at the external sensor
+  simulator -> pressure FF; settling 60 s
+  script start: none 90 | apnea 30 100% | none 60 | apnea 30 100% | none 60 | apnea 30 100% | none 60 | apnea 30 100% | none 60 | apnea 30 100% | none 90
+
+  t= 30s  external pressure 9.40 cmH2O
+  t= 61s  external pressure 9.36 cmH2O
+  t= 91s  external pressure 9.32 cmH2O
+  t= 91s  SIM  E START Apnea
+  t=121s  SIM  E END   Apnea
+  t=121s  external pressure 9.29 cmH2O
+  t=152s  external pressure 9.28 cmH2O
+  t=180s  CUE  READY (apnea 2) - squeeze in 5 s
+  t=181s  SIM  E START Apnea
+  t=182s  external pressure 9.24 cmH2O
+  t=185s  CUE  SQUEEZE (apnea 2) - squeeze blower MAX
+  t=204s  CUE  RELEASE (apnea 2) - squeeze blower OFF
+  t=211s  SIM  E END   Apnea
+  t=212s  external pressure 9.20 cmH2O
+  t=243s  external pressure 9.17 cmH2O
+  t=271s  SIM  E START Apnea
+  t=273s  external pressure 9.45 cmH2O
+  t=301s  SIM  E END   Apnea
+  t=303s  external pressure 9.69 cmH2O
+  t=334s  external pressure 11.68 cmH2O
+  t=360s  CUE  READY (apnea 4) - squeeze in 5 s
+  t=361s  SIM  E START Apnea
+  t=364s  external pressure 11.68 cmH2O
+  t=365s  CUE  SQUEEZE (apnea 4) - squeeze blower MAX
+  t=384s  CUE  RELEASE (apnea 4) - squeeze blower OFF
+  t=391s  SIM  E END   Apnea
+  t=394s  external pressure 11.70 cmH2O
+
+  !! ABORT: simulator commanded 36013 rpm
+  [ramp-down] stopped at measured 7962 rpm
+  !! make sure the squeeze blower is OFF
+
+simulator stopped. Stop the AirSense by hand if it is still running.

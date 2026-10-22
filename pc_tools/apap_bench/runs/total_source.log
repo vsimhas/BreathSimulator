@@ -1,0 +1,65 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.03 target 8.0  APAP range 5.0-20.0  Vbus 23.73 V
+  liveness before flow 645299 -> 645405   press 645307 -> 645413   OK
+  external sensor live: 201 samples in the last 2 s
+  CPAP firmware probe: # ack apap set breath_min_insp_ms 400
+  CPAP running fixed 8.0 cmH2O, measured -0.02
+
+  simulator priming (30 s)...
+  script start: none 60 | hypopnea 60 | none 60 | hypopnea 60 | none 60  (300 s)
+
+  t= 30s  CPAP meas 7.92 leak 12.4 | T 3753  F 935  ext 6956
+  t= 60s  CPAP meas 7.97 leak 12.5 | T 5251  F 1828  ext 9917
+  t= 65s  SIM  E START Hypopnea
+  t= 90s  CPAP meas 8.08 leak 11.9 | T 6751  F 2640  ext 12875
+  t=120s  CPAP meas 8.32 leak 12.0 | T 8251  F 3467  ext 15851
+  t=125s  SIM  E END   Hypopnea
+  t=150s  CPAP meas 8.06 leak 12.5 | T 9751  F 4377  ext 18806
+  t=180s  CPAP meas 8.06 leak 12.5 | T 11251  F 5272  ext 21776
+  t=185s  SIM  E START Hypopnea
+  t=210s  CPAP meas 8.17 leak 11.9 | T 12751  F 6047  ext 24733
+  t=240s  CPAP meas 8.07 leak 11.9 | T 14252  F 6832  ext 27674
+  t=245s  SIM  E END   Hypopnea
+  t=270s  CPAP meas 8.06 leak 12.5 | T 15752  F 7736  ext 30637
+  t=300s  CPAP meas 8.05 leak 12.5 | T 17252  F 8631  ext 33606
+  [ramp-down] stopped at measured 7998 rpm
+  liveness after  flow 680457 -> 680563   press 680465 -> 680571   OK
+
+  raw saved: total_raw.pkl  (T 18122, ext 35341, sim F 8779, sim P 0)
+  peak CPAP supply current 0.77 A   simulator sensors OK
+
+==============================================================================
+TOTAL-FLOW CAPTURE - measurement vs model, per breath
+==============================================================================
+  CPAP T 18122, CPAP B (total) 8939 (25.0 Hz), sim F 8779, ext 35341
+  alignment to external: CPAP -0.12 s (r 0.991), simulator -0.28 s (r 0.990)
+  59 breaths
+
+  per segment (medians):
+    segment                  n | box leak |  tot-ext  tot-pat | pat mean | sim pk ext pk tot pk pat pk
+                               |  ext-sim |  VENT as    MODEL |          |         -mean  -mean       
+                               |   (real) | measured   subtr. |          |
+    none 0-60 s             12 |    10.14 |    19.60    30.42 |    +0.18 |   21.3   18.9   18.1   17.5
+    hypopnea 60% 60-120 s   12 |     9.53 |    19.97    32.04 |    -2.06 |    8.6    7.7    7.6    4.6
+    none 120-180 s          12 |    10.20 |    19.68    30.46 |    +0.24 |   21.3   19.1   18.8   17.8
+    hypopnea 50% 180-240 s  12 |     9.33 |    19.91    31.59 |    -1.57 |   11.2   10.5   10.1    7.3
+    none 240-300 s          11 |    10.16 |    19.66    30.17 |    +0.46 |   21.6   19.2   18.6   18.0
+
+  hypopnea minus normal:
+    real box leak            -0.74 slm
+    vent as measured         +0.29 slm   (CPAP total - external)
+    model subtracted         +1.47 slm   (CPAP total - CPAP patient)
+    CPAP patient-flow mean   -2.11 slm
+    -> measurement error  ~+0.29 slm;  model error ~+2.20 slm (model change minus real leak change)
+  VERDICT: MODEL - the CPAP measures total flow correctly; its subtracted leak/vent model rises in weak breathing
+  per breath: total_breaths.csv   plot: total_source.png
+  [ramp-down] stopped at measured 7998 rpm
+
+  [CPAP stop] setpoint -> 4 cmH2O
+  [CPAP stop] blower at 13620 rpm - therapy stop
+  [CPAP stop] state 0
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 0
+
+simulator stopped. CPAP handled above.

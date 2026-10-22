@@ -1,0 +1,346 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.02  APAP range 5.0-20.0   Vbus 23.63 V
+  liveness before flow 247207 -> 247313   press 247215 -> 247321   OK
+  CPAP firmware probe: # ack leak set patient_pause_zero 0
+
+  simulator breathing (static FF, CPAP off) - priming 20 s...
+  CPAP running AutoSet 8-12, target 8.00, measured -0.17
+  simulator -> pressure FF; settling 30 s (past the APAP's 15 s start-up grace)
+  APAP at script start: state 1 | OA 0 CA 0 Hyp 0 FL 0 Snore 0   polarity 1 (bad 0)
+  script start: none 90 | apnea 5 | none 45 | apnea 10 | none 45 | apnea 10 | none 45 | apnea 10 | none 45 | apnea 20 | none 60 | apnea 20 | none 60 | apnea 20 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | apnea 20 | none 90  (955 s)
+
+  t= 30s  CPAP target 8.0 meas 7.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 60s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 90s  CPAP target 8.0 meas 8.0 apap_st 2 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 95s  SIM  E START Apnea     (breath 30)
+  t=100s  SIM  E END   Apnea     (breath 31)
+  t=120s  CPAP target 8.0 meas 8.6 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=145s  SIM  E START Apnea     (breath 40)
+  t=150s  CPAP target 8.0 meas 8.3 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=155s  SIM  E END   Apnea     (breath 42)
+  t=180s  CPAP target 8.0 meas 8.0 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=200s  SIM  E START Apnea     (breath 51)
+  t=210s  SIM  E END   Apnea     (breath 53)
+  t=210s  CPAP target 8.0 meas 7.4 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=240s  CPAP target 8.0 meas 7.0 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=255s  SIM  E START Apnea     (breath 62)
+  t=265s  SIM  E END   Apnea     (breath 64)
+  t=270s  CPAP target 8.0 meas 7.1 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=300s  CPAP target 8.0 meas 8.2 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=310s  SIM  E START Apnea     (breath 73)
+  t=330s  SIM  E END   Apnea     (breath 77)
+  t=330s  CPAP target 8.0 meas 7.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=360s  CPAP target 8.0 meas 8.5 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=390s  SIM  E START Apnea     (breath 89)
+  t=390s  CPAP target 8.0 meas 8.4 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=410s  SIM  E END   Apnea     (breath 93)
+  t=420s  CPAP target 8.0 meas 8.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=450s  CPAP target 8.0 meas 8.0 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=470s  SIM  E START Apnea     (breath 105)
+  t=480s  CPAP target 8.0 meas 7.7 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=490s  SIM  E END   Apnea     (breath 109)
+  t=510s  CPAP target 8.0 meas 7.4 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=540s  CPAP target 8.0 meas 7.0 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=550s  SIM  E START Hypopnea  (breath 121)
+  t=570s  CPAP target 8.0 meas 7.1 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=590s  SIM  E END   Hypopnea  (breath 129)
+  t=600s  CPAP target 8.0 meas 8.0 apap_st 1 osc 0 | OA 0 CA 1 Hyp 0 FL 0 | fl 0 hyp 0
+  t=630s  CPAP target 8.0 meas 8.0 apap_st 1 osc 0 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=650s  SIM  E START Hypopnea  (breath 141)
+  t=661s  CPAP target 8.0 meas 8.6 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=690s  SIM  E END   Hypopnea  (breath 149)
+  t=691s  CPAP target 8.0 meas 9.1 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=721s  CPAP target 8.0 meas 8.8 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=750s  SIM  E START Hypopnea  (breath 161)
+  t=751s  CPAP target 8.0 meas 7.9 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=781s  CPAP target 8.0 meas 8.4 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=790s  SIM  E END   Hypopnea  (breath 169)
+  t=811s  CPAP target 8.0 meas 7.8 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=837s  SIM  recovery breaths ON (2 x 1.5) for the last apnea
+  t=841s  CPAP target 8.0 meas 7.2 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=850s  SIM  E START Apnea     (breath 181)
+  t=870s  SIM  E END   Apnea     (breath 185)
+  t=871s  CPAP target 8.0 meas 7.5 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=880s  SIM  E END   Recovery  (breath 187)
+  t=901s  CPAP target 8.0 meas 7.2 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=931s  CPAP target 8.0 meas 8.0 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  t=961s  CPAP target 8.0 meas 8.2 apap_st 3 osc 1 | OA 0 CA 2 Hyp 0 FL 0 | fl 0 hyp 0
+  [ramp-down] stopped at measured 7998 rpm
+  liveness after  flow 353012 -> 353118   press 353020 -> 353126   OK
+  raw capture saved: apap_trial8_raw.pkl (52526 T lines, 10231 PH lines)
+
+==============================================================================
+SIMULATOR - what was delivered, by event label (V lines)
+==============================================================================
+  None       148 breaths  Vt   507  peak  23.3  flat 0.524
+  Apnea       23 breaths  Vt    66  peak   5.4  flat 0.293
+  Hypopnea    23 breaths  Vt   233  peak  12.9  flat 0.422
+  Recovery     2 breaths  Vt   760  peak  32.1  flat 0.567
+
+==============================================================================
+TIMELINE  (host seconds from script start; CPAP lines ~2 s late)
+==============================================================================
+  --    0-90   none
+  --   90-95   apnea 100%
+       93.1  CPAP  oscillation ON
+       94.9  SIM   E START Apnea
+  --   95-140  none
+       99.9  SIM   E END Apnea
+  --  140-150  apnea 100%
+      144.9  SIM   E START Apnea
+  --  150-195  none
+      154.9  SIM   E END Apnea
+  --  195-205  apnea 100%
+      199.9  SIM   E START Apnea
+  --  205-250  none
+      209.9  SIM   E END Apnea
+  --  250-260  apnea 100%
+      254.9  SIM   E START Apnea
+  --  260-305  none
+      264.9  SIM   E END Apnea
+  --  305-325  apnea 100%
+      309.9  SIM   E START Apnea
+  --  325-385  none
+      329.9  SIM   E END Apnea
+  --  385-405  apnea 100%
+      389.9  SIM   E START Apnea
+  --  405-465  none
+      409.9  SIM   E END Apnea
+  --  465-485  apnea 100%
+      469.9  SIM   E START Apnea
+  --  485-545  none
+      489.9  SIM   E END Apnea
+  --  545-585  hypopnea 50%
+      549.9  SIM   E START Hypopnea
+  --  585-645  none
+      589.9  SIM   E END Hypopnea
+      593.3  CPAP  CA count 0 -> 1
+      594.3  CPAP  oscillation off
+      617.8  CPAP  oscillation ON
+      623.3  CPAP  oscillation off
+      625.2  CPAP  CA count 1 -> 2
+      634.4  CPAP  oscillation ON
+  --  645-685  hypopnea 55%
+      649.9  SIM   E START Hypopnea
+  --  685-745  none
+      689.9  SIM   E END Hypopnea
+  --  745-785  hypopnea 60%
+      749.9  SIM   E START Hypopnea
+  --  785-845  none
+      789.9  SIM   E END Hypopnea
+  --  845-865  apnea 100%
+      849.9  SIM   E START Apnea
+  --  865-955  none
+      869.9  SIM   E END Apnea
+      879.9  SIM   E END Recovery
+
+  CPAP target 8.0 -> 8.0 cmH2O (max 8.0)
+
+  hypopnea delivery (normal peak 23.3 slm):
+    hypopnea 50%   Vt  257 mL  peak  14.9 slm ( 64%)  breaths 14.2-15.1
+    hypopnea 55%   Vt  234 mL  peak  12.9 slm ( 56%)  breaths 12.5-13.2
+    hypopnea 60%   Vt  210 mL  peak  12.1 slm ( 52%)  breaths 11.7-12.6
+
+  apneas (oscillation times from S lines: ~4 s resolution, ~2 s late):
+    segment       FOT onset    FOT for    CA/OA +  scored?
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+
+  CPAP supply current (22817 samples over the script):
+    oscillation windows: 93-594 s, 618-623 s, 634-978 s
+    during oscillation : max 1.18 A   (1010 samples > 0.8 A)
+    ordinary breathing : max 0.63 A   (0 samples > 0.8 A)
+    top peaks:
+       357.9 s  1.17 A  CPAP 21564 rpm  none           OSCILLATING
+       362.9 s  1.18 A  CPAP 21438 rpm  none           OSCILLATING
+       442.7 s  1.16 A  CPAP 21678 rpm  none           OSCILLATING
+       458.6 s  1.15 A  CPAP 21180 rpm  none           OSCILLATING
+       878.2 s  1.15 A  CPAP 21822 rpm  none           OSCILLATING
+    FOT-current hypothesis: SUPPORTED - >1 A only while oscillating
+
+==============================================================================
+R5 CAPTURE - CPAP patient flow (T, 50 Hz) during each apnea
+==============================================================================
+  T samples 52530 (49.3 Hz over the run), PH lines 10231
+
+  -- apnea 1 (apnea 100%): sim onset 94.9 s, end 99.9 s (5.0 s long)
+     patient flow in the apnea: mean -1.43  min -4.99  max +2.56 slm (max at +4.2 s)
+     P_mask 6.97..8.99 cmH2O   PID rpm 14685..21611
+     1 s mean flow: -1.2 -1.8 -1.5 -1.3 -1.4 -0.3
+     excursions > 4 slm: none
+     excursions > 2 slm: 
+       +  0.9..+  0.9 s  (0.02 s)  peak 2.4 slm at +0.9 s  1 mL
+       +  1.3..+  1.3 s  (0.09 s)  peak 2.0 slm at +1.3 s  1 mL
+       +  2.1..+  2.1 s  (0.02 s)  peak 2.1 slm at +2.1 s  1 mL
+       +  2.3..+  2.3 s  (0.05 s)  peak 2.1 slm at +2.3 s  1 mL
+       +  2.6..+  2.6 s  (0.02 s)  peak 2.2 slm at +2.6 s  1 mL
+       +  3.0..+  3.0 s  (0.02 s)  peak 2.1 slm at +3.0 s  1 mL
+       +  3.8..+  3.8 s  (0.02 s)  peak 2.1 slm at +3.8 s  1 mL
+       +  4.0..+  4.0 s  (0.03 s)  peak 2.1 slm at +4.0 s  1 mL
+     APAP state (S, ~1 s, arrives late): +-1.8 FOT/osc leak 13.3
+     leak estimate in the apnea: 12.36 -> 11.76 (min 11.76)
+     PH lines: +-1.0 src2 Vt 302, +-1.0 src2 Vt 302, +-1.0 src2 Vt 302, +-1.0 src2 Vt 302, +-0.9 src2 Vt 302, +-0.8 src2 Vt 302, +-0.8 src2 Vt 302, +-0.8 src2 Vt 302, +-0.8 src2 Vt 302, +-0.8 src2 Vt 302, +1.0 src2 Vt 302, +1.0 src2 Vt 302, +1.0 src2 Vt 302, +1.0 src2 Vt 302, +1.0 src2 Vt 302, +1.0 src2 Vt 302, +1.1 src2 Vt 302, +1.1 src2 Vt 302, +1.1 src2 Vt 302, +1.1 src2 Vt 302, +1.1 src2 Vt 302, +1.1 src2 Vt 302, +1.1 src2 Vt 302, +1.2 src2 Vt 302, +1.2 src2 Vt 302, +1.2 src2 Vt 302, +1.2 src2 Vt 302, +1.3 src2 Vt 302, +1.3 src2 Vt 302, +1.3 src2 Vt 302, +1.3 src2 Vt 302, +1.3 src2 Vt 302, +1.4 src2 Vt 302, +1.5 src2 Vt 302, +1.5 src2 Vt 302, +3.1 src2 Vt 302, +3.1 src2 Vt 302, +3.1 src2 Vt 302, +3.1 src2 Vt 302, +3.1 src2 Vt 302, +3.2 src2 Vt 302, +3.2 src2 Vt 302, +3.2 src2 Vt 302, +3.2 src2 Vt 302, +3.2 src2 Vt 302, +3.2 src2 Vt 302, +3.2 src2 Vt 302, +3.2 src2 Vt 302, +3.3 src2 Vt 302, +3.3 src2 Vt 302, +3.3 src2 Vt 302, +3.3 src2 Vt 302, +3.3 src2 Vt 302, +3.4 src2 Vt 302, +3.4 src2 Vt 302, +3.5 src2 Vt 302, +3.5 src2 Vt 302, +3.5 src2 Vt 302, +3.5 src2 Vt 302, +4.2 src2 Vt 302, +5.1 src2 Vt 302, +5.3 src2 Vt 302, +5.3 src2 Vt 302, +5.3 src2 Vt 302, +5.3 src2 Vt 302, +5.3 src2 Vt 302, +5.3 src2 Vt 302, +5.3 src2 Vt 302, +5.4 src2 Vt 302, +5.4 src2 Vt 302, +5.4 src2 Vt 302, +5.4 src2 Vt 302, +5.4 src2 Vt 302, +5.4 src2 Vt 302, +5.5 src2 Vt 302, +5.5 src2 Vt 302, +5.5 src2 Vt 302, +5.5 src2 Vt 302, +5.6 src2 Vt 302, +5.6 src2 Vt 302, +5.6 src2 Vt 302, +5.6 src2 Vt 302, +5.6 src2 Vt 302, +5.7 src2 Vt 302, +5.8 src2 Vt 302, +5.9 src2 Vt 302
+
+  -- apnea 2 (apnea 100%): sim onset 144.9 s, end 154.9 s (10.0 s long)
+     patient flow in the apnea: mean -1.68  min -7.98  max +2.77 slm (max at +3.6 s)
+     P_mask 6.97..9.08 cmH2O   PID rpm 14561..21658
+     1 s mean flow: -2.8 -2.0 -1.4 -1.4 -1.6 -1.7 -1.4 -1.8 -1.4 -1.5
+     excursions > 4 slm: none
+     excursions > 2 slm: 
+       +  2.1..+  2.1 s  (0.02 s)  peak 2.0 slm at +2.1 s  1 mL
+       +  2.4..+  2.4 s  (0.02 s)  peak 2.0 slm at +2.4 s  1 mL
+       +  3.1..+  3.1 s  (0.02 s)  peak 2.1 slm at +3.1 s  1 mL
+       +  3.4..+  3.4 s  (0.02 s)  peak 2.0 slm at +3.4 s  1 mL
+       +  3.6..+  3.6 s  (0.05 s)  peak 2.8 slm at +3.6 s  2 mL
+       +  3.8..+  3.8 s  (0.02 s)  peak 2.1 slm at +3.8 s  1 mL
+       +  4.1..+  4.1 s  (0.02 s)  peak 2.4 slm at +4.1 s  1 mL
+       +  5.3..+  5.3 s  (0.05 s)  peak 2.2 slm at +5.3 s  1 mL
+     APAP state (S, ~1 s, arrives late): +-0.1 FOT/osc leak 12.0
+     leak estimate in the apnea: 12.36 -> 13.02 (min 12.36)
+     PH lines: +-0.2 src0 Vt 306, +0.1 src2 Vt 306, +0.2 src2 Vt 306, +0.2 src2 Vt 306, +0.2 src2 Vt 306, +0.2 src2 Vt 306, +0.2 src2 Vt 306, +0.2 src2 Vt 306, +0.3 src2 Vt 306, +0.3 src2 Vt 306, +0.3 src2 Vt 306, +0.3 src2 Vt 306, +0.3 src2 Vt 306, +0.3 src2 Vt 306, +0.3 src2 Vt 306, +0.4 src2 Vt 306, +0.4 src2 Vt 306, +0.4 src2 Vt 306, +1.8 src0 Vt 105, +2.1 src2 Vt 105, +2.2 src2 Vt 105, +2.2 src2 Vt 105, +2.2 src2 Vt 105, +2.2 src2 Vt 105, +2.2 src2 Vt 105, +2.2 src2 Vt 105, +2.3 src2 Vt 105, +2.3 src2 Vt 105, +2.3 src2 Vt 105, +2.3 src2 Vt 105, +2.3 src2 Vt 105, +2.4 src2 Vt 105, +2.4 src2 Vt 105, +2.4 src2 Vt 105, +2.4 src2 Vt 105, +2.5 src2 Vt 105, +3.6 src0 Vt 13, +4.2 src2 Vt 13, +4.2 src2 Vt 13, +4.2 src2 Vt 13, +4.2 src2 Vt 13, +4.2 src2 Vt 13, +4.3 src2 Vt 13, +4.3 src2 Vt 13, +4.3 src2 Vt 13, +4.3 src2 Vt 13, +4.3 src2 Vt 13, +4.4 src2 Vt 13, +4.4 src2 Vt 13, +4.4 src2 Vt 13, +4.4 src2 Vt 13, +4.9 src2 Vt 13, +6.1 src2 Vt 13, +6.2 src2 Vt 13, +6.2 src2 Vt 13, +6.2 src2 Vt 13, +6.2 src2 Vt 13, +6.2 src2 Vt 13, +6.2 src2 Vt 13, +6.2 src2 Vt 13, +6.3 src2 Vt 13, +6.3 src2 Vt 13, +6.3 src2 Vt 13, +6.3 src2 Vt 13, +6.3 src2 Vt 13, +6.4 src2 Vt 13, +6.4 src2 Vt 13, +6.4 src2 Vt 13, +6.4 src2 Vt 13, +7.1 src2 Vt 13, +8.2 src2 Vt 13, +8.2 src2 Vt 13, +8.2 src2 Vt 13, +8.2 src2 Vt 13, +8.2 src2 Vt 13, +8.3 src2 Vt 13, +8.3 src2 Vt 13, +8.3 src2 Vt 13, +8.3 src2 Vt 13, +8.3 src2 Vt 13, +8.3 src2 Vt 13, +8.3 src2 Vt 13, +8.4 src2 Vt 13, +8.4 src2 Vt 13, +8.4 src2 Vt 13, +8.4 src2 Vt 13, +10.1 src2 Vt 13, +10.1 src2 Vt 13, +10.2 src2 Vt 13, +10.2 src2 Vt 13, +10.2 src2 Vt 13, +10.2 src2 Vt 13, +10.2 src2 Vt 13, +10.2 src2 Vt 13, +10.2 src2 Vt 13, +10.2 src2 Vt 13, +10.3 src2 Vt 13, +10.3 src2 Vt 13, +10.3 src2 Vt 13, +10.3 src2 Vt 13, +10.4 src2 Vt 13, +10.4 src2 Vt 13, +10.4 src2 Vt 13, +10.4 src2 Vt 13, +10.5 src2 Vt 13
+
+  -- apnea 3 (apnea 100%): sim onset 199.9 s, end 209.9 s (10.0 s long)
+     patient flow in the apnea: mean -0.17  min -7.89  max +5.98 slm (max at +4.5 s)
+     P_mask 7.00..9.09 cmH2O   PID rpm 14645..21681
+     1 s mean flow: -4.0 -1.8 +1.5 +1.0 +1.1 -0.4 +0.3 -0.3 -0.0 -0.1
+     excursions > 4 slm: 
+       +  1.8..+  1.8 s  (0.03 s)  peak 4.7 slm at +1.8 s  3 mL
+       +  2.0..+  2.1 s  (0.05 s)  peak 5.0 slm at +2.0 s  5 mL
+       +  2.3..+  2.3 s  (0.08 s)  peak 4.5 slm at +2.3 s  3 mL
+       +  2.5..+  2.5 s  (0.05 s)  peak 4.8 slm at +2.5 s  4 mL
+       +  2.7..+  2.8 s  (0.03 s)  peak 4.6 slm at +2.7 s  3 mL
+       +  2.9..+  3.0 s  (0.06 s)  peak 5.1 slm at +3.0 s  5 mL
+       +  3.3..+  3.3 s  (0.02 s)  peak 4.3 slm at +3.3 s  1 mL
+       +  3.6..+  3.6 s  (0.06 s)  peak 5.1 slm at +3.6 s  5 mL
+     APAP state (S, ~1 s, arrives late): +4.3 FOT/osc leak 8.8
+     leak estimate in the apnea: 8.82 -> 10.32 (min 8.82)
+     PH lines: +-0.9 src2 Vt 81, +-0.9 src2 Vt 81, +-0.9 src2 Vt 81, +-0.9 src2 Vt 81, +-0.9 src2 Vt 81, +-0.8 src2 Vt 81, +-0.8 src2 Vt 81, +-0.8 src2 Vt 81, +-0.8 src2 Vt 81, +-0.8 src2 Vt 81, +-0.8 src2 Vt 81, +-0.7 src2 Vt 81, +-0.7 src2 Vt 81, +-0.7 src2 Vt 81, +-0.7 src2 Vt 81, +-0.7 src2 Vt 81, +-0.7 src2 Vt 81, +-0.6 src2 Vt 81, +-0.6 src2 Vt 81, +-0.6 src2 Vt 81, +-0.6 src2 Vt 81, +-0.4 src2 Vt 81, +-0.4 src2 Vt 81, +-0.4 src2 Vt 81, +-0.3 src2 Vt 81, +-0.3 src2 Vt 81, +-0.3 src2 Vt 81, +-0.1 src0 Vt 416, +1.1 src2 Vt 416, +1.1 src2 Vt 416, +1.1 src2 Vt 416, +1.1 src2 Vt 416, +1.1 src2 Vt 416, +1.2 src2 Vt 416, +1.2 src2 Vt 416, +1.2 src2 Vt 416, +1.2 src2 Vt 416, +1.2 src2 Vt 416, +1.2 src2 Vt 416, +1.2 src2 Vt 416, +1.2 src2 Vt 416, +1.3 src2 Vt 416, +1.3 src2 Vt 416, +1.3 src2 Vt 416, +1.4 src2 Vt 416, +1.4 src2 Vt 416, +1.4 src2 Vt 416, +1.6 src0 Vt 142, +1.6 src2 Vt 142, +2.7 src2 Vt 142, +3.0 src2 Vt 142, +3.0 src2 Vt 142, +3.0 src2 Vt 142, +3.1 src2 Vt 142, +3.1 src2 Vt 142, +3.1 src2 Vt 142, +3.1 src2 Vt 142, +3.1 src2 Vt 142, +3.1 src2 Vt 142, +3.2 src2 Vt 142, +3.2 src2 Vt 142, +3.2 src2 Vt 142, +3.2 src2 Vt 142, +3.2 src2 Vt 142, +3.2 src2 Vt 142, +3.2 src2 Vt 142, +3.2 src2 Vt 142, +3.3 src2 Vt 142, +3.4 src2 Vt 142, +3.4 src2 Vt 142, +3.6 src2 Vt 142, +4.6 src2 Vt 142, +4.6 src0 Vt 1, +5.1 src2 Vt 1, +5.1 src2 Vt 1, +5.1 src2 Vt 1, +5.1 src2 Vt 1, +5.1 src2 Vt 1, +5.1 src2 Vt 1, +5.2 src2 Vt 1, +5.2 src2 Vt 1, +5.2 src2 Vt 1, +5.2 src2 Vt 1, +5.2 src2 Vt 1, +5.2 src2 Vt 1, +5.2 src2 Vt 1, +5.2 src2 Vt 1, +5.3 src2 Vt 1, +5.3 src2 Vt 1, +5.3 src2 Vt 1, +5.3 src2 Vt 1, +5.4 src2 Vt 1, +5.4 src2 Vt 1, +5.4 src2 Vt 1, +7.0 src2 Vt 1, +7.0 src2 Vt 1, +7.1 src2 Vt 1, +7.1 src2 Vt 1, +7.1 src2 Vt 1, +7.1 src2 Vt 1, +7.1 src2 Vt 1, +7.1 src2 Vt 1, +7.1 src2 Vt 1, +7.1 src2 Vt 1, +7.2 src2 Vt 1, +7.2 src2 Vt 1, +7.2 src2 Vt 1, +7.2 src2 Vt 1, +7.2 src2 Vt 1, +7.2 src2 Vt 1, +7.2 src2 Vt 1, +7.3 src2 Vt 1, +7.4 src2 Vt 1, +7.4 src2 Vt 1, +7.4 src2 Vt 1, +7.4 src2 Vt 1, +7.4 src2 Vt 1, +7.5 src2 Vt 1, +9.1 src2 Vt 1, +9.1 src2 Vt 1, +9.1 src2 Vt 1, +9.1 src2 Vt 1, +9.1 src2 Vt 1, +9.2 src2 Vt 1, +9.2 src2 Vt 1, +9.2 src2 Vt 1, +9.2 src2 Vt 1, +9.2 src2 Vt 1, +9.2 src2 Vt 1, +9.2 src2 Vt 1, +9.2 src2 Vt 1, +9.3 src2 Vt 1, +9.3 src2 Vt 1, +9.3 src2 Vt 1, +9.3 src2 Vt 1, +9.4 src2 Vt 1, +9.4 src2 Vt 1, +9.4 src2 Vt 1, +9.4 src2 Vt 1
+
+  -- apnea 4 (apnea 100%): sim onset 254.9 s, end 264.9 s (10.0 s long)
+     patient flow in the apnea: mean +0.04  min -8.52  max +5.03 slm (max at +10.0 s)
+     P_mask 7.02..9.14 cmH2O   PID rpm 14562..21816
+     1 s mean flow: -4.2 -3.3 +0.4 +1.0 +0.5 +1.2 +0.9 +1.2 +0.7 +1.2
+     excursions > 4 slm: 
+       +  2.3..+  2.3 s  (0.02 s)  peak 4.8 slm at +2.3 s  2 mL
+       +  2.6..+  2.6 s  (0.02 s)  peak 4.1 slm at +2.6 s  1 mL
+       +  2.8..+  2.8 s  (0.03 s)  peak 4.4 slm at +2.8 s  3 mL
+       +  3.0..+  3.0 s  (0.03 s)  peak 4.5 slm at +3.0 s  3 mL
+       +  3.2..+  3.3 s  (0.05 s)  peak 4.6 slm at +3.2 s  3 mL
+       +  3.5..+  3.5 s  (0.02 s)  peak 4.3 slm at +3.5 s  1 mL
+       +  3.7..+  3.7 s  (0.02 s)  peak 4.3 slm at +3.7 s  3 mL
+       +  3.9..+  4.0 s  (0.03 s)  peak 4.5 slm at +4.0 s  3 mL
+     APAP state (S, ~1 s, arrives late): +1.7 FOT/osc leak 15.1
+     leak estimate in the apnea: 15.12 -> 9.48 (min 9.48)
+     PH lines: +-0.2 src0 Vt 492, +0.1 src2 Vt 492, +0.1 src2 Vt 492, +0.1 src2 Vt 492, +0.1 src2 Vt 492, +0.2 src2 Vt 492, +0.2 src2 Vt 492, +0.2 src2 Vt 492, +0.2 src2 Vt 492, +0.2 src2 Vt 492, +0.2 src2 Vt 492, +0.2 src2 Vt 492, +0.3 src2 Vt 492, +0.3 src2 Vt 492, +0.3 src2 Vt 492, +0.3 src2 Vt 492, +0.4 src2 Vt 492, +0.4 src2 Vt 492, +0.4 src2 Vt 492, +2.0 src0 Vt 136, +2.1 src2 Vt 136, +2.1 src2 Vt 136, +2.1 src2 Vt 136, +2.1 src2 Vt 136, +2.1 src2 Vt 136, +2.2 src2 Vt 136, +2.2 src2 Vt 136, +2.2 src2 Vt 136, +2.2 src2 Vt 136, +2.2 src2 Vt 136, +2.2 src2 Vt 136, +2.3 src2 Vt 136, +2.3 src2 Vt 136, +2.3 src2 Vt 136, +2.3 src2 Vt 136, +2.3 src2 Vt 136, +2.4 src2 Vt 136, +2.4 src2 Vt 136, +2.4 src2 Vt 136, +2.5 src2 Vt 136, +2.6 src2 Vt 136, +4.0 src2 Vt 136, +4.0 src2 Vt 136, +4.0 src2 Vt 136, +4.1 src2 Vt 136, +4.1 src2 Vt 136, +4.1 src2 Vt 136, +4.1 src2 Vt 136, +4.1 src2 Vt 136, +4.1 src2 Vt 136, +4.2 src2 Vt 136, +4.2 src2 Vt 136, +4.2 src2 Vt 136, +4.2 src2 Vt 136, +4.2 src2 Vt 136, +4.2 src2 Vt 136, +4.2 src2 Vt 136, +4.2 src2 Vt 136, +4.3 src2 Vt 136, +4.4 src2 Vt 136, +4.4 src2 Vt 136, +4.4 src2 Vt 136, +4.4 src2 Vt 136, +4.6 src2 Vt 136, +5.0 src2 Vt 136, +6.1 src2 Vt 136, +6.1 src2 Vt 136, +6.1 src2 Vt 136, +6.1 src2 Vt 136, +6.1 src2 Vt 136, +6.1 src2 Vt 136, +6.1 src2 Vt 136, +6.2 src2 Vt 136, +6.2 src2 Vt 136, +6.2 src2 Vt 136, +6.2 src2 Vt 136, +6.2 src2 Vt 136, +6.2 src2 Vt 136, +6.3 src2 Vt 136, +6.3 src2 Vt 136, +6.3 src2 Vt 136, +6.4 src2 Vt 136, +6.4 src2 Vt 136, +6.4 src2 Vt 136, +6.6 src2 Vt 136, +8.0 src2 Vt 136, +8.0 src2 Vt 136, +8.0 src2 Vt 136, +8.1 src2 Vt 136, +8.1 src2 Vt 136, +8.1 src2 Vt 136, +8.1 src2 Vt 136, +8.1 src2 Vt 136, +8.1 src2 Vt 136, +8.2 src2 Vt 136, +8.2 src2 Vt 136, +8.2 src2 Vt 136, +8.2 src2 Vt 136, +8.2 src2 Vt 136, +8.2 src2 Vt 136, +8.2 src2 Vt 136, +8.2 src2 Vt 136, +8.3 src2 Vt 136, +8.4 src2 Vt 136, +8.4 src2 Vt 136, +8.4 src2 Vt 136, +8.4 src2 Vt 136, +8.5 src2 Vt 136, +9.0 src2 Vt 136, +10.1 src2 Vt 136, +10.1 src2 Vt 136, +10.1 src2 Vt 136, +10.1 src2 Vt 136, +10.1 src2 Vt 136, +10.1 src2 Vt 136, +10.1 src2 Vt 136, +10.1 src2 Vt 136, +10.2 src2 Vt 136, +10.2 src2 Vt 136, +10.2 src2 Vt 136, +10.2 src2 Vt 136, +10.2 src2 Vt 136, +10.2 src2 Vt 136, +10.3 src2 Vt 136, +10.3 src2 Vt 136, +10.3 src2 Vt 136, +10.3 src2 Vt 136, +10.4 src2 Vt 136, +10.4 src2 Vt 136, +10.4 src2 Vt 136, +10.5 src2 Vt 136
+
+  -- apnea 5 (apnea 100%): sim onset 309.9 s, end 329.9 s (20.0 s long)
+     patient flow in the apnea: mean +0.02  min -8.07  max +4.87 slm (max at +2.8 s)
+     P_mask 6.95..9.18 cmH2O   PID rpm 14157..21871
+     1 s mean flow: -4.2 -1.8 +0.9 -0.0 +0.2 +0.1 +0.5 +0.2 +0.4 -0.1 +0.9 +0.3 +0.6 -0.1 +0.0 +0.3 +0.4 +0.0 +0.3 +0.1
+     excursions > 4 slm: 
+       +  2.0..+  2.0 s  (0.02 s)  peak 4.7 slm at +2.0 s  3 mL
+       +  2.3..+  2.4 s  (0.05 s)  peak 4.3 slm at +2.3 s  3 mL
+       +  2.6..+  2.6 s  (0.05 s)  peak 4.5 slm at +2.6 s  3 mL
+       +  2.8..+  2.8 s  (0.03 s)  peak 4.9 slm at +2.8 s  3 mL
+       +  6.0..+  6.0 s  (0.02 s)  peak 4.2 slm at +6.0 s  1 mL
+       +  6.5..+  6.5 s  (0.02 s)  peak 4.1 slm at +6.5 s  1 mL
+       +  7.6..+  7.6 s  (0.02 s)  peak 4.0 slm at +7.6 s  1 mL
+       + 10.5..+ 10.6 s  (0.05 s)  peak 4.5 slm at +10.6 s  3 mL
+     APAP state (S, ~1 s, arrives late): +-1.8 FOT/osc leak 9.4
+     leak estimate in the apnea: 9.84 -> 10.98 (min 9.84)
+     PH lines: +-0.8 src2 Vt 138, +-0.8 src2 Vt 138, +-0.8 src2 Vt 138, +-0.8 src2 Vt 138, +-0.8 src2 Vt 138, +-0.7 src2 Vt 138, +-0.7 src2 Vt 138, +-0.7 src2 Vt 138, +-0.7 src2 Vt 138, +-0.7 src2 Vt 138, +-0.7 src2 Vt 138, +-0.7 src2 Vt 138, +-0.6 src2 Vt 138, +-0.6 src2 Vt 138, +-0.6 src2 Vt 138, +-0.6 src2 Vt 138, +-0.6 src2 Vt 138, +-0.4 src2 Vt 138, +-0.4 src2 Vt 138, +-0.4 src2 Vt 138, +-0.3 src2 Vt 138, +-0.3 src2 Vt 138, +-0.1 src0 Vt 460, +1.1 src2 Vt 460, +1.1 src2 Vt 460, +1.1 src2 Vt 460, +1.1 src2 Vt 460, +1.1 src2 Vt 460, +1.2 src2 Vt 460, +1.2 src2 Vt 460, +1.2 src2 Vt 460, +1.2 src2 Vt 460, +1.2 src2 Vt 460, +1.2 src2 Vt 460, +1.3 src2 Vt 460, +1.3 src2 Vt 460, +1.3 src2 Vt 460, +1.4 src2 Vt 460, +1.4 src2 Vt 460, +1.4 src2 Vt 460, +1.4 src2 Vt 460, +1.6 src0 Vt 142, +2.8 src0 Vt 9, +3.1 src2 Vt 9, +3.1 src2 Vt 9, +3.1 src2 Vt 9, +3.1 src2 Vt 9, +3.2 src2 Vt 9, +3.2 src2 Vt 9, +3.2 src2 Vt 9, +3.3 src2 Vt 9, +3.3 src2 Vt 9, +3.3 src2 Vt 9, +3.4 src2 Vt 9, +3.4 src2 Vt 9, +3.4 src2 Vt 9, +3.4 src2 Vt 9, +3.4 src2 Vt 9, +3.4 src2 Vt 9, +3.4 src2 Vt 9, +3.6 src2 Vt 9, +5.1 src2 Vt 9, +5.1 src2 Vt 9, +5.1 src2 Vt 9, +5.1 src2 Vt 9, +5.1 src2 Vt 9, +5.1 src2 Vt 9, +5.2 src2 Vt 9, +5.2 src2 Vt 9, +5.2 src2 Vt 9, +5.2 src2 Vt 9, +5.2 src2 Vt 9, +5.2 src2 Vt 9, +5.3 src2 Vt 9, +5.3 src2 Vt 9, +5.3 src2 Vt 9, +5.3 src2 Vt 9, +5.4 src2 Vt 9, +5.4 src2 Vt 9, +6.5 src2 Vt 9, +7.0 src2 Vt 9, +7.1 src2 Vt 9, +7.1 src2 Vt 9, +7.1 src2 Vt 9, +7.1 src2 Vt 9, +7.1 src2 Vt 9, +7.1 src2 Vt 9, +7.1 src2 Vt 9, +7.1 src2 Vt 9, +7.2 src2 Vt 9, +7.2 src2 Vt 9, +7.2 src2 Vt 9, +7.2 src2 Vt 9, +7.2 src2 Vt 9, +7.2 src2 Vt 9, +7.3 src2 Vt 9, +7.3 src2 Vt 9, +7.3 src2 Vt 9, +7.4 src2 Vt 9, +7.4 src2 Vt 9, +7.4 src2 Vt 9, +9.0 src2 Vt 9, +9.1 src2 Vt 9, +9.1 src2 Vt 9, +9.1 src2 Vt 9, +9.1 src2 Vt 9, +9.1 src2 Vt 9, +9.1 src2 Vt 9, +9.1 src2 Vt 9, +9.1 src2 Vt 9, +9.2 src2 Vt 9, +9.2 src2 Vt 9, +9.2 src2 Vt 9, +9.2 src2 Vt 9, +9.2 src2 Vt 9, +9.3 src2 Vt 9, +9.3 src2 Vt 9, +9.3 src2 Vt 9, +9.4 src2 Vt 9, +9.4 src2 Vt 9, +9.4 src2 Vt 9, +9.9 src2 Vt 9, +10.0 src2 Vt 9, +10.6 src2 Vt 9, +11.1 src2 Vt 9, +11.1 src2 Vt 9, +11.1 src2 Vt 9, +11.1 src2 Vt 9, +11.1 src2 Vt 9, +11.2 src2 Vt 9, +11.2 src2 Vt 9, +11.2 src2 Vt 9, +11.2 src2 Vt 9, +11.2 src2 Vt 9, +11.2 src2 Vt 9, +11.2 src2 Vt 9, +11.2 src2 Vt 9, +11.3 src2 Vt 9, +11.3 src2 Vt 9, +11.4 src2 Vt 9, +11.4 src2 Vt 9, +11.4 src2 Vt 9, +11.9 src2 Vt 9, +12.5 src2 Vt 9, +13.1 src2 Vt 9, +13.1 src2 Vt 9, +13.1 src2 Vt 9, +13.1 src2 Vt 9, +13.1 src2 Vt 9, +13.1 src2 Vt 9, +13.1 src2 Vt 9, +13.2 src2 Vt 9, +13.2 src2 Vt 9, +13.2 src2 Vt 9, +13.2 src2 Vt 9, +13.2 src2 Vt 9, +13.2 src2 Vt 9, +13.3 src2 Vt 9, +13.3 src2 Vt 9, +13.3 src2 Vt 9, +13.3 src2 Vt 9, +13.3 src2 Vt 9, +13.4 src2 Vt 9, +13.4 src2 Vt 9, +13.4 src2 Vt 9, +13.6 src2 Vt 9, +14.0 src2 Vt 9, +15.1 src2 Vt 9, +15.1 src2 Vt 9, +15.1 src2 Vt 9, +15.1 src2 Vt 9, +15.1 src2 Vt 9, +15.2 src2 Vt 9, +15.2 src2 Vt 9, +15.2 src2 Vt 9, +15.2 src2 Vt 9, +15.2 src2 Vt 9, +15.2 src2 Vt 9, +15.2 src2 Vt 9, +15.2 src2 Vt 9, +15.3 src2 Vt 9, +15.3 src2 Vt 9, +15.3 src2 Vt 9, +15.4 src2 Vt 9, +15.4 src2 Vt 9, +15.4 src2 Vt 9, +15.9 src2 Vt 9, +17.1 src2 Vt 9, +17.1 src2 Vt 9, +17.1 src2 Vt 9, +17.1 src2 Vt 9, +17.1 src2 Vt 9, +17.1 src2 Vt 9, +17.1 src2 Vt 9, +17.1 src2 Vt 9, +17.2 src2 Vt 9, +17.2 src2 Vt 9, +17.2 src2 Vt 9, +17.2 src2 Vt 9, +17.2 src2 Vt 9, +17.2 src2 Vt 9, +17.2 src2 Vt 9, +17.3 src2 Vt 9, +17.3 src2 Vt 9, +17.3 src2 Vt 9, +17.4 src2 Vt 9, +17.4 src2 Vt 9, +17.4 src2 Vt 9, +17.4 src2 Vt 9, +17.5 src2 Vt 9, +17.5 src2 Vt 9, +19.1 src2 Vt 9, +19.1 src2 Vt 9, +19.1 src2 Vt 9, +19.1 src2 Vt 9, +19.1 src2 Vt 9, +19.2 src2 Vt 9, +19.2 src2 Vt 9, +19.2 src2 Vt 9, +19.2 src2 Vt 9, +19.2 src2 Vt 9, +19.2 src2 Vt 9, +19.2 src2 Vt 9, +19.2 src2 Vt 9, +19.3 src2 Vt 9, +19.3 src2 Vt 9, +19.3 src2 Vt 9, +19.3 src2 Vt 9, +19.4 src2 Vt 9, +19.4 src2 Vt 9, +19.4 src2 Vt 9, +19.4 src2 Vt 9, +19.5 src2 Vt 9, +20.0 src2 Vt 9
+
+  -- apnea 6 (apnea 100%): sim onset 389.9 s, end 409.9 s (20.0 s long)
+     patient flow in the apnea: mean -0.01  min -6.36  max +4.61 slm (max at +16.6 s)
+     P_mask 6.92..9.08 cmH2O   PID rpm 14160..21679
+     1 s mean flow: -2.6 -1.7 -2.0 -1.4 -0.1 +0.2 +0.4 +0.4 +0.8 +0.5 +0.6 +0.5 +0.4 +0.3 +0.3 +0.5 +0.4 +0.5 +0.6 +0.5
+     excursions > 4 slm: 
+       +  4.5..+  4.5 s  (0.02 s)  peak 4.1 slm at +4.5 s  1 mL
+       +  6.3..+  6.3 s  (0.05 s)  peak 4.1 slm at +6.3 s  3 mL
+       +  6.5..+  6.5 s  (0.02 s)  peak 4.2 slm at +6.5 s  1 mL
+       +  6.8..+  6.8 s  (0.02 s)  peak 4.1 slm at +6.8 s  3 mL
+       +  7.4..+  7.4 s  (0.02 s)  peak 4.1 slm at +7.4 s  1 mL
+       +  8.3..+  8.3 s  (0.04 s)  peak 4.2 slm at +8.3 s  3 mL
+       +  8.5..+  8.5 s  (0.02 s)  peak 4.2 slm at +8.5 s  1 mL
+       +  8.8..+  8.8 s  (0.02 s)  peak 4.1 slm at +8.8 s  1 mL
+     APAP state (S, ~1 s, arrives late): +-1.2 FOT/osc leak 14.6
+     leak estimate in the apnea: 13.50 -> 10.20 (min 9.66)
+     PH lines: +-0.8 src2 Vt 473, +-0.8 src2 Vt 473, +-0.8 src2 Vt 473, +-0.8 src2 Vt 473, +-0.8 src2 Vt 473, +-0.7 src2 Vt 473, +-0.7 src2 Vt 473, +-0.7 src2 Vt 473, +-0.7 src2 Vt 473, +-0.7 src2 Vt 473, +-0.7 src2 Vt 473, +-0.7 src2 Vt 473, +-0.7 src2 Vt 473, +-0.6 src2 Vt 473, +-0.6 src2 Vt 473, +-0.6 src2 Vt 473, +-0.5 src2 Vt 473, +-0.4 src2 Vt 473, +-0.4 src2 Vt 473, +-0.3 src2 Vt 473, +-0.3 src2 Vt 473, +-0.1 src0 Vt 189, +1.2 src2 Vt 189, +1.2 src2 Vt 189, +1.2 src2 Vt 189, +1.2 src2 Vt 189, +1.2 src2 Vt 189, +1.2 src2 Vt 189, +1.2 src2 Vt 189, +1.3 src2 Vt 189, +1.3 src2 Vt 189, +1.3 src2 Vt 189, +1.3 src2 Vt 189, +1.3 src2 Vt 189, +1.4 src2 Vt 189, +1.4 src2 Vt 189, +1.4 src2 Vt 189, +1.9 src2 Vt 189, +3.1 src2 Vt 189, +3.1 src2 Vt 189, +3.1 src2 Vt 189, +3.1 src2 Vt 189, +3.2 src2 Vt 189, +3.2 src2 Vt 189, +3.2 src2 Vt 189, +3.2 src2 Vt 189, +3.2 src2 Vt 189, +3.2 src2 Vt 189, +3.2 src2 Vt 189, +3.2 src2 Vt 189, +3.3 src2 Vt 189, +3.3 src2 Vt 189, +3.3 src2 Vt 189, +3.3 src2 Vt 189, +3.4 src2 Vt 189, +3.4 src2 Vt 189, +3.4 src2 Vt 189, +3.4 src2 Vt 189, +3.7 src2 Vt 189, +4.1 src2 Vt 189, +4.3 src0 Vt 103, +5.1 src2 Vt 103, +5.1 src2 Vt 103, +5.1 src2 Vt 103, +5.1 src2 Vt 103, +5.1 src2 Vt 103, +5.2 src2 Vt 103, +5.2 src2 Vt 103, +5.2 src2 Vt 103, +5.2 src2 Vt 103, +5.2 src2 Vt 103, +5.2 src2 Vt 103, +5.2 src2 Vt 103, +5.2 src2 Vt 103, +5.3 src2 Vt 103, +5.4 src2 Vt 103, +5.4 src2 Vt 103, +5.4 src2 Vt 103, +7.1 src2 Vt 103, +7.1 src2 Vt 103, +7.1 src2 Vt 103, +7.1 src2 Vt 103, +7.2 src2 Vt 103, +7.2 src2 Vt 103, +7.2 src2 Vt 103, +7.2 src2 Vt 103, +7.2 src2 Vt 103, +7.2 src2 Vt 103, +7.2 src2 Vt 103, +7.3 src2 Vt 103, +7.3 src2 Vt 103, +7.3 src2 Vt 103, +7.3 src2 Vt 103, +7.4 src2 Vt 103, +7.4 src2 Vt 103, +7.4 src2 Vt 103, +7.4 src2 Vt 103, +7.5 src2 Vt 103, +7.6 src2 Vt 103, +9.1 src2 Vt 103, +9.1 src2 Vt 103, +9.1 src2 Vt 103, +9.1 src2 Vt 103, +9.1 src2 Vt 103, +9.2 src2 Vt 103, +9.2 src2 Vt 103, +9.2 src2 Vt 103, +9.2 src2 Vt 103, +9.2 src2 Vt 103, +9.2 src2 Vt 103, +9.2 src2 Vt 103, +9.2 src2 Vt 103, +9.3 src2 Vt 103, +9.3 src2 Vt 103, +9.3 src2 Vt 103, +9.3 src2 Vt 103, +9.4 src2 Vt 103, +9.4 src2 Vt 103, +9.4 src2 Vt 103, +9.4 src2 Vt 103, +9.5 src2 Vt 103, +11.1 src2 Vt 103, +11.1 src2 Vt 103, +11.1 src2 Vt 103, +11.1 src2 Vt 103, +11.2 src2 Vt 103, +11.2 src2 Vt 103, +11.2 src2 Vt 103, +11.2 src2 Vt 103, +11.2 src2 Vt 103, +11.2 src2 Vt 103, +11.2 src2 Vt 103, +11.3 src2 Vt 103, +11.3 src2 Vt 103, +11.3 src2 Vt 103, +11.3 src2 Vt 103, +11.4 src2 Vt 103, +11.4 src2 Vt 103, +11.4 src2 Vt 103, +11.4 src2 Vt 103, +11.5 src2 Vt 103, +13.1 src2 Vt 103, +13.1 src2 Vt 103, +13.1 src2 Vt 103, +13.1 src2 Vt 103, +13.2 src2 Vt 103, +13.2 src2 Vt 103, +13.2 src2 Vt 103, +13.2 src2 Vt 103, +13.2 src2 Vt 103, +13.2 src2 Vt 103, +13.3 src2 Vt 103, +13.3 src2 Vt 103, +13.3 src2 Vt 103, +13.4 src2 Vt 103, +13.4 src2 Vt 103, +15.1 src2 Vt 103, +15.1 src2 Vt 103, +15.1 src2 Vt 103, +15.1 src2 Vt 103, +15.1 src2 Vt 103, +15.2 src2 Vt 103, +15.2 src2 Vt 103, +15.2 src2 Vt 103, +15.2 src2 Vt 103, +15.2 src2 Vt 103, +15.2 src2 Vt 103, +15.2 src2 Vt 103, +15.2 src2 Vt 103, +15.3 src2 Vt 103, +15.3 src2 Vt 103, +15.4 src2 Vt 103, +15.4 src2 Vt 103, +15.4 src2 Vt 103, +15.4 src2 Vt 103, +16.0 src2 Vt 103, +17.1 src2 Vt 103, +17.1 src2 Vt 103, +17.1 src2 Vt 103, +17.2 src2 Vt 103, +17.2 src2 Vt 103, +17.2 src2 Vt 103, +17.2 src2 Vt 103, +17.2 src2 Vt 103, +17.2 src2 Vt 103, +17.3 src2 Vt 103, +17.3 src2 Vt 103, +17.3 src2 Vt 103, +17.3 src2 Vt 103, +17.3 src2 Vt 103, +17.4 src2 Vt 103, +17.4 src2 Vt 103, +17.4 src2 Vt 103, +17.5 src2 Vt 103, +18.4 src2 Vt 103, +19.1 src2 Vt 103, +19.1 src2 Vt 103, +19.1 src2 Vt 103, +19.1 src2 Vt 103, +19.1 src2 Vt 103, +19.2 src2 Vt 103, +19.2 src2 Vt 103, +19.2 src2 Vt 103, +19.2 src2 Vt 103, +19.2 src2 Vt 103, +19.2 src2 Vt 103, +19.2 src2 Vt 103, +19.2 src2 Vt 103, +19.3 src2 Vt 103, +19.3 src2 Vt 103, +19.3 src2 Vt 103, +19.3 src2 Vt 103, +19.4 src2 Vt 103, +19.4 src2 Vt 103, +19.4 src2 Vt 103, +19.4 src2 Vt 103, +19.5 src2 Vt 103
+
+  -- apnea 7 (apnea 100%): sim onset 469.9 s, end 489.9 s (20.0 s long)
+     patient flow in the apnea: mean -2.02  min -7.47  max +4.97 slm (max at +10.3 s)
+     P_mask 6.93..9.15 cmH2O   PID rpm 14166..21688
+     1 s mean flow: -4.0 -3.4 -3.1 -3.4 -3.6 -3.2 -3.3 -3.2 -3.3 -3.2 +0.9 -1.1 -0.7 -0.9 -0.9 -0.8 -1.2 -0.9 -0.6 -1.4 -2.2
+     excursions > 4 slm: 
+       + 10.1..+ 10.1 s  (0.02 s)  peak 4.8 slm at +10.1 s  3 mL
+       + 10.3..+ 10.3 s  (0.05 s)  peak 5.0 slm at +10.3 s  5 mL
+       + 11.0..+ 11.0 s  (0.06 s)  peak 4.7 slm at +11.0 s  4 mL
+     APAP state (S, ~1 s, arrives late): +0.4 FOT/osc leak 13.5
+     leak estimate in the apnea: 13.50 -> 12.42 (min 12.12)
+     PH lines: +-0.9 src2 Vt 140, +-0.9 src2 Vt 140, +-0.8 src2 Vt 140, +-0.8 src2 Vt 140, +-0.8 src2 Vt 140, +-0.8 src2 Vt 140, +-0.8 src2 Vt 140, +-0.8 src2 Vt 140, +-0.8 src2 Vt 140, +-0.8 src2 Vt 140, +-0.7 src2 Vt 140, +-0.7 src2 Vt 140, +-0.7 src2 Vt 140, +-0.7 src2 Vt 140, +-0.7 src2 Vt 140, +-0.7 src2 Vt 140, +-0.6 src2 Vt 140, +-0.6 src2 Vt 140, +-0.6 src2 Vt 140, +-0.5 src2 Vt 140, +-0.4 src2 Vt 140, +-0.4 src2 Vt 140, +-0.4 src2 Vt 140, +-0.3 src2 Vt 140, +-0.3 src2 Vt 140, +-0.1 src0 Vt 458, +1.1 src2 Vt 458, +1.2 src2 Vt 458, +1.2 src2 Vt 458, +1.2 src2 Vt 458, +1.2 src2 Vt 458, +1.2 src2 Vt 458, +1.2 src2 Vt 458, +1.3 src2 Vt 458, +1.3 src2 Vt 458, +1.3 src2 Vt 458, +1.3 src2 Vt 458, +1.3 src2 Vt 458, +1.3 src2 Vt 458, +1.4 src2 Vt 458, +1.4 src2 Vt 458, +1.8 src2 Vt 458, +3.1 src2 Vt 458, +3.1 src2 Vt 458, +3.1 src2 Vt 458, +3.1 src2 Vt 458, +3.1 src2 Vt 458, +3.2 src2 Vt 458, +3.2 src2 Vt 458, +3.2 src2 Vt 458, +3.2 src2 Vt 458, +3.2 src2 Vt 458, +3.2 src2 Vt 458, +3.2 src2 Vt 458, +3.2 src2 Vt 458, +3.3 src2 Vt 458, +3.3 src2 Vt 458, +3.3 src2 Vt 458, +3.3 src2 Vt 458, +3.4 src2 Vt 458, +3.4 src2 Vt 458, +3.4 src2 Vt 458, +3.4 src2 Vt 458, +3.4 src2 Vt 458, +3.4 src2 Vt 458, +5.1 src2 Vt 458, +5.1 src2 Vt 458, +5.2 src2 Vt 458, +5.2 src2 Vt 458, +5.2 src2 Vt 458, +5.2 src2 Vt 458, +5.2 src2 Vt 458, +5.2 src2 Vt 458, +5.2 src2 Vt 458, +5.2 src2 Vt 458, +5.3 src2 Vt 458, +5.3 src2 Vt 458, +5.3 src2 Vt 458, +5.3 src2 Vt 458, +5.3 src2 Vt 458, +5.3 src2 Vt 458, +5.4 src2 Vt 458, +5.4 src2 Vt 458, +5.4 src2 Vt 458, +5.5 src2 Vt 458, +5.7 src2 Vt 458, +7.1 src2 Vt 458, +7.1 src2 Vt 458, +7.1 src2 Vt 458, +7.1 src2 Vt 458, +7.1 src2 Vt 458, +7.2 src2 Vt 458, +7.2 src2 Vt 458, +7.2 src2 Vt 458, +7.2 src2 Vt 458, +7.2 src2 Vt 458, +7.2 src2 Vt 458, +7.2 src2 Vt 458, +7.3 src2 Vt 458, +7.3 src2 Vt 458, +7.3 src2 Vt 458, +7.3 src2 Vt 458, +7.3 src2 Vt 458, +7.4 src2 Vt 458, +7.4 src2 Vt 458, +7.4 src2 Vt 458, +7.4 src2 Vt 458, +7.5 src2 Vt 458, +9.1 src2 Vt 458, +9.1 src2 Vt 458, +9.1 src2 Vt 458, +9.2 src2 Vt 458, +9.2 src2 Vt 458, +9.2 src2 Vt 458, +9.2 src2 Vt 458, +9.2 src2 Vt 458, +9.2 src2 Vt 458, +9.2 src2 Vt 458, +9.2 src2 Vt 458, +9.3 src2 Vt 458, +9.3 src2 Vt 458, +9.3 src2 Vt 458, +9.4 src2 Vt 458, +9.4 src2 Vt 458, +9.4 src2 Vt 458, +9.4 src2 Vt 458, +10.0 src2 Vt 458, +10.1 src0 Vt 141, +10.2 src2 Vt 141, +11.0 src0 Vt 7, +11.1 src2 Vt 7, +11.1 src2 Vt 7, +11.1 src2 Vt 7, +11.1 src2 Vt 7, +11.1 src2 Vt 7, +11.1 src2 Vt 7, +11.1 src2 Vt 7, +11.2 src2 Vt 7, +11.2 src2 Vt 7, +11.2 src2 Vt 7, +11.2 src2 Vt 7, +11.2 src2 Vt 7, +11.2 src2 Vt 7, +11.2 src2 Vt 7, +11.3 src2 Vt 7, +11.3 src2 Vt 7, +11.3 src2 Vt 7, +11.4 src2 Vt 7, +11.4 src2 Vt 7, +11.4 src2 Vt 7, +11.4 src2 Vt 7, +13.1 src2 Vt 7, +13.1 src2 Vt 7, +13.1 src2 Vt 7, +13.1 src2 Vt 7, +13.1 src2 Vt 7, +13.2 src2 Vt 7, +13.2 src2 Vt 7, +13.2 src2 Vt 7, +13.2 src2 Vt 7, +13.2 src2 Vt 7, +13.2 src2 Vt 7, +13.2 src2 Vt 7, +13.2 src2 Vt 7, +13.3 src2 Vt 7, +13.3 src2 Vt 7, +13.3 src2 Vt 7, +13.3 src2 Vt 7, +13.4 src2 Vt 7, +13.4 src2 Vt 7, +13.4 src2 Vt 7, +13.4 src2 Vt 7, +13.6 src2 Vt 7, +13.9 src2 Vt 7, +14.0 src2 Vt 7, +15.1 src2 Vt 7, +15.1 src2 Vt 7, +15.1 src2 Vt 7, +15.1 src2 Vt 7, +15.1 src2 Vt 7, +15.2 src2 Vt 7, +15.2 src2 Vt 7, +15.2 src2 Vt 7, +15.2 src2 Vt 7, +15.2 src2 Vt 7, +15.2 src2 Vt 7, +15.2 src2 Vt 7, +15.2 src2 Vt 7, +15.3 src2 Vt 7, +15.3 src2 Vt 7, +15.3 src2 Vt 7, +15.3 src2 Vt 7, +15.3 src2 Vt 7, +15.4 src2 Vt 7, +15.4 src2 Vt 7, +15.4 src2 Vt 7, +15.5 src2 Vt 7, +17.0 src2 Vt 7, +17.1 src2 Vt 7, +17.1 src2 Vt 7, +17.1 src2 Vt 7, +17.1 src2 Vt 7, +17.1 src2 Vt 7, +17.2 src2 Vt 7, +17.2 src2 Vt 7, +17.2 src2 Vt 7, +17.2 src2 Vt 7, +17.2 src2 Vt 7, +17.2 src2 Vt 7, +17.2 src2 Vt 7, +17.3 src2 Vt 7, +17.3 src2 Vt 7, +17.3 src2 Vt 7, +17.3 src2 Vt 7, +17.4 src2 Vt 7, +17.4 src2 Vt 7, +17.4 src2 Vt 7, +17.4 src2 Vt 7, +17.6 src2 Vt 7, +18.9 src2 Vt 7, +19.0 src2 Vt 7, +19.1 src2 Vt 7, +19.1 src2 Vt 7, +19.1 src2 Vt 7, +19.1 src2 Vt 7, +19.1 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.2 src2 Vt 7, +19.3 src2 Vt 7, +19.3 src2 Vt 7, +19.3 src2 Vt 7, +19.4 src2 Vt 7, +19.4 src2 Vt 7, +19.4 src2 Vt 7, +19.4 src2 Vt 7, +19.9 src2 Vt 7, +20.1 src2 Vt 7
+
+  -- apnea 8 (apnea 100%): sim onset 849.9 s, end 869.9 s (20.0 s long)
+     patient flow in the apnea: mean +0.47  min -8.17  max +5.49 slm (max at +8.8 s)
+     P_mask 6.92..9.07 cmH2O   PID rpm 14128..21676
+     1 s mean flow: -3.8 -3.2 +0.8 +0.6 +1.0 +0.8 +0.9 +0.8 +1.5 +1.1 +1.2 +0.6 +1.2 +0.8 +1.0 +1.0 +1.1 -0.1 +0.7 +0.1
+     excursions > 4 slm: 
+       +  2.0..+  2.0 s  (0.04 s)  peak 4.3 slm at +2.0 s  3 mL
+       +  2.3..+  2.3 s  (0.05 s)  peak 4.8 slm at +2.3 s  4 mL
+       +  2.5..+  2.6 s  (0.05 s)  peak 4.2 slm at +2.6 s  3 mL
+       +  3.0..+  3.0 s  (0.02 s)  peak 4.3 slm at +3.0 s  3 mL
+       +  3.4..+  3.4 s  (0.02 s)  peak 4.3 slm at +3.4 s  1 mL
+       +  3.6..+  3.6 s  (0.02 s)  peak 4.1 slm at +3.6 s  1 mL
+       +  3.8..+  3.8 s  (0.02 s)  peak 4.4 slm at +3.8 s  1 mL
+       +  4.0..+  4.0 s  (0.02 s)  peak 4.2 slm at +4.0 s  3 mL
+     APAP state (S, ~1 s, arrives late): +-1.7 FOT/osc leak 10.6
+     leak estimate in the apnea: 10.56 -> 10.32 (min 9.18)
+     PH lines: +-0.8 src2 Vt 137, +-0.8 src2 Vt 137, +-0.8 src2 Vt 137, +-0.8 src2 Vt 137, +-0.8 src2 Vt 137, +-0.8 src2 Vt 137, +-0.7 src2 Vt 137, +-0.7 src2 Vt 137, +-0.7 src2 Vt 137, +-0.7 src2 Vt 137, +-0.7 src2 Vt 137, +-0.7 src2 Vt 137, +-0.7 src2 Vt 137, +-0.7 src2 Vt 137, +-0.6 src2 Vt 137, +-0.6 src2 Vt 137, +-0.6 src2 Vt 137, +-0.6 src2 Vt 137, +-0.6 src2 Vt 137, +-0.5 src2 Vt 137, +-0.4 src2 Vt 137, +-0.4 src2 Vt 137, +-0.3 src2 Vt 137, +-0.3 src2 Vt 137, +-0.1 src0 Vt 473, +1.1 src2 Vt 473, +1.1 src2 Vt 473, +1.1 src2 Vt 473, +1.1 src2 Vt 473, +1.1 src2 Vt 473, +1.2 src2 Vt 473, +1.2 src2 Vt 473, +1.2 src2 Vt 473, +1.2 src2 Vt 473, +1.2 src2 Vt 473, +1.2 src2 Vt 473, +1.2 src2 Vt 473, +1.2 src2 Vt 473, +1.3 src2 Vt 473, +1.3 src2 Vt 473, +1.3 src2 Vt 473, +1.4 src2 Vt 473, +1.4 src2 Vt 473, +1.4 src2 Vt 473, +1.4 src2 Vt 473, +1.4 src2 Vt 473, +1.9 src0 Vt 140, +3.1 src2 Vt 140, +3.1 src2 Vt 140, +3.1 src2 Vt 140, +3.1 src2 Vt 140, +3.1 src2 Vt 140, +3.1 src2 Vt 140, +3.2 src2 Vt 140, +3.2 src2 Vt 140, +3.2 src2 Vt 140, +3.2 src2 Vt 140, +3.2 src2 Vt 140, +3.2 src2 Vt 140, +3.2 src2 Vt 140, +3.2 src2 Vt 140, +3.3 src2 Vt 140, +3.3 src2 Vt 140, +3.3 src2 Vt 140, +3.4 src2 Vt 140, +3.4 src2 Vt 140, +3.4 src2 Vt 140, +3.4 src2 Vt 140, +3.4 src2 Vt 140, +3.5 src2 Vt 140, +5.0 src2 Vt 140, +5.1 src2 Vt 140, +5.1 src2 Vt 140, +5.1 src2 Vt 140, +5.1 src2 Vt 140, +5.1 src2 Vt 140, +5.1 src2 Vt 140, +5.1 src2 Vt 140, +5.2 src2 Vt 140, +5.2 src2 Vt 140, +5.2 src2 Vt 140, +5.2 src2 Vt 140, +5.2 src2 Vt 140, +5.2 src2 Vt 140, +5.2 src2 Vt 140, +5.3 src2 Vt 140, +5.4 src2 Vt 140, +5.4 src2 Vt 140, +5.4 src2 Vt 140, +5.4 src2 Vt 140, +5.4 src2 Vt 140, +5.9 src2 Vt 140, +7.1 src2 Vt 140, +7.1 src2 Vt 140, +7.1 src2 Vt 140, +7.1 src2 Vt 140, +7.1 src2 Vt 140, +7.1 src2 Vt 140, +7.2 src2 Vt 140, +7.2 src2 Vt 140, +7.2 src2 Vt 140, +7.2 src2 Vt 140, +7.2 src2 Vt 140, +7.2 src2 Vt 140, +7.2 src2 Vt 140, +7.3 src2 Vt 140, +7.3 src2 Vt 140, +7.3 src2 Vt 140, +7.4 src2 Vt 140, +7.4 src2 Vt 140, +7.4 src2 Vt 140, +7.4 src2 Vt 140, +7.5 src2 Vt 140, +9.0 src2 Vt 140, +9.1 src2 Vt 140, +9.1 src2 Vt 140, +9.1 src2 Vt 140, +9.1 src2 Vt 140, +9.1 src2 Vt 140, +9.1 src2 Vt 140, +9.1 src2 Vt 140, +9.1 src2 Vt 140, +9.2 src2 Vt 140, +9.2 src2 Vt 140, +9.2 src2 Vt 140, +9.2 src2 Vt 140, +9.2 src2 Vt 140, +9.2 src2 Vt 140, +9.2 src2 Vt 140, +9.3 src2 Vt 140, +9.3 src2 Vt 140, +9.4 src2 Vt 140, +9.4 src2 Vt 140, +11.0 src2 Vt 140, +11.0 src2 Vt 140, +11.0 src2 Vt 140, +11.0 src2 Vt 140, +11.0 src2 Vt 140, +11.1 src2 Vt 140, +11.1 src2 Vt 140, +11.1 src2 Vt 140, +11.1 src2 Vt 140, +11.1 src2 Vt 140, +11.1 src2 Vt 140, +11.2 src2 Vt 140, +11.2 src2 Vt 140, +11.2 src2 Vt 140, +11.2 src2 Vt 140, +11.2 src2 Vt 140, +11.3 src2 Vt 140, +11.3 src2 Vt 140, +11.3 src2 Vt 140, +11.4 src2 Vt 140, +11.4 src2 Vt 140, +11.4 src2 Vt 140, +11.5 src2 Vt 140, +11.6 src2 Vt 140, +13.0 src2 Vt 140, +13.1 src2 Vt 140, +13.1 src2 Vt 140, +13.1 src2 Vt 140, +13.1 src2 Vt 140, +13.1 src2 Vt 140, +13.1 src2 Vt 140, +13.1 src2 Vt 140, +13.1 src2 Vt 140, +13.2 src2 Vt 140, +13.2 src2 Vt 140, +13.2 src2 Vt 140, +13.2 src2 Vt 140, +13.2 src2 Vt 140, +13.2 src2 Vt 140, +13.2 src2 Vt 140, +13.3 src2 Vt 140, +13.3 src2 Vt 140, +13.4 src2 Vt 140, +13.4 src2 Vt 140, +13.4 src2 Vt 140, +13.9 src2 Vt 140, +14.1 src2 Vt 140, +15.0 src2 Vt 140, +15.1 src2 Vt 140, +15.1 src2 Vt 140, +15.1 src2 Vt 140, +15.1 src2 Vt 140, +15.1 src2 Vt 140, +15.1 src2 Vt 140, +15.2 src2 Vt 140, +15.2 src2 Vt 140, +15.2 src2 Vt 140, +15.2 src2 Vt 140, +15.2 src2 Vt 140, +15.2 src2 Vt 140, +15.2 src2 Vt 140, +15.2 src2 Vt 140, +15.3 src2 Vt 140, +15.4 src2 Vt 140, +15.4 src2 Vt 140, +15.4 src2 Vt 140, +15.4 src2 Vt 140, +15.5 src2 Vt 140, +15.6 src2 Vt 140, +17.1 src2 Vt 140, +17.1 src2 Vt 140, +17.1 src2 Vt 140, +17.1 src2 Vt 140, +17.1 src2 Vt 140, +17.1 src2 Vt 140, +17.1 src2 Vt 140, +17.2 src2 Vt 140, +17.2 src2 Vt 140, +17.2 src2 Vt 140, +17.2 src2 Vt 140, +17.2 src2 Vt 140, +17.2 src2 Vt 140, +17.3 src2 Vt 140, +17.3 src2 Vt 140, +17.3 src2 Vt 140, +17.3 src2 Vt 140, +17.3 src2 Vt 140, +17.4 src2 Vt 140, +17.4 src2 Vt 140, +17.4 src2 Vt 140, +17.5 src2 Vt 140, +19.1 src2 Vt 140, +19.1 src2 Vt 140, +19.1 src2 Vt 140, +19.1 src2 Vt 140, +19.1 src2 Vt 140, +19.1 src2 Vt 140, +19.2 src2 Vt 140, +19.2 src2 Vt 140, +19.2 src2 Vt 140, +19.2 src2 Vt 140, +19.2 src2 Vt 140, +19.2 src2 Vt 140, +19.2 src2 Vt 140, +19.3 src2 Vt 140, +19.3 src2 Vt 140, +19.3 src2 Vt 140, +19.4 src2 Vt 140, +19.4 src2 Vt 140, +19.4 src2 Vt 140, +19.4 src2 Vt 140, +19.6 src2 Vt 140, +20.5 src2 Vt 140, +20.6 src0 Vt 7
+
+  SUMMARY (times from sim apnea onset; S-line times arrive ~1-2 s late)
+    #   segment       dur    q max  q max at     NO_BR early exit      FOT  physio
+    1   apnea 100%   5.0s    2.6       +4.2        --         --    +-1.8      no
+    2   apnea 100%  10.0s    2.8       +3.6        --         --    +-0.1      no
+    3   apnea 100%  10.0s    6.0       +4.5        --         --     +4.3      no
+    4   apnea 100%  10.0s    5.0      +10.0        --         --     +1.7      no
+    5   apnea 100%  20.0s    4.9       +2.8        --         --    +-1.8      no
+    6   apnea 100%  20.0s    4.6      +16.6        --         --    +-1.2      no
+    7   apnea 100%  20.0s    5.0      +10.3        --         --     +0.4      no
+    8   apnea 100%  20.0s    5.5       +8.8        --         --    +-1.7      no
+
+==============================================================================
+SCORECARD vs the R4/R5 build
+==============================================================================
+  R5    apnea  5 s: NOT scored
+  R5    apnea 10 s: NOT scored
+  R5    apnea 10 s: NOT scored
+  R5    apnea 10 s: NOT scored
+  R5    apnea 20 s: NOT scored
+  R5    apnea 20 s: NOT scored
+  R5    apnea 20 s: NOT scored
+  hyp   hypopnea 50% : NO Hyp  [Hyp events 0]; CA 43.3 s in; OSA-likely x1
+  hyp   hypopnea 55% : NO Hyp  [Hyp events 0]
+  R4    hypopnea 60% : NO Hyp  [Hyp events 0]
+  R1    apnea 20 s + arousal: NOT scored
+  R1    after the arousal breaths: no FL call - fixed
+  AHI   10.79   (OA 0 + CA 2 + Hyp 0) / 0.185 h = 10.79  -> includes CA
+
+  totals: OA 0 CA 2 Hyp 0 FL 0 Snore 0  AHI 10.79   polarity 1 (bad 0)   leak-blocked raises seen: no
+  OSA-likely calls during the run: 7 samples
+  peak CPAP supply current 1.18 A   simulator sensors OK
+  logs: apap_trial8_cpap.csv / _status.csv / _sim.csv (scratchpad)
+  [ramp-down] stopped at measured 7998 rpm
+
+  [CPAP stop] setpoint -> 4 cmH2O
+  [CPAP stop] blower at 15270 rpm - therapy stop
+  [CPAP stop] state 0
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 0
+
+simulator stopped. CPAP handled above.

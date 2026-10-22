@@ -21,12 +21,13 @@ Sequence (simulator first, as in trial 8c):
 
 Scripts: 8c (apneas + hypopneas, as trial 8c), threshold (45 % / 55 %
 hypopneas), flshape (flattened breaths at full amplitude: plateau 90 %,
-M 90 %, plateau 60 %; 120 s each with 120 s normal between).
+M 90 %, plateau 60 %; 120 s each with 120 s normal between), obstruct
+(five 30 s apneas; 2, 4 and 5 with the chamber squeezed by hand on PC beeps).
 
 Saves airsense_<script>_<HHMM>_raw.pkl; compare with airsense_compare.py once
 the SD card's DATALOG files are copied over.
 
-usage: python airsense_run.py 8c|threshold|flshape
+usage: python airsense_run.py 8c|threshold|flshape|obstruct
 """
 import pickle
 import statistics
@@ -69,7 +70,19 @@ SCRIPTS = {
                 ("flowlimit", 120, 90), ("none", 120, None),
                 ("flowlimit", 120, 90), ("none", 120, None),
                 ("flowlimit", 120, 60), ("none", 120, None)],
+    # Obstructive apneas: simulator apnea (blower at rpm_base - no effort
+    # against the closed tube) with the collapsible chamber squeezed by hand
+    # on apneas 2, 4 and 5; 1 and 3 stay open as controls. PC beeps cue the
+    # squeeze (see CUES).
+    "obstruct": [("none", 90, None),
+                 ("apnea", 30, 100), ("none", 60, None),
+                 ("apnea", 30, 100), ("none", 60, None),
+                 ("apnea", 30, 100), ("none", 60, None),
+                 ("apnea", 30, 100), ("none", 60, None),
+                 ("apnea", 30, 100), ("none", 90, None)],
 }
+SQUEEZE_APNEAS = {"obstruct": {2, 4, 5}}     # 1-based apnea numbers to squeeze
+SQUEEZE_ON_S, SQUEEZE_OFF_S = 5.0, 24.0      # after the apnea step starts
 # Shape of each flowlimit step, in order (recorded in the raw pickle).
 FL_SHAPES = {"flshape": ["plateau", "m", "plateau"]}
 if NAME not in SCRIPTS:
@@ -93,6 +106,41 @@ for i, (ev, dur, sev) in enumerate(SCRIPT):
         ACTIONS.append((at, ["sim set fl_shape %s" % shape], "fl_shape -> %s" % shape))
     acc += dur
 ACTIONS.sort(key=lambda a: a[0])
+
+# Squeeze cues on the script clock. The simulator starts an apnea at the next
+# breath boundary (<= 5 s after its step), and it lasts the step's 30 s from
+# there, so ON at +5 s and OFF at +24 s always sits inside the apnea and
+# leaves >= 6 s for the tube to reopen before breathing resumes.
+CUES = []
+acc, k = 0.0, 0
+for ev, dur, sev in SCRIPT:
+    if ev == "apnea":
+        k += 1
+        if k in SQUEEZE_APNEAS.get(NAME, set()):
+            CUES += [(acc + SQUEEZE_ON_S - 5.0, "ready", k), (acc + SQUEEZE_ON_S, "squeeze", k),
+                     (acc + SQUEEZE_OFF_S, "release", k)]
+    acc += dur
+CUES.sort(key=lambda c: c[0])
+
+
+def beep(kind):
+    """Audible cue on the PC, in a thread so the logging never stalls.
+    ready   - one short low tone   (squeeze coming in 5 s)
+    squeeze - one long high tone   (squeeze blower to MAX now)
+    release - two short tones      (squeeze blower OFF now)"""
+    import threading
+    import winsound
+
+    def play():
+        if kind == "ready":
+            winsound.Beep(440, 300)
+        elif kind == "squeeze":
+            winsound.Beep(880, 1200)
+        else:
+            winsound.Beep(1320, 250)
+            time.sleep(0.15)
+            winsound.Beep(1320, 250)
+    threading.Thread(target=play, daemon=True).start()
 SIM_GUARD = 36000
 P_ON, P_OFF = 5.0, 2.0                     # cmH2O at the external sensor
 
@@ -142,6 +190,22 @@ def pump(seconds, log=False):
             pass
 
 
+def save_raw(alive, aborted=False):
+    """Pickle everything captured so far (also called from the abort path)."""
+    stamp = time.strftime("%H%M", time.localtime(wall_off + t_script))
+    out = SP + "/airsense_%s_%s%s_raw.pkl" % (NAME, stamp, "_ABORTED" if aborted else "")
+    raw = dict(kind="airsense", script_name=NAME, script=SCRIPT, t_script=t_script,
+               fl_shapes=FL_SHAPES.get(NAME, []),
+               squeeze_apneas=sorted(SQUEEZE_APNEAS.get(NAME, set())),
+               cue_log=list(globals().get("cue_log", [])), aborted=aborted,
+               t_therapy=t_therapy, wall_off=wall_off, ext=list(ext.samples),
+               ext_crc=ext.parser.crc_errors, sim_f=sim_f, sim_v=sim_v, sim_e=sim_e,
+               alive=alive)
+    with open(out, "wb") as fh:
+        pickle.dump(raw, fh)
+    return out
+
+
 try:
     send("log 0")
     send("telem on")
@@ -167,6 +231,16 @@ try:
     p0 = ext_pressure()
     print("  external sensor live (%d samples in 2 s), pressure %.2f cmH2O%s"
           % (len(es), p0, "  - AirSense already running" if p0 > P_ON else ""))
+
+    if CUES:
+        print("\n  squeeze cues - listen (apneas %s will be squeezed):"
+              % sorted(SQUEEZE_APNEAS.get(NAME, set())), flush=True)
+        for kind, what in (("ready", "short low tone  = squeeze in 5 s"),
+                           ("squeeze", "long high tone  = squeeze blower to MAX now"),
+                           ("release", "two short tones = squeeze blower OFF now")):
+            print("    %s" % what, flush=True)
+            beep(kind)
+            time.sleep(2.5)
 
     for c in ("sim set waveform sine", "sim set timing rate_ie",
               "sim set rate 12", "sim set ie 1", "sim set insp_pause 0",
@@ -210,10 +284,20 @@ try:
     send("sim script start")
     t_script = time.monotonic()
     pending = list(ACTIONS)
+    cues = list(CUES)
+    cue_log = []
     next_note = t_script + 30.0
     while time.monotonic() < t_script + SCRIPT_S + 10.0:
         pump(0.5, log=True)
         now = time.monotonic()
+        while cues and now - t_script >= cues[0][0]:
+            _, kind, k = cues.pop(0)
+            beep(kind)
+            cue_log.append((now - t_script, kind, k))
+            print("  t=%3.0fs  CUE  %s (apnea %d)%s"
+                  % (now - t_script, kind.upper(), k,
+                     {"ready": " - squeeze in 5 s", "squeeze": " - squeeze blower MAX",
+                      "release": " - squeeze blower OFF"}[kind]), flush=True)
         while pending and now - t_script >= pending[0][0]:
             _, cmds, what = pending.pop(0)
             for c in cmds:
@@ -232,15 +316,7 @@ try:
     time.sleep(30.0)
     ext.stop()
 
-    stamp = time.strftime("%H%M", time.localtime(wall_off + t_script))
-    out = SP + "/airsense_%s_%s_raw.pkl" % (NAME, stamp)
-    raw = dict(kind="airsense", script_name=NAME, script=SCRIPT, t_script=t_script,
-               fl_shapes=FL_SHAPES.get(NAME, []),
-               t_therapy=t_therapy, wall_off=wall_off, ext=list(ext.samples),
-               ext_crc=ext.parser.crc_errors, sim_f=sim_f, sim_v=sim_v, sim_e=sim_e,
-               alive=alive)
-    with open(out, "wb") as fh:
-        pickle.dump(raw, fh)
+    out = save_raw(alive=alive)
 
     print("\n" + "=" * 78)
     print("GROUND TRUTH - what the simulator delivered (V lines)")
@@ -259,6 +335,13 @@ try:
 
 except Abort as a:
     print("\n  !! ABORT: %s" % a)
+    # Keep what was captured: an aborted run is still evidence (2026-10-20:
+    # the obstruct run aborted after apnea 4 and its capture was lost).
+    if t_script is not None and ext is not None:
+        try:
+            print("  partial capture saved: %s" % save_raw(alive=None, aborted=True))
+        except Exception as ex:
+            print("  !! could not save the partial capture: %s" % ex)
 except SystemExit as e:
     print("\n  !! NOT STARTED: %s" % e)
 finally:
@@ -274,4 +357,6 @@ finally:
     if ext is not None and ext.is_alive():
         ext.stop()
     ser.close()
+    if CUES:
+        print("  !! make sure the squeeze blower is OFF")
     print("\nsimulator stopped. Stop the AirSense by hand if it is still running.")

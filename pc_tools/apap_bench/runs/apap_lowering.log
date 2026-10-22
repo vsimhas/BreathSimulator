@@ -1,0 +1,146 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.03  APAP range 5.0-20.0   Vbus 23.72 V
+  liveness before flow 2334125 -> 2334231   press 2334133 -> 2334239   OK
+  CPAP firmware probe: # ack apap set hyp_rearm_ratio 0.7
+
+  simulator breathing (static FF, CPAP off) - priming 20 s...
+  CPAP running AutoSet 8-12, target 8.00, measured -0.22
+  simulator -> pressure FF; settling 30 s (past the APAP's 15 s start-up grace)
+  APAP at script start: state 1 | OA 0 CA 0 Hyp 0 FL 0 Snore 0   polarity 1 (bad 0)
+  script start: none 60 | flowlimit 180 | none 720  (960 s)
+
+  t=  0s  SIM  fl_shape -> plateau
+  t= 30s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 60s  CPAP target 8.0 meas 8.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 65s  SIM  E START FlowLimit (breath 24)
+  t= 90s  CPAP target 8.1 meas 8.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 1 hyp 0
+  t=120s  CPAP target 8.3 meas 8.3 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 1 hyp 0
+  t=150s  CPAP target 8.5 meas 8.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 1 hyp 0
+  t=180s  CPAP target 8.7 meas 8.7 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 1 hyp 0
+  t=210s  CPAP target 8.9 meas 9.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 1 hyp 0
+  t=240s  CPAP target 9.1 meas 9.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 1 hyp 0
+  t=245s  SIM  E END   FlowLimit (breath 60)
+  t=270s  CPAP target 9.2 meas 9.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=300s  CPAP target 9.2 meas 9.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=330s  CPAP target 9.2 meas 9.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=360s  CPAP target 9.2 meas 9.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=390s  CPAP target 9.1 meas 8.7 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=420s  CPAP target 8.8 meas 8.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=450s  CPAP target 8.6 meas 8.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=480s  CPAP target 8.3 meas 8.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=510s  CPAP target 8.1 meas 7.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=540s  CPAP target 8.0 meas 7.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=570s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=600s  CPAP target 8.0 meas 8.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=630s  CPAP target 8.0 meas 7.8 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=660s  CPAP target 8.0 meas 7.7 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=690s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=721s  CPAP target 8.0 meas 7.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=751s  CPAP target 8.0 meas 7.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=781s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=811s  CPAP target 8.0 meas 7.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=841s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=871s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=901s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=931s  CPAP target 8.0 meas 8.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  t=961s  CPAP target 8.0 meas 8.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 1 | fl 0 hyp 0
+  [ramp-down] stopped at measured 8016 rpm
+  liveness after  flow 2440175 -> 2440280   press 2440183 -> 2440288   OK
+  raw capture saved: apap_lowering_raw.pkl (53546 T lines, 544 PH lines)
+
+==============================================================================
+SIMULATOR - what was delivered, by event label (V lines)
+==============================================================================
+  None       161 breaths  Vt   500  peak  20.3  flat 0.591
+  FlowLimit   36 breaths  Vt   499  peak  14.6  flat 0.820
+
+==============================================================================
+TIMELINE  (host seconds from script start; CPAP lines ~2 s late)
+==============================================================================
+  --    0-60   none
+  --   60-240  flowlimit 90%
+       64.7  SIM   E START FlowLimit
+       78.7  CPAP  FL count 0 -> 1
+       78.7  CPAP  FL flag ON
+  --  240-960  none
+      244.7  SIM   E END FlowLimit
+      255.3  CPAP  FL flag off
+
+  CPAP target 8.0 -> 8.0 cmH2O (max 9.2)
+
+  hypopnea delivery (normal peak 20.3 slm):
+
+  apneas (oscillation times from S lines: ~4 s resolution, ~2 s late):
+    segment       FOT onset    FOT for    CA/OA +  scored?
+
+  CPAP supply current (24497 samples over the script):
+    oscillation windows: none
+    ordinary breathing : max 0.79 A   (0 samples > 0.8 A)
+    top peaks:
+       251.6 s  0.72 A  CPAP 22134 rpm  none           breathing
+       255.5 s  0.79 A  CPAP 21588 rpm  none           breathing
+       420.3 s  0.78 A  CPAP 21312 rpm  none           breathing
+       485.6 s  0.77 A  CPAP 21090 rpm  none           breathing
+       825.2 s  0.73 A  CPAP 20268 rpm  none           breathing
+
+==============================================================================
+R5 CAPTURE - CPAP patient flow (T, 50 Hz) during each apnea
+==============================================================================
+  T samples 53549 (50.2 Hz over the run), PH lines 544
+
+  SUMMARY (times from sim apnea onset; S-line times arrive ~1-2 s late)
+    #   segment       dur    q max  q max at     NO_BR early exit      FOT  physio
+
+==============================================================================
+PRESSURE LOWERING after the flattened block (ends at 240 s)
+==============================================================================
+  FL flag first off after the block: 15 s after it ended
+  'Monitor+Lower' first seen: 136 s after the block ended
+    t=   0 s  target 8.00 cmH2O
+    t=  60 s  target 8.00 cmH2O
+    t= 120 s  target 8.31 cmH2O
+    t= 180 s  target 8.70 cmH2O
+    t= 240 s  target 9.12 cmH2O
+    t= 300 s  target 9.21 cmH2O
+    t= 360 s  target 9.21 cmH2O
+    t= 420 s  target 8.83 cmH2O
+    t= 480 s  target 8.35 cmH2O
+    t= 540 s  target 8.00 cmH2O
+    t= 600 s  target 8.00 cmH2O
+    t= 660 s  target 8.00 cmH2O
+    t= 720 s  target 8.00 cmH2O
+    t= 780 s  target 8.00 cmH2O
+    t= 840 s  target 8.00 cmH2O
+    t= 900 s  target 8.00 cmH2O
+    t= 960 s  target 8.00 cmH2O
+
+==============================================================================
+APAP DIAG (R11) - 196 apap / 196 epr lines
+==============================================================================
+  EPR flow baseline over the run: min -1.91  max +0.16 slm (R11: should stay near 0)
+  breath candidates: rejects 18 at start -> 18 at end; volume median 251 -> 285 mL
+  at script start  apap: st=1 ep_ms=0 recent=1 recov=1 need=10.0 ref=0.0 flbase=16.7 seen=5 lkfrz=0 apnea_nr=0 hyp_nr=0 rearm=4 notch=0 f0=4.0
+  at script start  epr: cand_ms=1250 cand_ml=276 cand_pk=17.2 stamped=1 rej=18 med_ml=251 since_ms=943 stamp_pk=17.2 base=0.16 fsm=4 pol=1
+  last (t=489589 s)  apap: st=1 ep_ms=0 recent=1 recov=1 need=10.0 ref=0.0 flbase=17.9 seen=202 lkfrz=0 apnea_nr=0 hyp_nr=0 rearm=155 notch=0 f0=4.0
+  last (t=489589 s)  epr: cand_ms=1250 cand_ml=286 cand_pk=17.7 stamped=1 rej=18 med_ml=285 since_ms=273 stamp_pk=17.7 base=-0.50 fsm=4 pol=1
+
+==============================================================================
+SCORECARD vs the R4/R5 build
+==============================================================================
+  AHI   0.00   (OA 0 + CA 0 + Hyp 0) / 0.283 h = 0.00  -> includes CA
+
+  totals: OA 0 CA 0 Hyp 0 FL 1 Snore 0  AHI 0.00   polarity 1 (bad 0)   leak-blocked raises seen: no
+  OSA-likely calls during the run: 0 samples
+  longest continuous FOT 0 s (watchdog 60 s)
+  peak CPAP supply current 0.79 A   simulator sensors OK
+  logs: apap_lowering_cpap.csv / _status.csv / _sim.csv (runs/)
+  [ramp-down] stopped at measured 7998 rpm
+
+  [CPAP stop] setpoint -> 4 cmH2O
+  [CPAP stop] blower at 12558 rpm - therapy stop
+  [CPAP stop] state 0
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 0
+
+simulator stopped. CPAP handled above.

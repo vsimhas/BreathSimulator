@@ -1,0 +1,274 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.02  APAP range 5.0-20.0   Vbus 23.74 V
+  liveness before flow 1115508 -> 1115614   press 1116436 -> 1116542   OK
+  CPAP firmware probe: # ack apap set breath_min_insp_ms 400
+  CPAP running AutoSet 8-12, target 8.00, measured -0.02
+  APAP counters at start: OA 0 CA 0 Hyp 0 FL 0 Snore 0   polarity 1 (bad 0)
+
+  simulator priming...
+  script start: none 90 | apnea 5 | none 45 | apnea 10 | none 45 | apnea 10 | none 45 | apnea 10 | none 45 | apnea 20 | none 60 | apnea 20 | none 60 | apnea 20 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | hypopnea 40 | none 60 | apnea 20 | none 90  (955 s)
+
+  t= 30s  CPAP target 8.0 meas 7.2 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 60s  CPAP target 8.0 meas 7.1 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 90s  CPAP target 8.0 meas 7.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 95s  SIM  E START Apnea     (breath 25)
+  t=100s  SIM  E END   Apnea     (breath 26)
+  t=120s  CPAP target 8.0 meas 9.0 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=150s  CPAP target 8.0 meas 8.6 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=155s  SIM  E END   Apnea     (breath 37)
+  t=180s  CPAP target 8.0 meas 8.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=200s  SIM  E START Apnea     (breath 46)
+  t=210s  CPAP target 8.0 meas 8.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=240s  CPAP target 8.0 meas 7.5 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=255s  SIM  E START Apnea     (breath 57)
+  t=270s  CPAP target 8.0 meas 7.3 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=300s  CPAP target 8.0 meas 7.7 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=310s  SIM  E START Apnea     (breath 68)
+  t=330s  SIM  E END   Apnea     (breath 72)
+  t=330s  CPAP target 8.0 meas 7.8 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=360s  CPAP target 8.0 meas 7.5 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=390s  SIM  E START Apnea     (breath 84)
+  t=390s  CPAP target 8.0 meas 7.1 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=410s  SIM  E END   Apnea     (breath 88)
+  t=420s  CPAP target 8.0 meas 7.1 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=450s  CPAP target 8.0 meas 7.1 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=470s  SIM  E START Apnea     (breath 100)
+  t=480s  CPAP target 8.0 meas 7.7 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=490s  SIM  E END   Apnea     (breath 104)
+  t=510s  CPAP target 8.0 meas 7.7 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=540s  CPAP target 8.0 meas 8.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=550s  SIM  E START Hypopnea  (breath 116)
+  t=571s  CPAP target 8.0 meas 8.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=590s  SIM  E END   Hypopnea  (breath 124)
+  t=601s  CPAP target 8.0 meas 8.8 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=631s  CPAP target 8.0 meas 8.4 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=650s  SIM  E START Hypopnea  (breath 136)
+  t=661s  CPAP target 8.0 meas 7.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=690s  SIM  E END   Hypopnea  (breath 144)
+  t=691s  CPAP target 8.0 meas 7.5 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=721s  CPAP target 8.0 meas 7.6 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=750s  SIM  E START Hypopnea  (breath 156)
+  t=751s  CPAP target 8.0 meas 7.4 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=781s  CPAP target 8.0 meas 7.7 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=790s  SIM  E END   Hypopnea  (breath 164)
+  t=811s  CPAP target 8.0 meas 7.3 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=837s  SIM  recovery breaths ON (2 x 1.5) for the last apnea
+  t=841s  CPAP target 8.0 meas 7.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=870s  SIM  E END   Apnea     (breath 180)
+  t=870s  SIM  E START Recovery  (breath 180)
+  t=871s  CPAP target 8.0 meas 7.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=880s  SIM  E END   Recovery  (breath 182)
+  t=901s  CPAP target 8.0 meas 7.5 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=931s  CPAP target 8.0 meas 8.9 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=961s  CPAP target 8.0 meas 9.0 apap_st 3 osc 1 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  [ramp-down] stopped at measured 5982 rpm
+  liveness after  flow 1218878 -> 1218983   press 1219806 -> 1219911   OK
+  raw capture saved: apap_trial7_raw.pkl (50840 T lines, 9478 PH lines)
+
+==============================================================================
+SIMULATOR - what was delivered, by event label (V lines)
+==============================================================================
+  None       124 breaths  Vt    71  peak   5.9  flat 0.287
+  Apnea       21 breaths  Vt    70  peak   5.9  flat 0.286
+  Hypopnea    20 breaths  Vt    71  peak   5.9  flat 0.286
+  Recovery     1 breaths  Vt    70  peak   5.8  flat 0.293
+
+==============================================================================
+TIMELINE  (host seconds from script start; CPAP lines ~2 s late)
+==============================================================================
+  --    0-90   none
+        2.8  CPAP  oscillation ON
+  --   90-95   apnea 100%
+       94.9  SIM   E START Apnea
+  --   95-140  none
+       99.9  SIM   E END Apnea
+  --  140-150  apnea 100%
+  --  150-195  none
+      154.9  SIM   E END Apnea
+  --  195-205  apnea 100%
+      199.9  SIM   E START Apnea
+  --  205-250  none
+  --  250-260  apnea 100%
+      254.9  SIM   E START Apnea
+  --  260-305  none
+  --  305-325  apnea 100%
+      309.9  SIM   E START Apnea
+  --  325-385  none
+      329.9  SIM   E END Apnea
+  --  385-405  apnea 100%
+      389.9  SIM   E START Apnea
+  --  405-465  none
+      409.9  SIM   E END Apnea
+  --  465-485  apnea 100%
+      469.9  SIM   E START Apnea
+  --  485-545  none
+      489.9  SIM   E END Apnea
+  --  545-585  hypopnea 50%
+      549.9  SIM   E START Hypopnea
+  --  585-645  none
+      589.9  SIM   E END Hypopnea
+  --  645-685  hypopnea 55%
+      649.9  SIM   E START Hypopnea
+  --  685-745  none
+      689.9  SIM   E END Hypopnea
+  --  745-785  hypopnea 60%
+      749.9  SIM   E START Hypopnea
+  --  785-845  none
+      789.9  SIM   E END Hypopnea
+  --  845-865  apnea 100%
+  --  865-955  none
+      869.9  SIM   E END Apnea
+      869.9  SIM   E START Recovery
+      879.9  SIM   E END Recovery
+
+  CPAP target 8.0 -> 8.0 cmH2O (max 8.0)
+
+  hypopnea delivery (normal peak 5.9 slm):
+    hypopnea 50%   Vt   70 mL  peak   5.9 slm (100%)  breaths 5.7-6.1
+    hypopnea 55%   Vt   71 mL  peak   5.9 slm (100%)  breaths 5.7-6.5
+    hypopnea 60%   Vt   71 mL  peak   5.9 slm (100%)  breaths 5.8-6.0
+
+  apneas (oscillation times from S lines: ~4 s resolution, ~2 s late):
+    segment       FOT onset    FOT for    CA/OA +  scored?
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+    apnea 100%       none         --          0  NO
+
+  CPAP supply current (22346 samples over the script):
+    oscillation windows: 3-979 s
+    during oscillation : max 0.90 A   (6 samples > 0.8 A)
+    top peaks:
+        74.3 s  0.81 A  CPAP 19464 rpm  none           OSCILLATING
+       163.1 s  0.85 A  CPAP 19716 rpm  none           OSCILLATING
+       287.3 s  0.83 A  CPAP 19422 rpm  none           OSCILLATING
+       429.4 s  0.81 A  CPAP 19590 rpm  none           OSCILLATING
+       624.6 s  0.90 A  CPAP 19482 rpm  none           OSCILLATING
+
+==============================================================================
+R5 CAPTURE - CPAP patient flow (T, 50 Hz) during each apnea
+==============================================================================
+  T samples 50841 (48.9 Hz over the run), PH lines 9484
+
+  -- apnea 1 (apnea 100%): sim onset 94.9 s, end 99.9 s (5.0 s long)
+     patient flow in the apnea: mean -16.20  min -19.89  max -11.84 slm (max at +3.1 s)
+     P_mask 6.99..9.22 cmH2O   PID rpm 14025..21743
+     1 s mean flow: -16.1 -16.3 -16.2 -16.1 -16.1 -18.5
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +0.7 FOT/osc leak 20.6
+     leak estimate in the apnea: 20.58 -> 20.88 (min 20.58)
+     PH lines: +-0.9 src2 Vt 33, +-0.3 src2 Vt 33, +0.1 src0 Vt 34, +0.7 src2 Vt 34, +0.7 src2 Vt 34, +0.7 src2 Vt 34, +0.7 src2 Vt 34, +0.7 src2 Vt 34, +0.7 src2 Vt 34, +0.7 src2 Vt 34, +0.8 src2 Vt 34, +0.8 src2 Vt 34, +0.8 src2 Vt 34, +0.8 src2 Vt 34, +0.9 src2 Vt 34, +0.9 src2 Vt 34, +0.9 src2 Vt 34, +0.9 src2 Vt 34, +0.9 src2 Vt 34, +2.6 src2 Vt 34, +2.6 src2 Vt 34, +2.6 src2 Vt 34, +2.7 src2 Vt 34, +2.7 src2 Vt 34, +2.7 src2 Vt 34, +2.7 src2 Vt 34, +2.7 src2 Vt 34, +2.7 src2 Vt 34, +2.8 src2 Vt 34, +2.8 src2 Vt 34, +2.8 src2 Vt 34, +2.8 src2 Vt 34, +2.9 src2 Vt 34, +2.9 src2 Vt 34, +2.9 src2 Vt 34, +2.9 src2 Vt 34, +2.9 src2 Vt 34, +3.2 src2 Vt 34, +3.4 src2 Vt 34, +4.7 src2 Vt 34, +4.7 src2 Vt 34, +4.7 src2 Vt 34, +4.7 src2 Vt 34, +4.7 src2 Vt 34, +4.7 src2 Vt 34, +4.7 src2 Vt 34, +4.7 src2 Vt 34, +4.8 src2 Vt 34, +4.8 src2 Vt 34, +4.8 src2 Vt 34, +4.9 src2 Vt 34, +4.9 src2 Vt 34, +4.9 src2 Vt 34, +4.9 src2 Vt 34, +4.9 src2 Vt 34
+
+  -- apnea 2 (apnea 100%): sim onset 140.0 s, end 154.9 s (14.9 s long)
+     patient flow in the apnea: mean -15.26  min -19.33  max -9.41 slm (max at +5.4 s)
+     P_mask 6.96..9.16 cmH2O   PID rpm 14059..22433
+     1 s mean flow: -15.3 -15.5 -15.3 -15.5 -15.1 -14.4 -15.2 -15.5 -15.2 -15.5 -15.4 -15.2 -15.4 -15.1 -15.4
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +9.0 FOT/osc leak 22.2
+     leak estimate in the apnea: 22.20 -> 20.34 (min 20.34)
+     PH lines: +-0.5 src2 Vt 28, +-0.5 src2 Vt 28, +-0.5 src2 Vt 28, +-0.5 src2 Vt 28, +-0.5 src2 Vt 28, +-0.4 src2 Vt 28, +-0.4 src2 Vt 28, +-0.4 src2 Vt 28, +-0.4 src2 Vt 28, +-0.4 src2 Vt 28, +-0.4 src2 Vt 28, +-0.4 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +0.5 src2 Vt 28, +1.5 src2 Vt 28, +1.5 src2 Vt 28, +1.5 src2 Vt 28, +1.5 src2 Vt 28, +1.5 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.8 src2 Vt 28, +2.0 src2 Vt 28, +2.6 src2 Vt 28, +3.5 src2 Vt 28, +3.5 src2 Vt 28, +3.5 src2 Vt 28, +3.5 src2 Vt 28, +3.5 src2 Vt 28, +3.6 src2 Vt 28, +3.6 src2 Vt 28, +3.6 src2 Vt 28, +3.6 src2 Vt 28, +3.6 src2 Vt 28, +3.6 src2 Vt 28, +3.6 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +5.4 src0 Vt 28, +5.5 src2 Vt 28, +5.5 src2 Vt 28, +5.5 src2 Vt 28, +5.5 src2 Vt 28, +5.5 src2 Vt 28, +5.6 src2 Vt 28, +5.6 src2 Vt 28, +5.6 src2 Vt 28, +5.6 src2 Vt 28, +5.6 src2 Vt 28, +5.6 src2 Vt 28, +5.6 src2 Vt 28, +5.7 src2 Vt 28, +5.7 src2 Vt 28, +5.7 src2 Vt 28, +5.8 src2 Vt 28, +5.8 src2 Vt 28, +5.8 src2 Vt 28, +5.8 src2 Vt 28, +5.8 src2 Vt 28, +5.8 src2 Vt 28, +6.0 src2 Vt 28, +6.2 src2 Vt 28, +7.5 src2 Vt 28, +7.5 src2 Vt 28, +7.5 src2 Vt 28, +7.5 src2 Vt 28, +7.5 src2 Vt 28, +7.6 src2 Vt 28, +7.6 src2 Vt 28, +7.6 src2 Vt 28, +7.6 src2 Vt 28, +7.6 src2 Vt 28, +7.6 src2 Vt 28, +7.7 src2 Vt 28, +7.7 src2 Vt 28, +7.7 src2 Vt 28, +7.7 src2 Vt 28, +7.8 src2 Vt 28, +7.8 src2 Vt 28, +7.8 src2 Vt 28, +7.9 src2 Vt 28, +8.7 src2 Vt 28, +9.5 src2 Vt 28, +9.6 src2 Vt 28, +9.6 src2 Vt 28, +9.6 src2 Vt 28, +9.6 src2 Vt 28, +9.6 src2 Vt 28, +9.6 src2 Vt 28, +9.7 src2 Vt 28, +9.7 src2 Vt 28, +9.7 src2 Vt 28, +9.7 src2 Vt 28, +9.8 src2 Vt 28, +9.8 src2 Vt 28, +9.8 src2 Vt 28, +9.8 src2 Vt 28, +9.8 src2 Vt 28, +10.5 src2 Vt 28, +11.5 src2 Vt 28, +11.6 src2 Vt 28, +11.6 src2 Vt 28, +11.6 src2 Vt 28, +11.6 src2 Vt 28, +11.6 src2 Vt 28, +11.6 src2 Vt 28, +11.7 src2 Vt 28, +11.7 src2 Vt 28, +11.7 src2 Vt 28, +11.7 src2 Vt 28, +11.8 src2 Vt 28, +11.8 src2 Vt 28, +11.8 src2 Vt 28, +11.8 src2 Vt 28, +11.9 src2 Vt 28, +12.0 src2 Vt 28, +12.2 src2 Vt 28, +13.0 src2 Vt 28, +13.5 src2 Vt 28, +13.6 src2 Vt 28, +13.6 src2 Vt 28, +13.6 src2 Vt 28, +13.6 src2 Vt 28, +13.6 src2 Vt 28, +13.6 src2 Vt 28, +13.6 src2 Vt 28, +13.6 src2 Vt 28, +13.7 src2 Vt 28, +13.7 src2 Vt 28, +13.7 src2 Vt 28, +13.8 src2 Vt 28, +13.8 src2 Vt 28, +13.8 src2 Vt 28, +15.5 src2 Vt 28, +15.5 src2 Vt 28, +15.5 src2 Vt 28, +15.5 src2 Vt 28, +15.5 src2 Vt 28, +15.6 src2 Vt 28, +15.6 src2 Vt 28, +15.6 src2 Vt 28, +15.6 src2 Vt 28, +15.6 src2 Vt 28, +15.6 src2 Vt 28, +15.6 src2 Vt 28, +15.7 src2 Vt 28, +15.7 src2 Vt 28, +15.7 src2 Vt 28, +15.7 src2 Vt 28, +15.8 src2 Vt 28, +15.8 src2 Vt 28, +15.8 src2 Vt 28, +15.8 src2 Vt 28
+
+  -- apnea 3 (apnea 100%): sim onset 199.9 s, end 205.0 s (5.1 s long)
+     patient flow in the apnea: mean -15.30  min -18.93  max -11.06 slm (max at +3.9 s)
+     P_mask 6.95..9.20 cmH2O   PID rpm 14027..21781
+     1 s mean flow: -15.4 -15.3 -15.6 -15.1 -15.3 -13.7
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +1.5 FOT/osc leak 21.5
+     leak estimate in the apnea: 21.54 -> 21.90 (min 21.54)
+     PH lines: +-0.4 src2 Vt 26, +-0.3 src2 Vt 26, +-0.3 src2 Vt 26, +-0.3 src2 Vt 26, +-0.3 src2 Vt 26, +-0.3 src2 Vt 26, +-0.3 src2 Vt 26, +-0.3 src2 Vt 26, +-0.3 src2 Vt 26, +-0.2 src2 Vt 26, +-0.2 src2 Vt 26, +-0.2 src2 Vt 26, +-0.1 src2 Vt 26, +-0.1 src2 Vt 26, +-0.1 src2 Vt 26, +-0.1 src2 Vt 26, +-0.1 src2 Vt 26, +-0.1 src2 Vt 26, +0.0 src2 Vt 26, +0.7 src2 Vt 26, +1.7 src2 Vt 26, +1.7 src2 Vt 26, +1.7 src2 Vt 26, +1.7 src2 Vt 26, +1.7 src2 Vt 26, +1.7 src2 Vt 26, +1.7 src2 Vt 26, +1.8 src2 Vt 26, +1.8 src2 Vt 26, +1.8 src2 Vt 26, +1.8 src2 Vt 26, +1.9 src2 Vt 26, +1.9 src2 Vt 26, +1.9 src2 Vt 26, +1.9 src2 Vt 26, +2.0 src2 Vt 26, +2.1 src2 Vt 26, +3.7 src2 Vt 26, +3.7 src2 Vt 26, +3.7 src2 Vt 26, +3.7 src2 Vt 26, +3.7 src2 Vt 26, +3.7 src2 Vt 26, +3.7 src2 Vt 26, +3.8 src2 Vt 26, +3.8 src2 Vt 26, +3.8 src2 Vt 26, +3.8 src2 Vt 26, +3.8 src2 Vt 26, +3.9 src2 Vt 26, +3.9 src2 Vt 26, +3.9 src2 Vt 26, +3.9 src2 Vt 26, +3.9 src2 Vt 26, +3.9 src2 Vt 26, +4.1 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.8 src2 Vt 26, +5.8 src2 Vt 26, +5.8 src2 Vt 26, +5.8 src2 Vt 26, +5.9 src2 Vt 26, +5.9 src2 Vt 26, +5.9 src2 Vt 26
+
+  -- apnea 4 (apnea 100%): sim onset 254.9 s, end 260.0 s (5.1 s long)
+     patient flow in the apnea: mean -15.34  min -19.25  max -10.72 slm (max at +4.9 s)
+     P_mask 6.95..9.12 cmH2O   PID rpm 13822..21769
+     1 s mean flow: -14.8 -15.5 -15.4 -15.6 -15.3 -14.9
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +1.9 FOT/osc leak 20.5
+     leak estimate in the apnea: 20.46 -> 20.46 (min 20.46)
+     PH lines: +-0.9 src2 Vt 27, +0.2 src2 Vt 27, +0.3 src2 Vt 27, +0.4 src0 Vt 29, +0.7 src2 Vt 29, +0.7 src2 Vt 29, +0.7 src2 Vt 29, +0.7 src2 Vt 29, +0.7 src2 Vt 29, +0.7 src2 Vt 29, +0.8 src2 Vt 29, +0.8 src2 Vt 29, +0.8 src2 Vt 29, +0.8 src2 Vt 29, +0.8 src2 Vt 29, +0.9 src2 Vt 29, +0.9 src2 Vt 29, +0.9 src2 Vt 29, +0.9 src2 Vt 29, +2.7 src2 Vt 29, +2.7 src2 Vt 29, +2.7 src2 Vt 29, +2.7 src2 Vt 29, +2.7 src2 Vt 29, +2.7 src2 Vt 29, +2.8 src2 Vt 29, +2.8 src2 Vt 29, +2.8 src2 Vt 29, +2.8 src2 Vt 29, +2.9 src2 Vt 29, +2.9 src2 Vt 29, +2.9 src2 Vt 29, +2.9 src2 Vt 29, +3.0 src2 Vt 29, +4.6 src2 Vt 29, +4.6 src2 Vt 29, +4.6 src2 Vt 29, +4.6 src2 Vt 29, +4.7 src2 Vt 29, +4.7 src2 Vt 29, +4.7 src2 Vt 29, +4.7 src2 Vt 29, +4.7 src2 Vt 29, +4.7 src2 Vt 29, +4.8 src2 Vt 29, +4.8 src2 Vt 29, +4.8 src2 Vt 29, +4.8 src2 Vt 29, +4.8 src2 Vt 29, +4.8 src2 Vt 29, +4.9 src2 Vt 29, +4.9 src2 Vt 29, +4.9 src2 Vt 29, +4.9 src2 Vt 29, +4.9 src0 Vt 27, +5.0 src2 Vt 27, +5.1 src2 Vt 27
+
+  -- apnea 5 (apnea 100%): sim onset 309.9 s, end 329.9 s (20.0 s long)
+     patient flow in the apnea: mean -15.27  min -19.33  max -10.33 slm (max at +5.6 s)
+     P_mask 6.95..9.24 cmH2O   PID rpm 14103..22134
+     1 s mean flow: -15.1 -15.1 -15.3 -15.1 -15.5 -14.9 -15.5 -15.3 -15.6 -15.2 -15.3 -15.3 -15.4 -14.8 -15.4 -14.9 -15.6 -15.1 -15.4 -15.0
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +-0.7 FOT/osc leak 23.0
+     leak estimate in the apnea: 21.72 -> 21.36 (min 19.98)
+     PH lines: +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.2 src2 Vt 27, +-0.2 src2 Vt 27, +-0.2 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +0.6 src2 Vt 27, +1.6 src2 Vt 27, +1.6 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.8 src2 Vt 27, +1.8 src2 Vt 27, +1.8 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +2.0 src2 Vt 27, +2.1 src2 Vt 27, +2.3 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.9 src2 Vt 27, +3.9 src2 Vt 27, +3.9 src2 Vt 27, +4.7 src2 Vt 27, +5.6 src2 Vt 27, +5.6 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.9 src2 Vt 27, +5.9 src2 Vt 27, +5.9 src2 Vt 27, +5.9 src2 Vt 27, +5.9 src2 Vt 27, +6.0 src2 Vt 27, +6.1 src2 Vt 27, +7.7 src2 Vt 27, +7.7 src2 Vt 27, +7.7 src2 Vt 27, +7.7 src2 Vt 27, +7.7 src2 Vt 27, +7.7 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.9 src2 Vt 27, +7.9 src2 Vt 27, +7.9 src2 Vt 27, +9.6 src2 Vt 27, +9.6 src2 Vt 27, +9.6 src2 Vt 27, +9.7 src2 Vt 27, +9.7 src2 Vt 27, +9.7 src2 Vt 27, +9.7 src2 Vt 27, +9.7 src2 Vt 27, +9.7 src2 Vt 27, +9.7 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.9 src2 Vt 27, +9.9 src2 Vt 27, +9.9 src2 Vt 27, +10.0 src2 Vt 27, +10.1 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.8 src2 Vt 27, +11.8 src2 Vt 27, +11.8 src2 Vt 27, +11.8 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +12.1 src2 Vt 27, +13.0 src2 Vt 27, +13.0 src2 Vt 27, +13.1 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.9 src2 Vt 27, +13.9 src2 Vt 27, +13.9 src2 Vt 27, +13.9 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +16.1 src2 Vt 27, +16.3 src2 Vt 27, +17.6 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.8 src2 Vt 27, +17.8 src2 Vt 27, +17.8 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +18.6 src2 Vt 27, +19.7 src2 Vt 27, +19.7 src2 Vt 27, +19.7 src2 Vt 27, +19.7 src2 Vt 27, +19.7 src2 Vt 27, +19.7 src2 Vt 27, +19.7 src2 Vt 27, +19.8 src2 Vt 27, +19.8 src2 Vt 27, +19.8 src2 Vt 27, +19.8 src2 Vt 27, +19.8 src2 Vt 27, +19.9 src2 Vt 27, +19.9 src2 Vt 27, +19.9 src2 Vt 27, +19.9 src2 Vt 27, +19.9 src2 Vt 27, +20.1 src2 Vt 27
+
+  -- apnea 6 (apnea 100%): sim onset 389.9 s, end 409.9 s (20.0 s long)
+     patient flow in the apnea: mean -15.23  min -19.47  max -8.80 slm (max at +3.9 s)
+     P_mask 6.90..9.29 cmH2O   PID rpm 14135..21921
+     1 s mean flow: -15.3 -15.1 -15.5 -14.9 -15.0 -14.9 -15.4 -15.3 -15.2 -15.3 -15.5 -15.3 -15.4 -15.0 -15.5 -15.1 -15.3 -15.0 -15.5 -14.9
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +7.0 FOT/osc leak 21.4
+     leak estimate in the apnea: 21.36 -> 22.56 (min 21.36)
+     PH lines: +-0.4 src2 Vt 28, +-0.4 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.3 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.2 src2 Vt 28, +-0.1 src2 Vt 28, +-0.1 src2 Vt 28, +-0.1 src2 Vt 28, +-0.1 src2 Vt 28, +-0.1 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.6 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.7 src2 Vt 28, +1.8 src2 Vt 28, +1.8 src2 Vt 28, +1.8 src2 Vt 28, +1.8 src2 Vt 28, +1.9 src2 Vt 28, +1.9 src2 Vt 28, +1.9 src2 Vt 28, +1.9 src2 Vt 28, +1.9 src2 Vt 28, +1.9 src2 Vt 28, +2.1 src2 Vt 28, +2.3 src2 Vt 28, +3.6 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.7 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.8 src2 Vt 28, +3.9 src2 Vt 28, +3.9 src2 Vt 28, +3.9 src2 Vt 28, +3.9 src0 Vt 26, +4.0 src2 Vt 26, +5.6 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.7 src2 Vt 26, +5.8 src2 Vt 26, +5.8 src2 Vt 26, +5.8 src2 Vt 26, +5.8 src2 Vt 26, +5.8 src2 Vt 26, +5.9 src2 Vt 26, +5.9 src2 Vt 26, +5.9 src2 Vt 26, +5.9 src2 Vt 26, +5.9 src2 Vt 26, +5.9 src2 Vt 26, +6.1 src2 Vt 26, +7.7 src2 Vt 26, +7.7 src2 Vt 26, +7.7 src2 Vt 26, +7.7 src2 Vt 26, +7.7 src2 Vt 26, +7.7 src2 Vt 26, +7.8 src2 Vt 26, +7.8 src2 Vt 26, +7.8 src2 Vt 26, +7.8 src2 Vt 26, +7.8 src2 Vt 26, +7.8 src2 Vt 26, +7.9 src2 Vt 26, +7.9 src2 Vt 26, +7.9 src2 Vt 26, +8.2 src2 Vt 26, +8.3 src2 Vt 26, +9.2 src2 Vt 26, +9.7 src2 Vt 26, +9.7 src2 Vt 26, +9.7 src2 Vt 26, +9.7 src2 Vt 26, +9.7 src2 Vt 26, +9.7 src2 Vt 26, +9.8 src2 Vt 26, +9.8 src2 Vt 26, +9.8 src2 Vt 26, +9.8 src2 Vt 26, +9.9 src2 Vt 26, +9.9 src2 Vt 26, +9.9 src2 Vt 26, +9.9 src2 Vt 26, +9.9 src2 Vt 26, +9.9 src2 Vt 26, +10.3 src2 Vt 26, +10.8 src2 Vt 26, +11.6 src2 Vt 26, +11.7 src2 Vt 26, +11.7 src2 Vt 26, +11.7 src2 Vt 26, +11.7 src2 Vt 26, +11.7 src2 Vt 26, +11.7 src2 Vt 26, +11.7 src2 Vt 26, +11.8 src2 Vt 26, +11.8 src2 Vt 26, +11.8 src2 Vt 26, +11.8 src2 Vt 26, +11.8 src2 Vt 26, +11.8 src2 Vt 26, +11.9 src2 Vt 26, +11.9 src2 Vt 26, +11.9 src2 Vt 26, +11.9 src2 Vt 26, +11.9 src2 Vt 26, +13.2 src2 Vt 26, +13.7 src2 Vt 26, +13.7 src2 Vt 26, +13.7 src2 Vt 26, +13.7 src2 Vt 26, +13.7 src2 Vt 26, +13.8 src2 Vt 26, +13.8 src2 Vt 26, +13.8 src2 Vt 26, +13.8 src2 Vt 26, +13.8 src2 Vt 26, +13.8 src2 Vt 26, +13.9 src2 Vt 26, +13.9 src2 Vt 26, +13.9 src2 Vt 26, +13.9 src2 Vt 26, +13.9 src2 Vt 26, +14.2 src2 Vt 60, +15.6 src2 Vt 60, +15.6 src2 Vt 60, +15.7 src2 Vt 60, +15.7 src2 Vt 60, +15.7 src2 Vt 60, +15.7 src2 Vt 60, +15.7 src2 Vt 60, +15.7 src2 Vt 60, +15.7 src2 Vt 60, +15.8 src2 Vt 60, +15.8 src2 Vt 60, +15.8 src2 Vt 60, +15.8 src2 Vt 60, +15.8 src2 Vt 60, +15.8 src2 Vt 60, +15.9 src2 Vt 60, +15.9 src2 Vt 60, +15.9 src2 Vt 60, +15.9 src2 Vt 60, +15.9 src2 Vt 60, +16.9 src2 Vt 60, +17.7 src2 Vt 60, +17.7 src2 Vt 60, +17.7 src2 Vt 60, +17.7 src2 Vt 60, +17.7 src2 Vt 60, +17.7 src2 Vt 60, +17.8 src2 Vt 60, +17.8 src2 Vt 60, +17.8 src2 Vt 60, +17.8 src2 Vt 60, +17.8 src2 Vt 60, +17.9 src2 Vt 60, +17.9 src2 Vt 60, +17.9 src2 Vt 60, +17.9 src2 Vt 60, +17.9 src2 Vt 60, +18.4 src2 Vt 60, +19.7 src2 Vt 60, +19.7 src2 Vt 60, +19.7 src2 Vt 60, +19.7 src2 Vt 60, +19.7 src2 Vt 60, +19.8 src2 Vt 60, +19.8 src2 Vt 60, +19.8 src2 Vt 60, +19.8 src2 Vt 60, +19.8 src2 Vt 60, +19.8 src2 Vt 60, +19.9 src2 Vt 60, +19.9 src2 Vt 60, +19.9 src2 Vt 60, +19.9 src2 Vt 60, +19.9 src2 Vt 60, +20.8 src2 Vt 60
+
+  -- apnea 7 (apnea 100%): sim onset 469.9 s, end 489.9 s (20.1 s long)
+     patient flow in the apnea: mean -15.23  min -19.55  max -7.72 slm (max at +12.7 s)
+     P_mask 6.94..9.18 cmH2O   PID rpm 14061..21932
+     1 s mean flow: -15.4 -15.2 -15.4 -15.2 -15.3 -14.9 -15.6 -15.2 -15.3 -15.2 -15.2 -15.1 -14.3 -15.3 -15.3 -15.1 -15.5 -15.1 -15.3 -15.3 -18.5
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +-0.4 FOT/osc leak 23.0
+     leak estimate in the apnea: 22.98 -> 20.58 (min 20.58)
+     PH lines: +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.3 src2 Vt 27, +-0.2 src2 Vt 27, +-0.2 src2 Vt 27, +-0.2 src2 Vt 27, +-0.2 src2 Vt 27, +-0.2 src2 Vt 27, +-0.2 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +-0.1 src2 Vt 27, +0.2 src0 Vt 27, +0.6 src2 Vt 27, +0.8 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.7 src2 Vt 27, +1.8 src2 Vt 27, +1.8 src2 Vt 27, +1.8 src2 Vt 27, +1.8 src2 Vt 27, +1.8 src2 Vt 27, +1.8 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +1.9 src2 Vt 27, +2.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.7 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.8 src2 Vt 27, +3.9 src2 Vt 27, +3.9 src2 Vt 27, +3.9 src2 Vt 27, +3.9 src2 Vt 27, +3.9 src2 Vt 27, +4.1 src2 Vt 27, +4.3 src2 Vt 27, +4.4 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.7 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.8 src2 Vt 27, +5.9 src2 Vt 27, +5.9 src2 Vt 27, +5.9 src2 Vt 27, +5.9 src2 Vt 27, +6.9 src2 Vt 27, +7.7 src0 Vt 27, +7.7 src2 Vt 27, +7.7 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.8 src2 Vt 27, +7.9 src2 Vt 27, +7.9 src2 Vt 27, +7.9 src2 Vt 27, +7.9 src2 Vt 27, +7.9 src2 Vt 27, +8.0 src2 Vt 27, +8.3 src2 Vt 27, +9.7 src2 Vt 27, +9.7 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.8 src2 Vt 27, +9.9 src2 Vt 27, +9.9 src2 Vt 27, +9.9 src2 Vt 27, +9.9 src2 Vt 27, +9.9 src2 Vt 27, +10.7 src2 Vt 27, +10.8 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.7 src2 Vt 27, +11.8 src2 Vt 27, +11.8 src2 Vt 27, +11.8 src2 Vt 27, +11.8 src2 Vt 27, +11.8 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +11.9 src2 Vt 27, +12.2 src2 Vt 27, +12.3 src2 Vt 27, +12.7 src0 Vt 27, +12.8 src2 Vt 27, +12.8 src2 Vt 27, +12.9 src2 Vt 27, +12.9 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.7 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.8 src2 Vt 27, +13.9 src2 Vt 27, +13.9 src2 Vt 27, +13.9 src2 Vt 27, +13.9 src2 Vt 27, +13.9 src2 Vt 27, +14.2 src2 Vt 27, +14.8 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.7 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.8 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +15.9 src2 Vt 27, +17.1 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.7 src2 Vt 27, +17.8 src2 Vt 27, +17.8 src2 Vt 27, +17.8 src2 Vt 27, +17.8 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +17.9 src2 Vt 27, +18.2 src2 Vt 27, +18.4 src2 Vt 27, +18.7 src0 Vt 45, +19.7 src2 Vt 45, +19.7 src2 Vt 45, +19.7 src2 Vt 45, +19.7 src2 Vt 45, +19.7 src2 Vt 45, +19.7 src2 Vt 45, +19.8 src2 Vt 45, +19.8 src2 Vt 45, +19.8 src2 Vt 45, +19.8 src2 Vt 45, +19.8 src2 Vt 45, +19.9 src2 Vt 45, +19.9 src2 Vt 45, +19.9 src2 Vt 45, +19.9 src2 Vt 45, +19.9 src2 Vt 45, +20.2 src2 Vt 45, +20.4 src2 Vt 45
+
+  -- apnea 8 (apnea 100%): sim onset 845.0 s, end 869.9 s (24.9 s long)
+     patient flow in the apnea: mean -15.16  min -19.33  max -1.93 slm (max at +10.3 s)
+     P_mask 6.91..9.29 cmH2O   PID rpm 14184..21923
+     1 s mean flow: -15.5 -15.2 -15.3 -15.1 -15.2 -15.1 -15.5 -15.0 -15.4 -15.2 -13.5 -15.3 -15.4 -15.2 -15.2 -15.0 -15.1 -15.0 -15.3 -15.0 -15.5 -15.3 -15.2 -15.1 -15.4
+     excursions > 4 slm: none
+     excursions > 2 slm: none
+     APAP state (S, ~1 s, arrives late): +0.3 FOT/osc leak 20.3
+     leak estimate in the apnea: 20.34 -> 21.18 (min 20.34)
+     PH lines: +0.6 src2 Vt 27, +0.6 src2 Vt 27, +0.6 src2 Vt 27, +0.6 src2 Vt 27, +0.6 src2 Vt 27, +0.7 src2 Vt 27, +0.7 src2 Vt 27, +0.7 src2 Vt 27, +0.7 src2 Vt 27, +0.7 src2 Vt 27, +0.8 src2 Vt 27, +0.8 src2 Vt 27, +0.8 src2 Vt 27, +0.8 src2 Vt 27, +0.8 src2 Vt 27, +0.9 src2 Vt 27, +1.8 src2 Vt 27, +2.6 src2 Vt 27, +2.6 src2 Vt 27, +2.6 src2 Vt 27, +2.6 src2 Vt 27, +2.6 src2 Vt 27, +2.7 src2 Vt 27, +2.7 src2 Vt 27, +2.7 src2 Vt 27, +2.7 src2 Vt 27, +2.7 src2 Vt 27, +2.7 src2 Vt 27, +2.7 src2 Vt 27, +2.7 src2 Vt 27, +2.8 src2 Vt 27, +2.8 src2 Vt 27, +2.8 src2 Vt 27, +2.8 src2 Vt 27, +3.0 src2 Vt 27, +4.6 src2 Vt 27, +4.6 src2 Vt 27, +4.6 src2 Vt 27, +4.6 src2 Vt 27, +4.6 src2 Vt 27, +4.7 src2 Vt 27, +4.7 src2 Vt 27, +4.7 src2 Vt 27, +4.7 src2 Vt 27, +4.7 src2 Vt 27, +4.8 src2 Vt 27, +4.8 src2 Vt 27, +4.8 src2 Vt 27, +4.8 src2 Vt 27, +5.1 src2 Vt 27, +6.6 src2 Vt 27, +6.6 src2 Vt 27, +6.6 src2 Vt 27, +6.6 src2 Vt 27, +6.6 src2 Vt 27, +6.6 src2 Vt 27, +6.7 src2 Vt 27, +6.7 src2 Vt 27, +6.7 src2 Vt 27, +6.7 src2 Vt 27, +6.7 src2 Vt 27, +6.8 src2 Vt 27, +6.8 src2 Vt 27, +6.8 src2 Vt 27, +6.8 src2 Vt 27, +6.8 src2 Vt 27, +8.6 src2 Vt 27, +8.6 src2 Vt 27, +8.6 src2 Vt 27, +8.6 src2 Vt 27, +8.6 src2 Vt 27, +8.7 src2 Vt 27, +8.7 src2 Vt 27, +8.7 src2 Vt 27, +8.7 src2 Vt 27, +8.7 src2 Vt 27, +8.7 src2 Vt 27, +8.8 src2 Vt 27, +8.8 src2 Vt 27, +8.8 src2 Vt 27, +8.8 src2 Vt 27, +8.8 src2 Vt 27, +9.1 src2 Vt 27, +9.2 src2 Vt 27, +9.8 src2 Vt 27, +10.2 src2 Vt 27, +10.3 src0 Vt 48, +10.6 src2 Vt 48, +10.6 src2 Vt 48, +10.6 src2 Vt 48, +10.6 src2 Vt 48, +10.7 src2 Vt 48, +10.7 src2 Vt 48, +10.7 src2 Vt 48, +10.7 src2 Vt 48, +10.7 src2 Vt 48, +10.7 src2 Vt 48, +10.8 src2 Vt 48, +10.8 src2 Vt 48, +10.8 src2 Vt 48, +10.8 src2 Vt 48, +10.8 src2 Vt 48, +11.2 src2 Vt 48, +11.3 src2 Vt 48, +12.6 src2 Vt 48, +12.6 src2 Vt 48, +12.6 src2 Vt 48, +12.6 src2 Vt 48, +12.7 src2 Vt 48, +12.7 src2 Vt 48, +12.7 src2 Vt 48, +12.7 src2 Vt 48, +12.7 src2 Vt 48, +12.8 src2 Vt 48, +12.8 src2 Vt 48, +12.8 src2 Vt 48, +12.8 src2 Vt 48, +12.8 src2 Vt 48, +12.8 src2 Vt 48, +13.2 src2 Vt 48, +14.6 src2 Vt 48, +14.6 src2 Vt 48, +14.6 src2 Vt 48, +14.6 src2 Vt 48, +14.6 src2 Vt 48, +14.6 src2 Vt 48, +14.7 src2 Vt 48, +14.7 src2 Vt 48, +14.7 src2 Vt 48, +14.7 src2 Vt 48, +14.7 src2 Vt 48, +14.7 src2 Vt 48, +14.7 src2 Vt 48, +14.8 src2 Vt 48, +14.8 src2 Vt 48, +14.8 src2 Vt 48, +14.8 src2 Vt 48, +14.8 src2 Vt 48, +14.9 src2 Vt 48, +16.0 src2 Vt 48, +16.6 src2 Vt 48, +16.6 src2 Vt 48, +16.6 src2 Vt 48, +16.6 src2 Vt 48, +16.7 src2 Vt 48, +16.7 src2 Vt 48, +16.7 src2 Vt 48, +16.7 src2 Vt 48, +16.7 src2 Vt 48, +16.7 src2 Vt 48, +16.8 src2 Vt 48, +16.8 src2 Vt 48, +16.8 src2 Vt 48, +16.8 src2 Vt 48, +18.6 src2 Vt 48, +18.6 src2 Vt 48, +18.6 src2 Vt 48, +18.6 src2 Vt 48, +18.6 src2 Vt 48, +18.6 src2 Vt 48, +18.6 src2 Vt 48, +18.7 src2 Vt 48, +18.7 src2 Vt 48, +18.7 src2 Vt 48, +18.7 src2 Vt 48, +18.7 src2 Vt 48, +18.7 src2 Vt 48, +18.8 src2 Vt 48, +18.8 src2 Vt 48, +18.8 src2 Vt 48, +18.8 src2 Vt 48, +18.8 src2 Vt 48, +19.0 src2 Vt 48, +20.6 src2 Vt 48, +20.6 src2 Vt 48, +20.6 src2 Vt 48, +20.6 src2 Vt 48, +20.6 src2 Vt 48, +20.7 src2 Vt 48, +20.7 src2 Vt 48, +20.7 src2 Vt 48, +20.7 src2 Vt 48, +20.7 src2 Vt 48, +20.8 src2 Vt 48, +20.8 src2 Vt 48, +20.8 src2 Vt 48, +20.8 src2 Vt 48, +20.8 src2 Vt 48, +21.1 src2 Vt 48, +22.3 src0 Vt 51, +22.6 src2 Vt 51, +22.6 src2 Vt 51, +22.6 src2 Vt 51, +22.6 src2 Vt 51, +22.6 src2 Vt 51, +22.7 src2 Vt 51, +22.7 src2 Vt 51, +22.7 src2 Vt 51, +22.7 src2 Vt 51, +22.7 src2 Vt 51, +22.7 src2 Vt 51, +22.7 src2 Vt 51, +22.8 src2 Vt 51, +22.8 src2 Vt 51, +22.8 src2 Vt 51, +22.8 src2 Vt 51, +22.8 src2 Vt 51, +24.6 src2 Vt 51, +24.6 src2 Vt 51, +24.6 src2 Vt 51, +24.6 src2 Vt 51, +24.6 src2 Vt 51, +24.7 src2 Vt 51, +24.7 src2 Vt 51, +24.7 src2 Vt 51, +24.7 src2 Vt 51, +24.7 src2 Vt 51, +24.7 src2 Vt 51, +24.7 src2 Vt 51, +24.7 src2 Vt 51, +24.8 src2 Vt 51, +24.8 src2 Vt 51, +24.8 src2 Vt 51, +24.8 src2 Vt 51, +24.8 src2 Vt 51, +24.8 src2 Vt 51, +25.1 src2 Vt 51, +25.2 src2 Vt 51
+
+  SUMMARY (times from sim apnea onset; S-line times arrive ~1-2 s late)
+    #   segment       dur    q max  q max at     NO_BR early exit      FOT  physio
+    1   apnea 100%   5.0s  -11.8       +3.1        --         --     +0.7      no
+    2   apnea 100%  14.9s   -9.4       +5.4        --         --     +9.0      no
+    3   apnea 100%   5.1s  -11.1       +3.9        --         --     +1.5      no
+    4   apnea 100%   5.1s  -10.7       +4.9        --         --     +1.9      no
+    5   apnea 100%  20.0s  -10.3       +5.6        --         --    +-0.7      no
+    6   apnea 100%  20.0s   -8.8       +3.9        --         --     +7.0      no
+    7   apnea 100%  20.1s   -7.7      +12.7        --         --    +-0.4      no
+    8   apnea 100%  24.9s   -1.9      +10.3        --         --     +0.3      no
+
+==============================================================================
+SCORECARD vs the R4/R5 build
+==============================================================================
+  R5    apnea  5 s: NOT scored
+  R5    apnea 10 s: NOT scored
+  R5    apnea 10 s: NOT scored
+  R5    apnea 10 s: NOT scored
+  R5    apnea 20 s: NOT scored
+  R5    apnea 20 s: NOT scored
+  R5    apnea 20 s: NOT scored
+  hyp   hypopnea 50% : NO Hyp  [Hyp events 0]
+  hyp   hypopnea 55% : NO Hyp  [Hyp events 0]
+  R4    hypopnea 60% : NO Hyp  [Hyp events 0]; OSA-likely x1
+  R1    apnea 20 s + arousal: NOT scored
+  R1    after the arousal breaths: no FL call - fixed
+  AHI   0.00   (OA 0 + CA 0 + Hyp 0) / 0.000 h = 0.00  -> includes CA
+
+  totals: OA 0 CA 0 Hyp 0 FL 0 Snore 0  AHI 0.00   polarity 1 (bad 0)   leak-blocked raises seen: no
+  OSA-likely calls during the run: 2 samples
+  peak CPAP supply current 0.90 A   simulator sensors OK
+  logs: apap_trial7_cpap.csv / _status.csv / _sim.csv (scratchpad)
+  [ramp-down] stopped at measured 5982 rpm
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 2
+
+simulator stopped. CPAP handled above.
