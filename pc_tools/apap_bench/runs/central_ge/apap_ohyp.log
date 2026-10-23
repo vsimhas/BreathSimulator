@@ -1,0 +1,51 @@
+==============================================================================
+PRE-CHECKS
+==============================================================================
+  CPAP state 0 mode 0 measured -0.02  APAP range 5.0-20.0   Vbus 23.66 V
+  liveness before flow 607673 -> 607779   press 607681 -> 607787   OK
+  CPAP firmware probe: # ack apap set hyp_rearm_ratio 0.7
+  CPAP R13 probe: # ack apap set fl_dip_ratio 0.93
+  CPAP central/obstructive Hyp probe: # ack apap set hyp_raise_shape_frac 0.5
+
+  simulator breathing (static FF, CPAP off) - priming 20 s...
+  CPAP running AutoSet 8-12, target 8.00, measured -0.20
+  simulator -> pressure FF; settling 30 s (past the APAP's 15 s start-up grace)
+  APAP at script start: state 1 | OA 0 CA 0 Hyp 0 FL 0 Snore 0   polarity 1 (bad 0)
+  script start: none 90 | hypopnea 40 | none 90 | hypopnea 40 | none 90 | hypopnea 40 | none 90  (480 s)
+
+  t= 30s  CPAP target 8.0 meas 8.2 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 60s  CPAP target 8.0 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t= 88s  SIM  flattening -> 0.90
+  t= 90s  CPAP target 8.0 meas 7.8 apap_st 1 osc 0 | OA 0 CA 0 Hyp 0 FL 0 | fl 0 hyp 0
+  t=120s  CPAP target 8.4 meas 8.4 apap_st 1 osc 0 | OA 0 CA 0 Hyp 1 FL 1 | fl 1 hyp 1
+  t=132s  SIM  flattening -> 0.00
+  t=135s  SIM  E END   Hypopnea  (breath 38)
+  t=150s  CPAP target 8.9 meas 8.9 apap_st 1 osc 0 | OA 0 CA 0 Hyp 1 FL 1 | fl 0 hyp 0
+  t=180s  CPAP target 8.9 meas 9.0 apap_st 1 osc 0 | OA 0 CA 0 Hyp 1 FL 1 | fl 0 hyp 0
+  t=210s  CPAP target 8.7 meas 8.7 apap_st 1 osc 0 | OA 0 CA 0 Hyp 1 FL 1 | fl 0 hyp 0
+  t=225s  SIM  E START Hypopnea  (breath 56)
+  t=240s  CPAP target 8.6 meas 8.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 1 | fl 0 hyp 1
+  t=265s  SIM  E END   Hypopnea  (breath 64)
+  t=270s  CPAP target 8.6 meas 8.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 1 | fl 0 hyp 0
+  t=300s  CPAP target 8.5 meas 8.5 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 1 | fl 0 hyp 0
+  t=330s  CPAP target 8.3 meas 8.3 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 1 | fl 0 hyp 0
+  t=348s  SIM  flattening -> 0.90
+  t=355s  SIM  E START Hypopnea  (breath 82)
+  t=360s  CPAP target 8.2 meas 8.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 2 FL 1 | fl 0 hyp 0
+  t=390s  CPAP target 8.9 meas 8.7 apap_st 1 osc 0 | OA 0 CA 0 Hyp 3 FL 2 | fl 1 hyp 1
+  t=392s  SIM  flattening -> 0.00
+  t=395s  SIM  E END   Hypopnea  (breath 90)
+  t=420s  CPAP target 9.0 meas 9.1 apap_st 1 osc 0 | OA 0 CA 0 Hyp 3 FL 2 | fl 0 hyp 0
+  t=450s  CPAP target 8.9 meas 8.8 apap_st 1 osc 0 | OA 0 CA 0 Hyp 3 FL 2 | fl 0 hyp 0
+  t=480s  CPAP target 8.7 meas 8.6 apap_st 1 osc 0 | OA 0 CA 0 Hyp 3 FL 2 | fl 0 hyp 0
+  [ramp-down] stopped at measured 7998 rpm
+  liveness after  flow 665804 -> 665910   press 665812 -> 665918   OK
+  raw capture saved: apap_ohyp_raw.pkl (29613 T lines, 311 PH lines)
+  [ramp-down] stopped at measured 7998 rpm
+
+  [CPAP stop] setpoint -> 4 cmH2O
+  [CPAP stop] blower at 13068 rpm - therapy stop
+  [CPAP stop] state 0
+  [CPAP] restored: mode 0, target 8.0, APAP range 5.0-20.0, state 0
+
+simulator stopped. CPAP handled above.
