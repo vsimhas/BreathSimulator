@@ -1,3 +1,3 @@
 # Raw bench captures stay local (~60 MB); scripts and README are tracked.
-runs/*.pkl
+runs/**/*.pkl
 __pycache__/

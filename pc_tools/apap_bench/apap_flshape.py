@@ -87,7 +87,8 @@ SCRIPT_S = sum(d for _, d, _ in SCRIPT)
 APAP_RE = re.compile(
     r"# APAP OA=(\d+) CA=(\d+) Hyp=(\d+) FL=(\d+) Snore=(\d+) t_ms=(\d+) "
     r"AHI=([-\d.]+) RDI=([-\d.]+) SI=([-\d.]+) st=(\S+) hyp=(\d) fl=(\d) "
-    r"sn=(\d) leak_blk=(\d) pol=(-?\d+) pol_ev=([-\d.]+) pol_bad=(\d+)")
+    r"sn=(\d) leak_blk=(\d) pol=(-?\d+) pol_ev=([-\d.]+) pol_bad=(\d+)"
+    r"(?: flat=([-\d.]+) dip=([-\d.]+))?")      # R13 build: last breath's shape
 
 
 class Abort(Exception):
@@ -192,7 +193,7 @@ class Cpap:
                             self.osc_since = None
                         if st["state"] and st["maskoff"] and not self.abort:
                             self.abort = "CPAP reports mask-off"
-                elif "apap set hyp_rearm_ratio" in t or (
+                elif "apap set hyp_rearm_ratio" in t or "apap set fl_dip_ratio" in t or (
                         t.startswith("# err") and getattr(self, "fw_reply", 0) is None):
                     with self.lock:
                         self.fw_reply = t
@@ -205,7 +206,9 @@ class Cpap:
                                   AHI=float(g[6]), st=g[9], hyp=int(g[10]),
                                   fl=int(g[11]), sn=int(g[12]),
                                   leak_blk=int(g[13]), pol=int(g[14]),
-                                  pol_bad=int(g[16]))
+                                  pol_bad=int(g[16]),
+                                  flat=float(g[17]) if g[17] else None,
+                                  dip=float(g[18]) if g[18] else None)
                         with self.lock:
                             self.ap = ap
                             self.ap_log.append(ap)
@@ -304,6 +307,18 @@ try:
     print("  CPAP firmware probe: %s" % (cp.fw_reply or "no reply"))
     if not (cp.fw_reply and cp.fw_reply.startswith("# ack")):
         raise SystemExit("CPAP is not running the R12 build")
+    # R13 (2026-10-23): whole-inspiration flatness + dip; only that build
+    # knows fl_dip_ratio, and 0.93 is its default (0.90 on the first R13 flash,
+    # so this also sets the tuned value on that build).
+    with cp.lock:
+        cp.fw_reply = None
+    cp.cmd("apap set fl_dip_ratio 0.93")
+    end = time.monotonic() + 4.0
+    while time.monotonic() < end and cp.fw_reply is None:
+        time.sleep(0.1)
+    print("  CPAP R13 probe: %s" % (cp.fw_reply or "no reply"))
+    if not (cp.fw_reply and cp.fw_reply.startswith("# ack")):
+        raise SystemExit("CPAP is not running the R13 build")
 
     # ---- start order: simulator FIRST, then the CPAP -----------------------
     # Every trial up to 7g started the CPAP first, so the APAP saw no breath
