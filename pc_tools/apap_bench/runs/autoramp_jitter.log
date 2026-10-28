@@ -1,0 +1,29 @@
+simulator breathing (static FF, jitter 25 %) - priming 20 s
+CPAP mode 10 cmH2O, AutoRamp, started
+     10 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     21 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     31 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     41 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+     51 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+     61 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+     71 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+     81 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     90 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=2 sp=4.00  OA=0 Hyp=0 sn=0
+    101 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+    111 s jitter     st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+    121 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=0 sp=4.01  OA=0 Hyp=0 sn=0
+    131 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=2 sp=4.18  OA=0 Hyp=0 sn=0
+    141 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=0 sp=4.35  OA=0 Hyp=0 sn=0
+    151 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=0 sp=4.51  OA=0 Hyp=0 sn=0
+    161 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=1 sp=4.68  OA=0 Hyp=0 sn=0
+    170 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=1 sp=4.84  OA=0 Hyp=0 sn=0
+    181 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=3 sp=5.01  OA=0 Hyp=0 sn=0
+    191 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=1 sp=5.19  OA=0 Hyp=0 sn=0
+    201 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=0 sp=5.34  OA=0 Hyp=0 sn=0
+    211 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=1 sp=5.52  OA=0 Hyp=0 sn=0
+    220 s jitter     st=Ramp phase=1 cause=4 onset_s=120 stable=0 sp=5.67  OA=0 Hyp=0 sn=0
+  [ramp-down] stopped at measured 7998 rpm
+final: # APAP OA=0 CA=1 Hyp=0 FL=0 Snore=0 t_ms=239770 AHI=15.01 RDI=15.01 SI=0.00 st=Idle hyp=0 fl=0 sn=0 leak_blk=0 pol=1 pol_ev=14.3 pol_bad=0 flat=0.00 dip=1.00 fli=0.00 snl=0.00 fli_avg=0.12 fli_p95=0.19 fl_s=0 sn_s=0 snr=0.000 pb=0 pb_s=0 pb_n=0 pb_r=0.00 pb_d=0.00 pb_T=0
+ramp:  # RAMP auto=0 min=0 st=Idle elapsed_s=239 phase=1 cause=4 onset_s=120 stable=0 sleep=0 sp=6.00
+edf:   # EDF en=1 st=Idle path=0:/DATALOG/20261027/20261027_120905_BRP.edf rec=239 fsize=24668 err=0x0 pld=0:/DATALOG/20261027/20261027_120905_PLD.edf pldrec=239 plderr=0x0 eve=0:/DATALOG/20261027/20261027_120905_EVE.edf everec=2 eveerr=0x0 evedrop=0 csl=1 cslerr=0x0 mounted=1 sd=1 test=0 fatfs=1 fail_step=0 sd_hal=0x0 dio_err=0x0 dio_n=0
+done

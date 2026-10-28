@@ -1,0 +1,44 @@
+mask pulls at [4.0, 8.0, 12.0] cmH2O, 2 each
+
+== 4 cmH2O: settling 25 s
+   state Running, # MASK n=0 open=0 pending=0 last_off=- last_off_s=0 last_on=- last_on_s=0 dur=0.0 path=- end=- rows=0 err=0x0000
+   pull 1: OPEN cue
+     mask-off detected None s after the cue
+     RECONNECT cue (state Running)
+     mask-on detected 0.31 s after the cue
+     logged: n=0 off_s=0 on_s=0 dur=0.0 path=- end=- rows=0
+   pull 2: OPEN cue
+     mask-off detected 0.31 s after the cue
+     RECONNECT cue (state Running)
+     mask-on detected 0.31 s after the cue
+     logged: n=1 off_s=53 on_s=64 dur=10.9 path=sustained end=mask_on rows=1
+   after stop: n=1 rows=1 err=0x0000
+
+== 8 cmH2O: settling 25 s
+   state Running, # MASK n=0 open=0 pending=0 last_off=- last_off_s=53 last_on=- last_on_s=64 dur=10.9 path=sustained end=mask_on rows=1 err=0x0000
+   pull 1: OPEN cue
+     mask-off detected None s after the cue
+     RECONNECT cue (state Running)
+     mask-on detected 0.31 s after the cue
+     logged: n=0 off_s=53 on_s=64 dur=10.9 path=sustained end=mask_on rows=1
+   pull 2: OPEN cue
+     mask-off detected 0.32 s after the cue
+     RECONNECT cue (state Running)
+     mask-on detected None s after the cue
+     logged: n=0 off_s=53 on_s=64 dur=10.9 path=sustained end=mask_on rows=1
+   after stop: n=1 rows=2 err=0x0000
+
+== 12 cmH2O: settling 25 s
+   state Running, # MASK n=0 open=0 pending=0 last_off=- last_off_s=41 last_on=- last_on_s=104 dur=62.5 path=sustained end=mask_on rows=2 err=0x0000
+   pull 1: OPEN cue
+     mask-off detected None s after the cue
+     RECONNECT cue (state Running)
+     mask-on detected 0.31 s after the cue
+     logged: n=0 off_s=41 on_s=104 dur=62.5 path=sustained end=mask_on rows=2
+   pull 2: OPEN cue
+     mask-off detected None s after the cue
+     RECONNECT cue (state Running)
+     mask-on detected 0.31 s after the cue
+     logged: n=0 off_s=41 on_s=104 dur=62.5 path=sustained end=mask_on rows=2
+   after stop: n=1 rows=3 err=0x0000
+edf: eve=0:/DATALOG/20260101/20260101_001046_EVE.edf everec=2 eveerr=0x0 evedrop=0

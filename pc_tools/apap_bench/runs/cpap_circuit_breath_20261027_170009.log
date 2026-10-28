@@ -1,0 +1,36 @@
+in use at start: learned 0.0 / 0.000209 (res ok d60 0.754)
+simulator breathing, tidal 700 mL, 12/min; priming 15 s
+CPAP 12.0 cmH2O started
+== A learned: R_lam 0.00000 R_turb 0.000209
+   state after: Running
+== B built-in: R_lam 0.00353 R_turb 0.000118
+   state after: Running
+== A2 learned: R_lam 0.00000 R_turb 0.000209
+   state after: Running
+after: # CIRCUIT ph=done step=4/5 res=ok warn=0x00 applied=1 n=5 r_lam=0.00000 r_turb=0.000209 d60=0.754 d100=2.094 rms=0.034 prev_d60=0.637 p0=-0.015 q0=1.11 stop=q_max use=learned use_lam=0.00000 use_turb=0.000209 apply=1 rpm_max=26000 csv=5 csverr=0x0000
+
+P_mask estimate minus external pressure (median by external flow band)
+  A learned: 1996 samples, lag +0.04 s, r 0.647
+    ext flow          n Pmask-ext       p10..p90   Psens-ext     ext P
+    exp < -20       223    +0.173   0.02..0.29        +0.167     11.85
+    exp -20..-5      95    +0.256  -0.23..0.38        +0.275     11.51
+    |Q| < 5          70    +0.209  -0.35..0.39        +0.304     11.60
+    insp 5..25      916    +0.098  -0.07..0.26        +0.388     11.87
+    insp 25..45     692    +0.109  -0.11..0.35        +0.841     12.00
+    ext peak flow 43 L/min; ext P mean 11.89
+  B built-in: 1996 samples, lag +0.03 s, r 0.577
+    ext flow          n Pmask-ext       p10..p90   Psens-ext     ext P
+    exp < -20       223    +0.183  -0.02..0.29        +0.160     11.83
+    exp -20..-5      91    +0.264  -0.20..0.40        +0.318     11.45
+    |Q| < 5          73    +0.133  -0.37..0.33        +0.285     11.62
+    insp 5..25      912    +0.094  -0.09..0.27        +0.392     11.86
+    insp 25..45     697    +0.239   0.02..0.47        +0.865     11.87
+    ext peak flow 42 L/min; ext P mean 11.85
+  A2 learned: 1999 samples, lag +0.04 s, r 0.616
+    ext flow          n Pmask-ext       p10..p90   Psens-ext     ext P
+    exp < -20       225    +0.175   0.02..0.31        +0.165     11.85
+    exp -20..-5      97    +0.234  -0.17..0.41        +0.251     11.49
+    |Q| < 5          63    +0.202  -0.30..0.37        +0.315     11.63
+    insp 5..25      927    +0.104  -0.07..0.27        +0.393     11.87
+    insp 25..45     687    +0.115  -0.10..0.35        +0.862     11.98
+    ext peak flow 42 L/min; ext P mean 11.89

@@ -1,0 +1,2 @@
+   final                        ps_off=? gain=? src=? rej=? cand=? n=? | fs_zero=? rej=? cand=? az=? | as_off=? src=? | rows=? err=?
+   final                        precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=-0.1 amb=912.2

@@ -1,0 +1,25 @@
+== 1. clean start, simulator idle
+    states: [(0.9, 'Self-test'), (5.6, 'Running')]
+    # SPIN en=1 map=1 fail=OK inj=0 n=257 rpm=12272 p=2.916 model=2.409 q=30.07 p_sd=0.1636 q_sd=1.362
+   (simulator breathing, static FF)
+== 2. clean start, simulator breathing
+    states: [(0.9, 'Self-test'), (5.6, 'Running')]
+    # SPIN en=1 map=1 fail=OK inj=0 n=201 rpm=12769 p=3.580 model=3.324 q=20.81 p_sd=0.3298 q_sd=4.184
+== 3. injected spin_map
+    states: [(0.9, 'Self-test'), (6.7, 'Fault')]
+    # SPIN en=1 map=1 fail=pressure / flow off the blower curve inj=1 n=256 rpm=12263 p=2.895 model=2.395 q=30.17 p_sd=0.1835 q_sd=3.858
+== 3. injected spin_flat
+    states: [(0.9, 'Self-test'), (5.6, 'Fault')]
+    # SPIN en=1 map=1 fail=sensor flat while the blower runs inj=1 n=201 rpm=12732 p=3.063 model=2.449 q=33.37 p_sd=0.2337 q_sd=2.491
+   (fan map a 0.025508 -> 0.040: real mismatch)
+== 4. wrong fan map
+    states: [(0.9, 'Self-test'), (5.6, 'Running')]
+    # SPIN en=1 map=1 fail=OK inj=0 n=201 rpm=12691 p=3.180 model=4.963 q=30.66 p_sd=0.1583 q_sd=1.420
+== 5. stop during the spin
+    state after start: Self-test
+    state after stop: Idle
+    # SUM pending=0 written=5 err=0x0
+  [ramp-down] stopped at measured 7998 rpm
+    # FAULTS count=2 pending=0 err=0x0
+    # FLT 1,2,,0,111,therapy,6,Self-Test Failed,spin_flat test 12732rpm p3.1/2.4 q33,5,0,9,6.00,4.00,2.80,18.4,1.3,17534,12318,110,36,23722,6,0x0000,0x0000
+    # FLT 1,1,,0,92,therapy,6,Self-Test Failed,spin_map test 12263rpm p2.9/2.4 q30,5,0,9,6.00,4.00,2.76,-8.3,24.7,17534,11988,160,39,23721,6,0x0000,0x0000

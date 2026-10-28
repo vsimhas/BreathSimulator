@@ -39,16 +39,22 @@ SP = _os.path.join(HERE, "runs")                       # run data in / out
 sys.path.insert(0, HERE)
 
 if len(sys.argv) > 1 and sys.argv[1] == "--analyze":
+    # --analyze [file]   default: the 19 October R10 capture
     import total_analysis
-    total_analysis.main(pickle.load(open(SP + "/total_raw.pkl", "rb")))
+    f = sys.argv[2] if len(sys.argv) > 2 else SP + "/total_raw.pkl"
+    total_analysis.main(pickle.load(open(f, "rb")))
     sys.exit(0)
+
+# #25 (28 Oct): optional CPAP pressure; phase1 takes argv[1] as its port.
+CPAP_P = float(sys.argv[1]) if len(sys.argv) > 1 else 8.0
+del sys.argv[1:]
+OUT = SP + "/total_raw_P%g_%s.pkl" % (CPAP_P, time.strftime("%Y%m%d_%H%M%S"))
 
 from phase1 import send, ramp_down, ser
 import liveness
 from ext_sensor import ExtSensorLogger, looks_frozen
 
 CPAP_PORT = "COM13"
-CPAP_P = 8.0
 SIM_GUARD = 36000
 I_LIMIT, I_HOLD_S, VBUS_MIN = 0.8, 0.7, 21.0
 SCRIPT = [("none", 60, None), ("hypopnea", 60, 60), ("none", 60, None),
@@ -124,6 +130,14 @@ class Cpap:
                               meas=float(p[5]), leak=float(p[6]), maskoff=int(p[8]),
                               mode=int(p[10]), amin=float(p[11]), amax=float(p[12]),
                               apst=int(p[13]), osc=int(p[14]))
+                    if len(p) >= 36:
+                        # #25: VIVO state - MeanRatio, its 10 s instant mean,
+                        # vent ref, uninten, flow leak, rest volume, breath
+                        # FSM insp flag, rate, last insp / exp volumes.
+                        st.update(mr=int(p[25]), mr10=int(p[26]), vent=float(p[27]),
+                                  unint=float(p[28]), fleak=float(p[29]),
+                                  rest=float(p[31]), binsp=int(p[32]), bpm=float(p[33]),
+                                  vi=float(p[34]), ve=float(p[35]))
                     with self.lock:
                         self.st = st
                         self.st_log.append(st)
@@ -257,6 +271,7 @@ try:
     print("  CPAP running fixed %.1f cmH2O, measured %.2f" % (st["target"], st["meas"]))
 
     # ---- simulator ------------------------------------------------------------
+    send("sim event cancel")      # ramp_down() leaves a 120 s apnea latched
     for c in ("sim set waveform sine", "sim set timing rate_ie",
               "sim set rate 12", "sim set ie 1", "sim set insp_pause 0",
               "sim set exp_pause 0", "sim set jitter 0",
@@ -291,7 +306,7 @@ try:
         now = time.monotonic()
         if now >= next_poll:
             cp.cmd("therapy status")
-            next_poll = now + 2.0
+            next_poll = now + 1.0
         if now >= next_note:
             with cp.lock:
                 s_, nt = cp.st, len(cp.t_log)
@@ -330,10 +345,10 @@ try:
     raw_dump.update(ext=list(ext.samples), ext_crc=ext.parser.crc_errors,
                     sim_f=sim_f, sim_p=sim_p, sim_e=sim_e, sim_v=sim_v, t_script=t_script,
                     script=SCRIPT, i_max=cp.i_max, alive=alive)
-    with open(SP + "/total_raw.pkl", "wb") as fh:
+    with open(OUT, "wb") as fh:
         pickle.dump(raw_dump, fh)
-    print("\n  raw saved: total_raw.pkl  (T %d, ext %d, sim F %d, sim P %d)"
-          % (len(raw_dump["t_log"]), len(raw_dump["ext"]), len(sim_f), len(sim_p)))
+    print("\n  raw saved: %s  (T %d, ext %d, sim F %d, sim P %d)"
+          % (OUT, len(raw_dump["t_log"]), len(raw_dump["ext"]), len(sim_f), len(sim_p)))
     print("  peak CPAP supply current %.2f A   simulator sensors %s"
           % (cp.i_max, "OK" if alive else "!! NOT READING AT END"))
     try:

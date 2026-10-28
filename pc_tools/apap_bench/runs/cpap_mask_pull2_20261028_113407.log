@@ -1,0 +1,19 @@
+
+== 4 cmH2O: settling 25 s
+   OPEN cue
+   RECONNECT cue
+   base P 4.27; open cue -> P drop 4305 ms; reconnect cue -> P back -493 ms
+   NO mask-off entry; sensor P min after the cue 2.61
+   while open: Ps med 4.05, Pmask med 4.02, Qpat med 0.1
+
+== 8 cmH2O: settling 25 s
+   OPEN cue
+   RECONNECT cue
+   base P 8.09; open cue -> P drop None ms; reconnect cue -> P back -486 ms
+   NO mask-off entry; sensor P min after the cue 7.04
+
+== 12 cmH2O: settling 25 s
+   OPEN cue
+   RECONNECT cue
+   base P 12.20; open cue -> P drop 26185 ms; reconnect cue -> P back -497 ms
+   M enter path 1 at 675 ms after the P drop (q 156, Ps 10.59, Pm 5.50)

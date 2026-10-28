@@ -1,0 +1,16 @@
+
+== 4 cmH2O
+   round, full            ext (lung): n 5  flat med 0.515 (0.508..0.788)  peak med 26.1
+                          CPAP pat. : n 4  flat med 0.686 (0.683..0.693)  peak med 17.2
+   flattened, full        ext (lung): n 5  flat med 0.607 (0.604..0.722)  peak med 22.5
+                          CPAP pat. : n 5  flat med 0.813 (0.751..0.892)  peak med 14.1
+   flattened, 55 % hyp    ext (lung): n 4  flat med 0.616 (0.600..0.886)  peak med 14.5
+                          CPAP pat. : n 4  flat med 0.708 (0.671..0.744)  peak med 8.4
+
+== 8 cmH2O
+   round, full            ext (lung): n 5  flat med 0.548 (0.543..0.748)  peak med 29.7
+                          CPAP pat. : n 4  flat med 0.643 (0.627..0.654)  peak med 17.7
+   flattened, full        ext (lung): n 5  flat med 0.644 (0.638..0.768)  peak med 25.7
+                          CPAP pat. : n 5  flat med 0.786 (0.777..0.867)  peak med 14.0
+   flattened, 55 % hyp    ext (lung): n 5  flat med 0.678 (0.669..0.900)  peak med 17.8
+                          CPAP pat. : n 4  flat med 0.773 (0.730..0.780)  peak med 7.4

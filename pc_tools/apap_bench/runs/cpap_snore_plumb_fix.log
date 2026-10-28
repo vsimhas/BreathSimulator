@@ -1,0 +1,26 @@
+simulator breathing (static FF) - priming 20 s
+CPAP mode 8 cmH2O started
+     10 s  normal     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr=0.626
+     20 s  normal     sn=1 snl=2.31 sn_s=6 Snore=1 fli=0.00 snr=0.807
+     31 s  normal     sn=1 snl=4.11 sn_s=16 Snore=1 fli=0.00 snr=1.440
+     41 s  normal     sn=1 snl=5.00 sn_s=27 Snore=1 fli=0.00 snr=4.116
+     51 s  normal     sn=1 snl=5.00 sn_s=37 Snore=1 fli=0.00 snr=3.785
+     61 s  normal     sn=1 snl=5.00 sn_s=47 Snore=1 fli=0.00 snr=2.294
+snore_rms_thresh -> 0.05, snore_hp_hz -> 20.0
+     71 s  thr 0.05   sn=1 snl=5.00 sn_s=57 Snore=1 fli=0.00 snr=2.497
+     82 s  thr 0.05   sn=1 snl=5.00 sn_s=67 Snore=1 fli=0.00 snr=1.801
+     92 s  thr 0.05   sn=1 snl=5.00 sn_s=78 Snore=1 fli=0.00 snr=1.209
+    102 s  thr 0.05   sn=1 snl=5.00 sn_s=88 Snore=1 fli=0.02 snr=0.820
+    112 s  thr 0.05   sn=1 snl=5.00 sn_s=98 Snore=1 fli=0.00 snr=0.582
+    122 s  thr 0.05   sn=1 snl=5.00 sn_s=108 Snore=1 fli=0.00 snr=0.431
+    132 s  thr 0.05   sn=1 snl=5.00 sn_s=118 Snore=1 fli=0.00 snr=0.391
+    143 s  thr 0.05   sn=1 snl=5.00 sn_s=128 Snore=1 fli=0.00 snr=0.253
+    153 s  thr 0.05   sn=1 snl=5.00 sn_s=139 Snore=1 fli=0.00 snr=0.363
+snore_rms_thresh -> 0.35, snore_hp_hz -> 20.0
+    163 s  restored   sn=1 snl=2.05 sn_s=149 Snore=1 fli=0.04 snr=0.719
+    173 s  restored   sn=1 snl=2.71 sn_s=159 Snore=1 fli=0.00 snr=0.950
+    184 s  restored   sn=1 snl=2.09 sn_s=169 Snore=1 fli=0.00 snr=0.733
+    194 s  restored   sn=1 snl=2.19 sn_s=180 Snore=1 fli=0.00 snr=0.767
+  [ramp-down] stopped at measured 8016 rpm
+final: # APAP OA=0 CA=1 Hyp=0 FL=0 Snore=1 t_ms=218290 AHI=16.49 RDI=16.49 SI=16.49 st=Idle hyp=0 fl=0 sn=0 leak_blk=0 pol=1 pol_ev=12.1 pol_bad=0 flat=0.00 dip=1.00 fli=0.00 snl=0.00 fli_avg=0.00 fli_p95=0.02 fl_s=0 sn_s=188 snr=0.000
+done

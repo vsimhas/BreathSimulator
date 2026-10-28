@@ -1,0 +1,31 @@
+simulator breathing (static FF) - priming 20 s
+CPAP mode 8 cmH2O started
+     11 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.000/0.626
+     21 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.196/0.295
+     32 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.208/0.417
+     42 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.205/0.294
+     53 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.209/0.369
+     63 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.196/0.945
+sim snore 35 Hz +/-500 rpm
+     74 s  sim 500      sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.205/0.326
+     85 s  sim 500      sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.198/0.339
+     95 s  sim 500      sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.197/0.407
+    106 s  sim 500      sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.211/0.836
+sim snore 35 Hz +/-1000 rpm
+    116 s  sim 1000     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.07 snr med/max=0.202/0.338
+    127 s  sim 1000     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.199/0.349
+    138 s  sim 1000     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.185/0.318
+    148 s  sim 1000     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.11 snr med/max=0.196/0.286
+sim snore 35 Hz +/-1500 rpm
+    159 s  sim 1500     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.56 snr med/max=0.199/0.296
+    169 s  sim 1500     sn=0 snl=0.00 sn_s=0 Snore=0 fli=1.00 snr med/max=0.205/0.333
+    180 s  sim 1500     sn=0 snl=0.00 sn_s=0 Snore=0 fli=1.00 snr med/max=0.199/0.387
+    191 s  sim 1500     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.88 snr med/max=0.212/0.379
+sim snore off
+    201 s  restored     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.221/0.385
+    212 s  restored     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.209/1.210
+    223 s  restored     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.174/0.269
+    233 s  restored     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.185/0.314
+  [ramp-down] stopped at measured 7998 rpm
+final: # APAP OA=0 CA=1 Hyp=0 FL=1 Snore=0 t_ms=258360 AHI=13.93 RDI=27.87 SI=0.00 st=Idle hyp=0 fl=0 sn=0 leak_blk=0 pol=1 pol_ev=11.7 pol_bad=0 flat=0.00 dip=1.00 fli=0.00 snl=0.00 fli_avg=0.16 fli_p95=1.00 fl_s=34 sn_s=0 snr=0.000
+done

@@ -1,0 +1,33 @@
+
+== 4 cmH2O, jitter 25 %
+   simulator breathing (3 inspirations in 15 s)
+   events: Hyp=0 FL=0 CA=1 OA=0
+   normal         none
+   hyp-limited    none
+   => hypopnea breaths judged central by shape
+  [ramp-down] stopped at measured 6000 rpm
+
+== 4 cmH2O, jitter 0 %
+   simulator breathing (3 inspirations in 15 s)
+   events: Hyp=0 FL=0 CA=1 OA=0
+   normal         none
+   hyp-limited    none
+   => hypopnea breaths judged central by shape
+  [ramp-down] stopped at measured 7998 rpm
+
+== 8 cmH2O, jitter 0 %
+   simulator breathing (3 inspirations in 15 s)
+   events: Hyp=0 FL=0 CA=1 OA=0
+   normal         none
+   hyp-limited    none
+   => hypopnea breaths judged central by shape
+  [ramp-down] stopped at measured 6000 rpm
+
+== 8 cmH2O, jitter 25 %
+   simulator breathing (3 inspirations in 15 s)
+   events: Hyp=0 FL=0 CA=1 OA=0
+   normal         none
+   hyp-limited    none
+   => hypopnea breaths judged central by shape
+  [ramp-down] stopped at measured 7998 rpm
+  [ramp-down] stopped at measured 7980 rpm

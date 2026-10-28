@@ -1,0 +1,47 @@
+   start                        ps_off=? gain=? src=? rej=? cand=? n=? | fs_zero=? rej=? cand=? az=? | as_off=? src=? | rows=? err=?
+   start                        precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=-0.1 amb=911.7
+== 1. PS +0.8 cmH2O offset: learned and corrected
+   before                       ps_off=-0.019 gain=1.0000 src=auto rej=0 cand=-0.019 n=1 | fs_zero=-0.0343 rej=0 cand=0.0000 az=1 | as_off=0.00 src=factory | rows=0 err=0x0000
+   offset in, not learned       precheck ok=1 fail=OK warn=0x1D ps=0.80 q=-0.0 amb=911.7
+   learned after 3.6 s
+   after                        ps_off=0.780 gain=1.0000 src=auto rej=0 cand=0.780 n=2 | fs_zero=-0.0343 rej=0 cand=0.0000 az=1 | as_off=0.00 src=factory | rows=1 err=0x0000
+   after                        precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=-0.0 amb=911.7
+== 2. PS +2.0 cmH2O offset: refused, start refused
+   before                       ps_off=0.780 gain=1.0000 src=auto rej=0 cand=0.780 n=2 | fs_zero=-0.0343 rej=0 cand=0.0000 az=1 | as_off=0.00 src=factory | rows=1 err=0x0000
+   decided after 3.6 s
+   after                        ps_off=0.780 gain=1.0000 src=auto rej=1 cand=1.981 n=3 | fs_zero=-0.0343 rej=0 cand=0.0000 az=1 | as_off=0.00 src=factory | rows=2 err=0x0000
+   after                        precheck ok=0 fail=mask pressure not zero at rest warn=0x1D ps=1.20 q=-0.1 amb=911.7
+   start: # PRECHECK ok=0 fail=mask pressure not zero at rest inj=0 warn=0x1D en=1 ps=1.20 an=-26.42 q=-0.0 amb=911.7 fz_ps=0 fz_fs=0 fz_as=20 cm4=5 flt=0x0000 vbus=23.66
+   start: S,45622,4,8.00,6.00,1.20,0.00,0,0,6,0,5.00,20.00,0,0,0.000,0.000,0.000,0,0.000,0,1,0.00,0,1,1000,0,6.36,0.00,6.36,15.42,0.0,0,0.0,0,0,1158,0,0.0,0,0,0.00,0.00,0
+== 3. offset removed: learned back
+   before                       ps_off=0.780 gain=1.0000 src=auto rej=1 cand=1.981 n=3 | fs_zero=-0.0343 rej=0 cand=0.0000 az=1 | as_off=0.00 src=factory | rows=2 err=0x0000
+   learned after 3.7 s
+   after                        ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0343 rej=0 cand=0.0000 az=1 | as_off=0.00 src=factory | rows=3 err=0x0000
+   after                        precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=-0.0 amb=911.7
+== 4. flow +0.02 mbar (~2 L/min): learned
+   before                       ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0343 rej=0 cand=0.0000 az=1 | as_off=0.00 src=factory | rows=3 err=0x0000
+   offset in, not learned       precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=1.7 amb=911.7
+   done after 16.5 s
+   after                        ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0153 rej=0 cand=0.0000 az=2 | as_off=0.00 src=factory | rows=4 err=0x0000
+   after                        precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=0.1 amb=911.7
+== 5. flow +0.08 mbar (~8 L/min): refused, warning
+   before                       ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0153 rej=0 cand=0.0000 az=2 | as_off=0.00 src=factory | rows=4 err=0x0000
+   done after 9.2 s
+   after                        ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0153 rej=1 cand=0.0454 az=2 | as_off=0.00 src=factory | rows=5 err=0x0000
+   after                        precheck ok=1 fail=OK warn=0x3D ps=-0.00 q=5.3 amb=911.7
+== 6. flow offset removed: learned back
+   before                       ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0153 rej=1 cand=0.0454 az=2 | as_off=0.00 src=factory | rows=5 err=0x0000
+   done after 3.8 s
+   after                        ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0153 rej=1 cand=0.0454 az=2 | as_off=0.00 src=factory | rows=5 err=0x0000
+   after                        precheck ok=1 fail=OK warn=0x3D ps=0.00 q=-1.7 amb=911.8
+== 7. field span / ambient
+   ps gain 1.2: []
+   ps gain 1.02: ['# ack cal ps gain 1.02']
+   gain 1.02                    ps_off=-0.018 gain=1.0200 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0180 rej=0 cand=0.0454 az=2 | as_off=0.00 src=factory | rows=6 err=0x0000
+   ps gain 1.0: ['# ack cal ps gain 1.0']
+   before as offset             precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=-1.1 amb=911.8
+   as offset 0.5: ['# ack cal as offset 0.5']
+   as offset 0.5                precheck ok=1 fail=OK warn=0x1D ps=-0.00 q=-0.6 amb=912.2
+   end (as +0.5 left for reload) ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0341 rej=0 cand=0.0454 az=3 | as_off=0.50 src=field | rows=9 err=0x0000
+   final                        ps_off=-0.018 gain=1.0000 src=auto rej=0 cand=-0.018 n=4 | fs_zero=-0.0341 rej=0 cand=0.0454 az=3 | as_off=0.50 src=field | rows=9 err=0x0000
+   final                        precheck ok=1 fail=OK warn=0x1D ps=0.01 q=-0.1 amb=912.2

@@ -1,0 +1,64 @@
+
+== 4 cmH2O, jitter 25 %
+   simulator breathing (3 inspirations in 15 s, up to 15540 rpm)
+   settings: apap set rel_baseline 1
+   events: Hyp=2 FL=2 CA=0 OA=0
+   normal         n=20  clean segment 20  (from floor 20, overflow 0)  FL-shape 4  flat(clean) 0.51..0.83  dip med 1.00
+   hyp-limited    n=6  clean segment 5  (from floor 6, overflow 1)  FL-shape 4  flat(clean) 0.71..0.83  dip med 1.00
+     seq 213 ti 2605 T 5265 pk 4.8 base 19.9 flat 0.833 dip 0.920 ok 1 floor 1 ovf 0 fl 1
+     seq 215 ti 2505 T 5045 pk 6.9 base 19.9 flat 0.750 dip 1.000 ok 1 floor 1 ovf 0 fl 1
+     seq 226 ti 2065 T 5150 pk 7.3 base 19.3 flat 0.714 dip 1.000 ok 1 floor 1 ovf 0 fl 0
+     seq 227 ti 4855 T 6055 pk 7.3 base 19.3 flat 0.000 dip 1.000 ok 0 floor 1 ovf 1 fl 0
+     seq 228 ti 2240 T 5120 pk 4.7 base 19.3 flat 0.793 dip 0.930 ok 1 floor 1 ovf 0 fl 1
+     seq 229 ti 2345 T 5220 pk 6.1 base 19.3 flat 0.768 dip 1.000 ok 1 floor 1 ovf 0 fl 1
+   => hypopnea breaths judged obstructive by shape
+
+== 4 cmH2O, jitter 0 %
+   simulator breathing (4 inspirations in 15 s, up to 22518 rpm)
+   settings: apap set rel_baseline 1
+   events: Hyp=2 FL=1 CA=0 OA=0
+   normal         n=18  clean segment 18  (from floor 18, overflow 0)  FL-shape 2  flat(clean) 0.66..0.83  dip med 1.00
+   hyp-limited    n=10  clean segment 10  (from floor 10, overflow 0)  FL-shape 5  flat(clean) 0.56..0.84  dip med 0.98
+     seq 244 ti 2455 T 4955 pk 5.0 base 17.3 flat 0.836 dip 0.909 ok 1 floor 1 ovf 0 fl 1
+     seq 245 ti 2430 T 5000 pk 6.1 base 17.3 flat 0.760 dip 0.928 ok 1 floor 1 ovf 0 fl 1
+     seq 246 ti 2430 T 5020 pk 7.0 base 17.3 flat 0.716 dip 0.796 ok 1 floor 1 ovf 0 fl 1
+     seq 247 ti 2435 T 4980 pk 5.6 base 17.3 flat 0.781 dip 0.959 ok 1 floor 1 ovf 0 fl 1
+     seq 248 ti 2400 T 4985 pk 5.5 base 17.3 flat 0.747 dip 0.962 ok 1 floor 1 ovf 0 fl 1
+     seq 258 ti 2535 T 4985 pk 7.6 base 18.7 flat 0.707 dip 1.000 ok 1 floor 1 ovf 0 fl 0
+     seq 259 ti 3405 T 5005 pk 9.0 base 18.7 flat 0.563 dip 1.000 ok 1 floor 1 ovf 0 fl 0
+     seq 260 ti 2905 T 5005 pk 8.8 base 18.7 flat 0.621 dip 1.000 ok 1 floor 1 ovf 0 fl 0
+     seq 261 ti 2600 T 4990 pk 8.6 base 18.7 flat 0.670 dip 0.998 ok 1 floor 1 ovf 0 fl 0
+     seq 262 ti 2535 T 5000 pk 8.1 base 18.7 flat 0.710 dip 0.977 ok 1 floor 1 ovf 0 fl 0
+   => hypopnea breaths judged central by shape
+
+== 8 cmH2O, jitter 0 %
+   simulator breathing (3 inspirations in 15 s, up to 22536 rpm)
+   settings: apap set rel_baseline 1
+   events: Hyp=1 FL=1 CA=0 OA=0
+   normal         n=18  clean segment 18  (from floor 18, overflow 0)  FL-shape 2  flat(clean) 0.53..0.81  dip med 1.00
+   hyp-limited    n=8  clean segment 7  (from floor 7, overflow 0)  FL-shape 6  flat(clean) 0.57..0.83  dip med 0.95
+     seq 276 ti 2525 T 5005 pk 6.8 base 18.4 flat 0.743 dip 0.955 ok 1 floor 1 ovf 0 fl 1
+     seq 277 ti 2565 T 5015 pk 8.1 base 18.4 flat 0.743 dip 0.946 ok 1 floor 1 ovf 0 fl 1
+     seq 278 ti 2560 T 4990 pk 7.0 base 18.4 flat 0.768 dip 1.000 ok 1 floor 1 ovf 0 fl 1
+     seq 279 ti 2450 T 4950 pk 4.9 base 18.4 flat 0.829 dip 0.883 ok 1 floor 1 ovf 0 fl 1
+     seq 280 ti 2390 T 4985 pk 4.3 base 18.4 flat 0.682 dip 0.918 ok 1 floor 1 ovf 0 fl 1
+     seq 290 ti 1465 T 3450 pk 4.6 base 19.3 flat 0.573 dip 0.931 ok 1 floor 1 ovf 0 fl 0
+     seq 291 ti 1505 T 1500 pk 5.1 base 19.3 flat 0.000 dip 1.000 ok 0 floor 0 ovf 0 fl 0
+     seq 292 ti 2395 T 4990 pk 4.6 base 19.3 flat 0.760 dip 0.858 ok 1 floor 1 ovf 0 fl 1
+   => hypopnea breaths judged obstructive by shape
+
+== 8 cmH2O, jitter 25 %
+   simulator breathing (3 inspirations in 15 s, up to 23124 rpm)
+   settings: apap set rel_baseline 1
+   events: Hyp=2 FL=2 CA=0 OA=0
+   normal         n=17  clean segment 17  (from floor 17, overflow 0)  FL-shape 1  flat(clean) 0.52..0.78  dip med 1.00
+   hyp-limited    n=8  clean segment 8  (from floor 8, overflow 0)  FL-shape 7  flat(clean) 0.67..0.80  dip med 0.97
+     seq 309 ti 2065 T 3140 pk 9.0 base 22.1 flat 0.753 dip 0.975 ok 1 floor 1 ovf 0 fl 1
+     seq 310 ti 2640 T 5275 pk 5.2 base 22.1 flat 0.754 dip 1.000 ok 1 floor 1 ovf 0 fl 1
+     seq 312 ti 2460 T 5035 pk 4.4 base 22.1 flat 0.762 dip 0.999 ok 1 floor 1 ovf 0 fl 1
+     seq 314 ti 2610 T 5265 pk 11.0 base 22.1 flat 0.804 dip 0.967 ok 1 floor 1 ovf 0 fl 1
+     seq 323 ti 2045 T 5140 pk 6.2 base 20.0 flat 0.769 dip 0.986 ok 1 floor 1 ovf 0 fl 1
+     seq 324 ti 3285 T 5980 pk 4.8 base 20.0 flat 0.673 dip 0.966 ok 1 floor 1 ovf 0 fl 0
+     seq 326 ti 2265 T 5190 pk 4.0 base 20.0 flat 0.788 dip 0.876 ok 1 floor 1 ovf 0 fl 1
+     seq 327 ti 2090 T 5645 pk 8.7 base 20.0 flat 0.712 dip 0.914 ok 1 floor 1 ovf 0 fl 1
+   => hypopnea breaths judged obstructive by shape

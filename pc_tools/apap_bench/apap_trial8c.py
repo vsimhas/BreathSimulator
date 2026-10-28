@@ -50,11 +50,18 @@ import os as _os
 HERE = _os.path.dirname(_os.path.abspath(__file__))   # code
 SP = _os.path.join(HERE, "runs")                       # run data in / out
 sys.path.insert(0, HERE)
+# phase1 takes sys.argv[1] as the simulator port: take our flag out first.
+CPAP_MODE = "--cpap" in sys.argv
+sys.argv = [x for x in sys.argv if x != "--cpap"]
 from phase1 import send, collect, ramp_down, ser, decode
 import liveness
 
 CPAP_PORT = "COM13"
 APAP_MIN, APAP_MAX = 8.0, 12.0
+# --cpap (checklist #33, 2026-10-26): the same script in CPAP mode at APAP_MIN,
+# to check event scoring without titration. Probes `apap set cpap_scoring 1`
+# (only that build knows it); outputs go to apap_trial8c_cpapmode_*.
+TAG = "apap_trial8c_cpapmode" if CPAP_MODE else "apap_trial8c"
 SIM_GUARD = 36000
 I_LIMIT, I_HOLD_S, VBUS_MIN = 0.8, 0.7, 21.0
 FOT_MAX_S = 60.0   # watchdog: continuous APAP oscillation longer than this aborts
@@ -184,7 +191,7 @@ class Cpap:
                             self.osc_since = None
                         if st["state"] and st["maskoff"] and not self.abort:
                             self.abort = "CPAP reports mask-off"
-                elif "apap set hyp_rearm_ratio" in t or (
+                elif "apap set hyp_rearm_ratio" in t or "apap set cpap_scoring" in t or (
                         t.startswith("# err") and getattr(self, "fw_reply", 0) is None):
                     with self.lock:
                         self.fw_reply = t
@@ -340,24 +347,40 @@ try:
     drain_sim(20.0)
 
     # ---- CPAP: AutoSet, started on a breathing patient ---------------------
-    for c in ("therapy set ramp 0", "therapy set epr 0",
-              "therapy set pressure_min %.0f" % APAP_MIN,
-              "therapy set pressure_max %.0f" % APAP_MAX,
-              "therapy set mode autoset"):
+    if CPAP_MODE:
+        with cp.lock:
+            cp.fw_reply = None
+        cp.cmd("apap set cpap_scoring 1")
+        end = time.monotonic() + 4.0
+        while time.monotonic() < end and cp.fw_reply is None:
+            time.sleep(0.1)
+        print("  CPAP-mode scoring probe: %s" % (cp.fw_reply or "no reply"))
+        if not (cp.fw_reply and cp.fw_reply.startswith("# ack")):
+            raise Abort("CPAP is not running the CPAP-mode scoring build")
+        start_cmds = ("therapy set ramp 0", "therapy set epr 0",
+                      "therapy set mode cpap", "therapy set pressure %.1f" % APAP_MIN)
+    else:
+        start_cmds = ("therapy set ramp 0", "therapy set epr 0",
+                      "therapy set pressure_min %.0f" % APAP_MIN,
+                      "therapy set pressure_max %.0f" % APAP_MAX,
+                      "therapy set mode autoset")
+    for c in start_cmds:
         cp.cmd(c)
     cp.cmd("therapy start")
+    want_mode = 0 if CPAP_MODE else 1
     end = time.monotonic() + 25.0
     st = None
     while time.monotonic() < end:
         st = cp.status()
-        if st and st["state"] == 2 and st["mode"] == 1:
+        if st and st["state"] == 2 and st["mode"] == want_mode:
             break
         drain_sim(1.0)
-    if not (st and st["state"] == 2 and st["mode"] == 1):
-        raise Abort("CPAP did not reach running AutoSet (state %s mode %s)"
+    if not (st and st["state"] == 2 and st["mode"] == want_mode):
+        raise Abort("CPAP did not reach running therapy (state %s mode %s)"
                     % (st and st["state"], st and st["mode"]))
-    print("  CPAP running AutoSet %.0f-%.0f, target %.2f, measured %.2f"
-          % (st["amin"], st["amax"], st["target"], st["meas"]))
+    print("  CPAP running %s, target %.2f, measured %.2f"
+          % ("CPAP %.1f (scoring only)" % APAP_MIN if CPAP_MODE
+             else "AutoSet %.0f-%.0f" % (st["amin"], st["amax"]), st["target"], st["meas"]))
 
     drain_sim(6.0)                    # a breath or two at 8 cmH2O for the estimate
     send("sim set ff pressure")
@@ -446,7 +469,7 @@ try:
                         b_log=list(cp.b_log), t0=cp.t0)
     raw_dump.update(t_script=t_script, sim_events=sim_events, sim_rows=sim_rows,
                     script=SCRIPT)
-    with open(SP + "/apap_trial8c_raw.pkl", "wb") as fh:
+    with open(SP + "/" + TAG + "_raw.pkl", "wb") as fh:
         pickle.dump(raw_dump, fh)
     print("  raw capture saved: apap_trial8c_raw.pkl (%d T lines, %d PH lines)"
           % (len(raw_dump["t_log"]), len(raw_dump["ph_log"])))
@@ -623,7 +646,7 @@ try:
                    if max(br_amps) > 1.0 else
                    "no peak above 1 A this run")
         print("    FOT-current hypothesis: %s" % verdict)
-    with open(SP + "/apap_trial8c_current.csv", "w", newline="") as fh:
+    with open(SP + "/" + TAG + "_current.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["t_s", "amps", "cpap_rpm", "oscillating"])
         for t, amps, rpm in run_bl:
@@ -727,7 +750,7 @@ try:
                              early_exit=(exits[0] - t_on) if exits and (not fot or exits[0] < fot[0]) else None,
                              fot=(fot[0] - t_on) if fot else None,
                              physio=any(x[3] == 1 for x in phs)))
-        with open(SP + "/apap_trial8c_apnea%d.csv" % (k + 1), "w", newline="") as fh:
+        with open(SP + "/" + TAG + "_apnea%d.csv" % (k + 1), "w", newline="") as fh:
             w = csv.writer(fh)
             w.writerow(["t_rel_s", "tick", "p_sensor", "q_patient", "pid_rpm",
                         "mech_rpm", "p_mask"])
@@ -743,12 +766,12 @@ try:
         print("    %-3d %-10s %5.1fs %6.1f   %8s %9s %10s %8s %7s"
               % (c["k"], c["name"], c["dur"], c["qmax"], f(c["t_qmax"]), f(c["nb"]),
                  f(c["early_exit"]), f(c["fot"]), "YES" if c["physio"] else "no"))
-    with open(SP + "/apap_trial8c_T.csv", "w", newline="") as fh:
+    with open(SP + "/" + TAG + "_T.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["t_s", "tick", "p_sensor", "q_patient", "pid_rpm", "mech_rpm", "p_mask"])
         for r in tl_:
             w.writerow([round(r[0], 3)] + list(r[1:]))
-    with open(SP + "/apap_trial8c_PH.csv", "w", newline="") as fh:
+    with open(SP + "/" + TAG + "_PH.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["t_s", "tick", "vt_ml", "fot_src", "p_pp", "q_pp"])
         for r in ph_:
@@ -779,7 +802,7 @@ try:
         last = dl[-2:]
         for x in last:
             print("  last (t=%.0f s)  %s: %s" % (x[0], x[1], " ".join("%s=%s" % kv for kv in x[2].items())))
-    with open(SP + "/apap_trial8c_diag.csv", "w") as fh:
+    with open(SP + "/" + TAG + "_diag.csv", "w") as fh:
         keys = sorted({k for x in dl for k in x[2]})
         fh.write("t_s,kind," + ",".join(keys) + "\n")
         for x in dl:
@@ -865,7 +888,7 @@ try:
     print("  peak CPAP supply current %.2f A   simulator sensors %s"
           % (cp.i_max, "OK" if alive else "!! NOT READING AT END"))
 
-    with open(SP + "/apap_trial8c_cpap.csv", "w", newline="") as fh:
+    with open(SP + "/" + TAG + "_cpap.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["t_s", "OA", "CA", "Hyp", "FL", "Snore", "AHI", "st",
                     "hyp", "fl", "sn", "leak_blk", "pol"])
@@ -873,7 +896,7 @@ try:
             w.writerow([round(a["ts"], 2), a["OA"], a["CA"], a["Hyp"], a["FL"],
                         a["Snore"], a["AHI"], a["st"], a["hyp"], a["fl"],
                         a["sn"], a["leak_blk"], a["pol"]])
-    with open(SP + "/apap_trial8c_status.csv", "w", newline="") as fh:
+    with open(SP + "/" + TAG + "_status.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["t_s", "target", "meas", "leak", "apap_state", "osc",
                     "fot_p", "fot_q", "osa"])
@@ -881,7 +904,7 @@ try:
             w.writerow([round(s_["ts"], 2), s_["target"], s_["meas"],
                         s_["leak"], s_["apst"], s_["osc"], s_["fot_p"],
                         s_["fot_q"], s_["osa"]])
-    with open(SP + "/apap_trial8c_sim.csv", "w", newline="") as fh:
+    with open(SP + "/" + TAG + "_sim.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["t_s", "breath", "vt", "qpk", "flat", "event"])
         for r in sim_rows:

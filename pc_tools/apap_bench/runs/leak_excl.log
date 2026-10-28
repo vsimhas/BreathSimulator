@@ -1,0 +1,52 @@
+edf at boot: # EDF en=1 st=Idle path= rec=0 fsize=0 err=0x0 pld= pldrec=0 plderr=0x0 eve= everec=0 eveerr=0x0 evedrop=0 csl=0 cslerr=0x0 mounted=0 sd=0 test=2 fatfs=0 fail_step=0 sd_hal=0x0 dio_err=0x0 dio_n=0
+simulator breathing (static FF, jitter 0 %) - priming 20 s
+CPAP mode 8 cmH2O started
+     10 s leak     lx=0 lx_s=0 lx_n=0 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=10295 AHI=0.00
+     20 s leak     lx=0 lx_s=0 lx_n=0 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=20530 AHI=0.00
+     31 s leak     lx=0 lx_s=0 lx_n=0 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=30760 AHI=0.00
+     41 s leak     lx=0 lx_s=0 lx_n=0 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=41030 AHI=0.00
+     51 s leak     lx=0 lx_s=0 lx_n=0 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=51250 AHI=0.00
+     60 s leak     lx=0 lx_s=0 lx_n=0 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=60520 AHI=0.00
+     60 s  -> cpap:leak set high_threshold 5
+     71 s leak     lx=1 lx_s=7 lx_n=1 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=70895 AHI=0.00
+     81 s leak     lx=1 lx_s=17 lx_n=1 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=81115 AHI=0.00
+     90 s leak     lx=1 lx_s=26 lx_n=1 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=90340 AHI=0.00
+     98 s  -> sim set flattening 0.9
+    101 s leak     lx=1 lx_s=37 lx_n=1 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=100690 AHI=0.00
+    101 s  -> sim event hypopnea 25 55
+    111 s leak     lx=1 lx_s=47 lx_n=1 lx_drop=0  Hyp=0 CA=0 OA=0 t_ms=111040 AHI=0.00
+    120 s leak     lx=1 lx_s=56 lx_n=1 lx_drop=2  Hyp=0 CA=0 OA=0 t_ms=120295 AHI=0.00
+    127 s  -> sim set flattening 0
+    131 s leak     lx=1 lx_s=66 lx_n=1 lx_drop=2  Hyp=0 CA=0 OA=0 t_ms=130655 AHI=0.00
+    141 s leak     lx=1 lx_s=77 lx_n=1 lx_drop=2  Hyp=0 CA=0 OA=0 t_ms=140930 AHI=0.00
+    149 s  -> sim set flattening 0.9
+    150 s leak     lx=1 lx_s=86 lx_n=1 lx_drop=2  Hyp=0 CA=0 OA=0 t_ms=150315 AHI=0.00
+    150 s  -> sim event hypopnea 25 55
+    161 s leak     lx=1 lx_s=97 lx_n=1 lx_drop=2  Hyp=0 CA=0 OA=0 t_ms=160705 AHI=0.00
+    171 s leak     lx=1 lx_s=107 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=170935 AHI=0.00
+    178 s  -> sim set flattening 0
+    180 s leak     lx=1 lx_s=116 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=180270 AHI=0.00
+    190 s leak     lx=1 lx_s=126 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=190505 AHI=0.00
+    201 s leak     lx=1 lx_s=137 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=200730 AHI=0.00
+    211 s leak     lx=1 lx_s=147 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=211000 AHI=0.00
+    221 s leak     lx=1 lx_s=157 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=221220 AHI=0.00
+    221 s  -> cpap:leak set high_threshold 24
+    231 s leak     lx=1 lx_s=166 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=230645 AHI=0.00
+    241 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=240870 AHI=0.00
+    251 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=251090 AHI=0.00
+    260 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=260305 AHI=0.00
+    268 s  -> sim set flattening 0.9
+    271 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=270655 AHI=0.00
+    271 s  -> sim event hypopnea 25 55
+    281 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=0 CA=0 OA=0 t_ms=281060 AHI=0.00
+    290 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=1 CA=0 OA=0 t_ms=290270 AHI=29.38
+    297 s  -> sim set flattening 0
+    301 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=1 CA=0 OA=0 t_ms=300625 AHI=27.09
+    311 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=1 CA=0 OA=0 t_ms=310850 AHI=25.16
+    321 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=1 CA=0 OA=0 t_ms=321110 AHI=23.47
+    330 s leak     lx=0 lx_s=167 lx_n=1 lx_drop=3  Hyp=1 CA=0 OA=0 t_ms=330335 AHI=22.14
+  [ramp-down] stopped at measured 7998 rpm
+final: # APAP OA=0 CA=1 Hyp=1 FL=1 Snore=0 t_ms=348860 AHI=39.75 RDI=59.63 SI=0.00 st=Idle hyp=0 fl=0 sn=0 leak_blk=0 pol=1 pol_ev=10.7 pol_bad=0 flat=0.00 dip=1.00 fli=0.00 snl=0.00 fli_avg=0.09 fli_p95=0.56 fl_s=14 sn_s=0 snr=0.000 pb=0 pb_s=0 pb_n=0 pb_r=0.00 pb_d=0.00 pb_T=0 lx=0 lx_s=167 lx_n=1 lx_drop=3
+ramp:  # RAMP auto=0 min=0 start=4.0 st=Idle elapsed_s=0 phase=0 cause=0 onset_s=0 stable=0 sleep=0 sp=4.00
+edf:   # EDF en=1 st=Idle path= rec=0 fsize=0 err=0x1001 pld= pldrec=0 plderr=0x0 eve= everec=0 eveerr=0x0 evedrop=2 csl=0 cslerr=0x0 mounted=0 sd=0 test=2 fatfs=0 fail_step=0 sd_hal=0x0 dio_err=0x0 dio_n=0
+done

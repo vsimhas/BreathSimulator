@@ -1,0 +1,4 @@
+# SomnaLink session summary, schema 1
+schema,start,end,rtc_valid,run_s,mask_on_s,mask_off_s,mask_off_n,mode,p_cpap,apap_min,apap_max,epr_type,epr_level,ramp_min,p_avg,p_min,p_max,p50,p90,p95,leak_avg,leak_p50,leak_p95,leak_max,leak_high_s,leak_low_s,events_scored,oa,ca,hyp,fl,snore,ahi,rdi,si,edf
+1,2026-10-26 15:29:51,2026-10-26 15:39:17,1,566,566,0,0,CPAP,4.0,8.0,12.0,0,1,0,8.17,0.00,9.54,8.20,8.60,8.80,11.8,12.0,13.0,14.6,0,52,0,0,0,0,0,0,0.00,0.00,0.00,20261026_152951
+1,2026-10-26 15:42:15,2026-10-26 15:51:41,1,566,566,0,0,AutoSet,8.0,8.0,12.0,0,1,0,8.22,0.00,9.61,8.20,8.80,8.80,12.0,12.0,13.0,14.6,0,52,1,0,1,2,2,0,19.08,31.80,0.00,20261026_154215

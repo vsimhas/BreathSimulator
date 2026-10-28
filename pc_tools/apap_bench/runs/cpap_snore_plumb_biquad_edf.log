@@ -1,0 +1,26 @@
+simulator breathing (static FF) - priming 20 s
+CPAP mode 8 cmH2O started
+     11 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.000/0.611
+     21 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.211/0.409
+     32 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.222/0.277
+     42 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.195/0.309
+     53 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.200/0.370
+     63 s  normal       sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00 snr med/max=0.210/0.359
+snore_rms_thresh -> 0.05, snore_hp_hz -> 20.0
+     74 s  thr 0.05     sn=1 snl=3.62 sn_s=9 Snore=1 fli=0.00 snr med/max=0.206/0.377
+     85 s  thr 0.05     sn=1 snl=4.40 sn_s=19 Snore=1 fli=0.00 snr med/max=0.204/0.676
+     95 s  thr 0.05     sn=1 snl=3.96 sn_s=30 Snore=1 fli=0.00 snr med/max=0.216/0.545
+    106 s  thr 0.05     sn=1 snl=4.58 sn_s=40 Snore=1 fli=0.00 snr med/max=0.206/0.369
+    116 s  thr 0.05     sn=1 snl=4.07 sn_s=51 Snore=1 fli=0.00 snr med/max=0.204/0.296
+    127 s  thr 0.05     sn=1 snl=4.27 sn_s=61 Snore=1 fli=0.00 snr med/max=0.206/0.359
+    137 s  thr 0.05     sn=1 snl=3.77 sn_s=72 Snore=1 fli=0.00 snr med/max=0.216/0.496
+    148 s  thr 0.05     sn=1 snl=4.01 sn_s=82 Snore=1 fli=0.00 snr med/max=0.207/0.317
+    159 s  thr 0.05     sn=1 snl=3.86 sn_s=93 Snore=1 fli=0.00 snr med/max=0.206/0.371
+snore_rms_thresh -> 0.35, snore_hp_hz -> 20.0
+    169 s  restored     sn=0 snl=0.00 sn_s=98 Snore=1 fli=0.00 snr med/max=0.208/0.486
+    180 s  restored     sn=0 snl=0.00 sn_s=98 Snore=1 fli=0.00 snr med/max=0.210/0.325
+    191 s  restored     sn=0 snl=0.00 sn_s=98 Snore=1 fli=0.00 snr med/max=0.201/0.363
+    201 s  restored     sn=0 snl=0.00 sn_s=98 Snore=1 fli=0.00 snr med/max=0.218/0.280
+  [ramp-down] stopped at measured 7998 rpm
+final: # APAP OA=0 CA=1 Hyp=0 FL=0 Snore=1 t_ms=223785 AHI=16.09 RDI=16.09 SI=16.09 st=Idle hyp=0 fl=0 sn=0 leak_blk=0 pol=1 pol_ev=12.3 pol_bad=0 flat=0.00 dip=1.00 fli=0.00 snl=0.00 fli_avg=0.00 fli_p95=0.00 fl_s=0 sn_s=98 snr=0.000
+done

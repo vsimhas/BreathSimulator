@@ -1,0 +1,26 @@
+simulator breathing (static FF) - priming 20 s
+CPAP mode 8 cmH2O started
+     10 s  normal     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+     20 s  normal     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+     30 s  normal     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+     41 s  normal     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+     51 s  normal     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+     61 s  normal     sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+snore_rms_thresh -> 0.05
+     71 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+     81 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+     92 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    102 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    112 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    122 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    132 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    142 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    153 s  thr 0.05   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+snore_rms_thresh -> 0.35
+    163 s  restored   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    173 s  restored   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    183 s  restored   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+    193 s  restored   sn=0 snl=0.00 sn_s=0 Snore=0 fli=0.00
+  [ramp-down] stopped at measured 7998 rpm
+final: # APAP OA=0 CA=1 Hyp=0 FL=0 Snore=0 t_ms=218405 AHI=16.48 RDI=16.48 SI=0.00 st=Idle hyp=0 fl=0 sn=0 leak_blk=0 pol=1 pol_ev=12.2 pol_bad=0 flat=0.00 dip=1.00 fli=0.00 snl=0.00 fli_avg=0.00 fli_p95=0.03 fl_s=0 sn_s=0
+done

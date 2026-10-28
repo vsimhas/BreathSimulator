@@ -1,0 +1,28 @@
+simulator breathing (static FF, jitter 25 %) - priming 20 s
+CPAP mode 10 cmH2O, AutoRamp, started
+     10 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     21 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     31 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     41 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+     51 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=0
+     61 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=0
+     61 s  -> cpap:apap set snore_rms_thresh 0.05
+     71 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=1 sp=4.00  OA=0 Hyp=0 sn=1
+     81 s snore      st=Ramp phase=0 cause=0 onset_s=0 stable=0 sp=4.00  OA=0 Hyp=0 sn=1
+     91 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=4.06  OA=0 Hyp=0 sn=1
+    101 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=4.23  OA=0 Hyp=0 sn=1
+    110 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=4.39  OA=0 Hyp=0 sn=1
+    121 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=4.56  OA=0 Hyp=0 sn=1
+    131 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=4.74  OA=0 Hyp=0 sn=1
+    140 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=4.89  OA=0 Hyp=0 sn=1
+    151 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=5.07  OA=0 Hyp=0 sn=1
+    161 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=5.24  OA=0 Hyp=0 sn=1
+    171 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=5.40  OA=0 Hyp=0 sn=1
+    181 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=5.57  OA=0 Hyp=0 sn=1
+    191 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=5.73  OA=0 Hyp=0 sn=1
+    201 s snore      st=Ramp phase=1 cause=3 onset_s=86 stable=1 sp=5.90  OA=0 Hyp=0 sn=1
+  [ramp-down] stopped at measured 7998 rpm
+final: # APAP OA=0 CA=1 Hyp=0 FL=0 Snore=1 t_ms=220500 AHI=16.33 RDI=16.33 SI=16.33 st=Idle hyp=0 fl=0 sn=0 leak_blk=0 pol=1 pol_ev=11.4 pol_bad=0 flat=0.00 dip=1.00 fli=0.00 snl=0.00 fli_avg=0.11 fli_p95=0.17 fl_s=0 sn_s=145 snr=0.000 pb=0 pb_s=0 pb_n=0 pb_r=0.00 pb_d=0.00 pb_T=0
+ramp:  # RAMP auto=0 min=0 st=Idle elapsed_s=220 phase=1 cause=3 onset_s=86 stable=0 sleep=3 sp=6.23
+edf:   # EDF en=1 st=Idle path=0:/DATALOG/20261027/20261027_122045_BRP.edf rec=220 fsize=22768 err=0x0 pld=0:/DATALOG/20261027/20261027_122045_PLD.edf pldrec=220 plderr=0x0 eve=0:/DATALOG/20261027/20261027_122045_EVE.edf everec=2 eveerr=0x0 evedrop=0 csl=1 cslerr=0x0 mounted=1 sd=1 test=0 fatfs=1 fail_step=0 sd_hal=0x0 dio_err=0x0 dio_n=0
+done

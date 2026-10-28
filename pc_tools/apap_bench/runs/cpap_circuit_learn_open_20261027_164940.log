@@ -1,0 +1,29 @@
+   external sensor logging (COM4)
+== learn, tube end open
+   ['# ack circuit learn']
+   0.0 s  ph=zero step=0/5
+   0.9 s  ph=step step=0/5
+   7.0 s  ph=step step=1/5
+   9.6 s  ph=step step=2/5
+   12.3 s  ph=step step=3/5
+   14.9 s  ph=step step=4/5
+   16.6 s  ph=rampdown step=4/5
+   18.4 s  ph=done step=4/5
+   result high warn=0x00 applied=0 n=5 stop=-
+   fit R_lam 0.02507 R_turb 0.000520  d60 3.376 (was 0.637) d100 7.706 rms 0.073  p0 -0.019 q0 1.12
+   in use: default 0.00353 / 0.000118  csv rows 4 err 0x0000
+    # CIRCUIT pt=0 rpm=11992 q=42.92 p=2.011 fit=2.033 amps=0.05
+    # CIRCUIT pt=1 rpm=15499 q=59.23 p=3.428 fit=3.308 amps=0.09
+    # CIRCUIT pt=2 rpm=18994 q=78.98 p=5.128 fit=5.223 amps=0.13
+    # CIRCUIT pt=3 rpm=22500 q=96.27 p=7.198 fit=7.232 amps=0.21
+    # CIRCUIT pt=4 rpm=25999 q=113.62 p=9.601 fit=9.559 amps=0.31
+   external sensor at each step (P_dev - P_ext is the drop to it):
+== final
+   result high warn=0x00 applied=0 n=5 stop=-
+   fit R_lam 0.02507 R_turb 0.000520  d60 3.376 (was 0.637) d100 7.706 rms 0.073  p0 -0.019 q0 1.12
+   in use: default 0.00353 / 0.000118  csv rows 4 err 0x0000
+    # CIRCUIT pt=0 rpm=11992 q=42.92 p=2.011 fit=2.033 amps=0.05
+    # CIRCUIT pt=1 rpm=15499 q=59.23 p=3.428 fit=3.308 amps=0.09
+    # CIRCUIT pt=2 rpm=18994 q=78.98 p=5.128 fit=5.223 amps=0.13
+    # CIRCUIT pt=3 rpm=22500 q=96.27 p=7.198 fit=7.232 amps=0.21
+    # CIRCUIT pt=4 rpm=25999 q=113.62 p=9.601 fit=9.559 amps=0.31

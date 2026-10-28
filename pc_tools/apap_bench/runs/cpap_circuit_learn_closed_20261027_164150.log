@@ -1,0 +1,27 @@
+== 1. circuit connected: learn must stop at the first step (not_open)
+   []
+   0.0 s  ph=zero step=0/5
+   0.9 s  ph=step step=0/5
+   1.8 s: therapy start during learn -> state Idle
+   7.4 s  ph=done step=0/5
+   result not_open warn=0x00 applied=0 n=1 stop=-
+   fit R_lam 0.00000 R_turb 0.000000  d60 0.000 (was 0.637) d100 0.000 rms 0.000  p0 -0.015 q0 -0.04
+   in use: default 0.00353 / 0.000118  csv rows 1 err 0x0000
+    # CIRCUIT pt=0 rpm=11998 q=28.28 p=2.819 fit=0.000 amps=0.05
+== 2. abort during the first step
+   ['# ack circuit learn']
+   0.0 s  ph=wait step=0/5
+   1.7 s  ph=zero step=0/5
+   2.6 s: circuit abort ['# ack circuit abort']
+   2.6 s  ph=done step=0/5
+   result aborted warn=0x00 applied=0 n=0 stop=abort
+   fit R_lam 0.00000 R_turb 0.000000  d60 0.000 (was 0.637) d100 0.000 rms 0.000  p0 0.005 q0 -1.27
+   in use: default 0.00353 / 0.000118  csv rows 2 err 0x0000
+== 3. learn while therapy runs (4 cmH2O): must be refused (busy)
+   state Running
+   ['# err circuit learn refused: busy', '# CIRCUIT ph=done step=0/5 res=aborted warn=0x00 applied=0 n=0 r_lam=0.00000 r_turb=0.000000 d60=0.000 d100=0.000 rms=0.000 prev_d60=0.637 p0=0.005 q0=-1.27 stop=abort use=default use_lam=0.00353 use_turb=0.000118 apply=1 rpm_max=26000 csv=2 csverr=0x0000']
+   state after stop Idle
+== final
+   result aborted warn=0x00 applied=0 n=0 stop=abort
+   fit R_lam 0.00000 R_turb 0.000000  d60 0.000 (was 0.637) d100 0.000 rms 0.000  p0 0.005 q0 -1.27
+   in use: default 0.00353 / 0.000118  csv rows 2 err 0x0000

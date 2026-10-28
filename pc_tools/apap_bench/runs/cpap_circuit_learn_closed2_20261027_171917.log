@@ -1,0 +1,8 @@
+['# ack circuit learn']
+   0.0 s  ph=zero step=0/5
+   0.9 s  ph=step step=0/5
+   7.0 s  ph=done step=0/5
+   result not_open warn=0x00 applied=0 n=1 stop=-
+   fit R_lam 0.00000 R_turb 0.000000  d60 0.000 (was 0.754) d100 0.000 rms 0.000  p0 -0.015 q0 -0.04
+   in use: card 0.00000 / 0.000209  csv rows 1 err 0x0000
+    # CIRCUIT pt=0 rpm=11993 q=29.19 p=2.781 fit=0.000 amps=0.05

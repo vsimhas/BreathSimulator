@@ -18,6 +18,59 @@ from leak_analysis import insp_starts
 import os as _os
 HERE = _os.path.dirname(_os.path.abspath(__file__))   # code
 SP = _os.path.join(HERE, "runs")                       # run data in / out
+def split_terms(raw, rows, segs, ts0):
+    """#25 (28 Oct): which subtracted term is wrong - vent model or leak estimate?
+
+    The CPAP's leak estimate comes from the status lines (2 s poll; it is a
+    ~10 s average, so the poll rate is enough). Per breath:
+      vent model = (total - patient) - leak estimate
+      vent real  = total - external                 (vent sits between them)
+      leak real  = external - simulator             (the box leak)
+    """
+    st = [(s["t"] - ts0, s["leak"]) for s in raw.get("st_log", [])
+          if s.get("state") and "leak" in s]
+    if len(st) < 5:
+        print("\n  (no status-line leak estimates - cannot split the terms)")
+        return
+    ts = np.array([x[0] for x in st])
+    ls = np.array([x[1] for x in st])
+    for r in rows:
+        r["leak_est"] = float(np.interp(r["t"] + 2.5, ts, ls))
+        r["vent_model"] = r["model"] - r["leak_est"]
+        r["vent_err"] = r["vent_model"] - r["vent_seen"]
+        r["leak_err"] = r["leak_est"] - r["box_leak"]
+    print("\n  SPLIT OF THE SUBTRACTED MODEL (medians per segment, slm)")
+    print("  %-14s %3s %10s %10s %9s %10s %10s %9s %9s" % (
+        "segment", "n", "vent model", "vent real", "vent err",
+        "leak est", "leak real", "leak err", "total err"))
+    for a, b, name in segs:
+        g = [r for r in rows if a + 8 <= r["t"] < b - 2]
+        if not g:
+            continue
+        m = {k: float(np.median([r[k] for r in g])) for k in
+             ("vent_model", "vent_seen", "vent_err", "leak_est", "box_leak", "leak_err")}
+        print("  %-14s %3d %10.2f %10.2f %+9.2f %10.2f %10.2f %+9.2f %+9.2f" % (
+            name, len(g), m["vent_model"], m["vent_seen"], m["vent_err"], m["leak_est"],
+            m["box_leak"], m["leak_err"], m["vent_err"] + m["leak_err"]))
+    print("  (err = model minus real; + = the CPAP subtracts too much)")
+
+    vv = [s for s in raw.get("st_log", []) if s.get("state") and "mr" in s]
+    if not vv:
+        return
+    print("\n  VIVO STATE (status lines, medians per segment)")
+    print("  %-14s %3s %8s %8s %9s %8s %7s %8s %8s %8s %6s" % (
+        "segment", "n", "MeanR", "MeanR10", "ventref", "unint", "bpm", "Vi mL", "Ve mL",
+        "rest mL", "MR sd"))
+    for a, b, name in segs:
+        g = [s for s in vv if a + 8 <= s["t"] - ts0 < b - 2]
+        if not g:
+            continue
+        med = lambda k: float(np.median([s[k] for s in g]))
+        print("  %-14s %3d %8.0f %8.0f %9.2f %8.2f %7.1f %8.0f %8.0f %8.0f %6.0f" % (
+            name, len(g), med("mr"), med("mr10"), med("vent"), med("unint"), med("bpm"),
+            med("vi"), med("ve"), med("rest"), float(np.std([s["mr"] for s in g]))))
+
+
 def main(raw):
     ts0 = raw["t_script"]
     segs, acc = [], 0.0
@@ -80,6 +133,7 @@ def main(raw):
         r["vent_seen"] = r["tot"] - r["ext"]          # measurement check
         r["model"] = r["tot"] - r["pat"]              # what the CPAP subtracts
     print("  %d breaths" % len(rows))
+    split_terms(raw, rows, segs, ts0)
 
     print("\n  per segment (medians):")
     hdr = ("segment", "n", "box leak", "tot-ext", "tot-pat", "pat mean", "sim pk", "ext pk", "tot pk", "pat pk")
