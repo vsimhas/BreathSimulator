@@ -294,18 +294,20 @@ static uint8_t  g_p_valid;
 #define BREATH_P_INVALID_ABORT_S  0.3f
 static float    g_p_invalid_s;
 
-/* Abort ramp-down. An abort the motor itself did not cause (pressure limit,
- * pressure invalid) used to post STOP straight away, which switches PWM off
- * at whatever speed the blower was at. Instead the speed is walked down at
- * the normal, bus-voltage-derated fall rate to ABORT_RAMP_END_RPM and only
- * then stopped. Active decel also drops the airway pressure faster than a
- * free coast does. ABORT_RAMP_SLACK_S bounds the wait for the rotor to
- * follow, so a drive that will not decelerate is still stopped. */
-#define BREATH_ABORT_RAMP_END_RPM   BREATH_RPM_OBS_MIN_RPM
-#define BREATH_ABORT_RAMP_TOL_RPM   1000
-#define BREATH_ABORT_RAMP_SLACK_S   2.0f
-static uint8_t  g_abort_ramping;
-static float    g_abort_ramp_left_s;
+/* Stop ramp-down. A stop (`sim stop`, the GUI) and an abort the motor itself
+ * did not cause (pressure limit, pressure invalid) used to post STOP straight
+ * away, which switches PWM off at whatever speed the blower was at. Instead
+ * the speed is walked down at the normal, bus-voltage-derated fall rate to
+ * STOP_RAMP_END_RPM and only then stopped. Active decel also drops the airway
+ * pressure faster than a free coast does. STOP_RAMP_SLACK_S bounds the wait
+ * for the rotor to follow, so a drive that will not decelerate is still
+ * stopped. The ramp runs from BreathSim_Update in IDLE (stop) or FAULT
+ * (abort). */
+#define BREATH_STOP_RAMP_END_RPM    BREATH_RPM_OBS_MIN_RPM
+#define BREATH_STOP_RAMP_TOL_RPM    1000
+#define BREATH_STOP_RAMP_SLACK_S    2.0f
+static volatile uint8_t g_stop_ramping;
+static float    g_stop_ramp_left_s;
 
 static float    g_q_target_lpm;
 static float    g_q_peak_lpm;      /* peak this breath needs for tidal_ml */
@@ -1485,18 +1487,36 @@ static void BreathSim_AckFaultIfLatched(void)
   }
 }
 
+/** Begin a ramp-down from g_target_rpm before STOP. Only while the drive is
+ *  in RUN and healthy; returns false if the caller must stop at once. */
+static bool BreathSim_BeginStopRamp(const char *what)
+{
+  if ((g_mc_state != MC_STATE_RUN) || (g_current_faults != 0U) ||
+      (g_have_posted == 0U) || (g_target_rpm <= BREATH_STOP_RAMP_END_RPM))
+  {
+    return false;
+  }
+  const float span = (float)(g_target_rpm - BREATH_STOP_RAMP_END_RPM);
+  g_stop_ramp_left_s = (span / BREATH_SLEW_FALL_MIN_RPM_PER_S) +
+                       BREATH_STOP_RAMP_SLACK_S;
+  g_stop_ramping = 1U;   /* last: the breath task may run the ramp from here */
+  DBG_W("SIM", "%s: ramping %ld -> %d rpm before stop",
+        what, (long)g_target_rpm, (int)BREATH_STOP_RAMP_END_RPM);
+  return true;
+}
+
 /** Abort the run. @p soft_stop asks for a ramp-down before STOP; it is only
  *  honoured while the drive is in RUN and healthy - a motor fault, or a drive
  *  that never got to RUN, is stopped at once. */
 static void BreathSim_EnterFault(const char *why, bool soft_stop)
 {
-  const bool was_ramping = (g_abort_ramping != 0U);
+  const bool was_ramping = (g_stop_ramping != 0U);
 
-  g_abort_ramping = 0U;
+  g_stop_ramping = 0U;
   if (was_ramping)
   {
     /* A fault arriving during the ramp: the ramp is void, stop now. */
-    DBG_E("SIM", "abort ramp cut short: %s (mc=%u cur=0x%04X rpm_act=%ld)",
+    DBG_E("SIM", "stop ramp cut short: %s (mc=%u cur=0x%04X rpm_act=%ld)",
           why, (unsigned)g_mc_state, (unsigned)g_current_faults, (long)g_rpm_act);
     (void)BlowerIpc_CM7_Stop();
     g_have_posted = 0U;
@@ -1517,15 +1537,8 @@ static void BreathSim_EnterFault(const char *why, bool soft_stop)
         (long)g_target_rpm, (long)g_rpm_act,
         (unsigned long)g_bus_voltage_mv, (unsigned)g_flags);
 
-  if (soft_stop && (g_mc_state == MC_STATE_RUN) && (g_current_faults == 0U) &&
-      (g_have_posted != 0U) && (g_target_rpm > BREATH_ABORT_RAMP_END_RPM))
+  if (soft_stop && BreathSim_BeginStopRamp("abort"))
   {
-    const float span = (float)(g_target_rpm - BREATH_ABORT_RAMP_END_RPM);
-    g_abort_ramping     = 1U;
-    g_abort_ramp_left_s = (span / BREATH_SLEW_FALL_MIN_RPM_PER_S) +
-                          BREATH_ABORT_RAMP_SLACK_S;
-    DBG_W("SIM", "abort: ramping %ld -> %d rpm before stop",
-          (long)g_target_rpm, (int)BREATH_ABORT_RAMP_END_RPM);
     return;
   }
 
@@ -1533,33 +1546,34 @@ static void BreathSim_EnterFault(const char *why, bool soft_stop)
   g_have_posted = 0U;
 }
 
-/** One tick of the abort ramp-down; posts STOP once the rotor is down. */
-static void BreathSim_AbortRampStep(float dt_s)
+/** One tick of the stop ramp-down; posts STOP once the rotor is down. */
+static void BreathSim_StopRampStep(float dt_s)
 {
   const int32_t max_drop = (int32_t)lroundf(BreathSim_FallSlewLimit() * dt_s);
   int32_t next = g_target_rpm - max_drop;
 
-  if (next < BREATH_ABORT_RAMP_END_RPM) { next = BREATH_ABORT_RAMP_END_RPM; }
+  if (next < BREATH_STOP_RAMP_END_RPM) { next = BREATH_STOP_RAMP_END_RPM; }
   g_target_rpm = next;
   BreathSim_PostRpm(next);
 
-  g_abort_ramp_left_s -= dt_s;
-  const bool down = (next == BREATH_ABORT_RAMP_END_RPM) &&
-                    (g_rpm_act <= (BREATH_ABORT_RAMP_END_RPM + BREATH_ABORT_RAMP_TOL_RPM));
-  if (down || (g_abort_ramp_left_s <= 0.0f))
+  g_stop_ramp_left_s -= dt_s;
+  const bool down = (next == BREATH_STOP_RAMP_END_RPM) &&
+                    (g_rpm_act <= (BREATH_STOP_RAMP_END_RPM + BREATH_STOP_RAMP_TOL_RPM));
+  if (down || (g_stop_ramp_left_s <= 0.0f))
   {
     if (!down)
     {
-      DBG_W("SIM", "abort ramp timed out: cmd=%ld act=%ld, stopping",
+      DBG_W("SIM", "stop ramp timed out: cmd=%ld act=%ld, stopping",
             (long)g_target_rpm, (long)g_rpm_act);
     }
     else
     {
-      DBG_I("SIM", "abort ramp done at rpm_act=%ld, stopping", (long)g_rpm_act);
+      DBG_I("SIM", "stop ramp done at rpm_act=%ld, stopping", (long)g_rpm_act);
     }
-    g_abort_ramping = 0U;
+    g_stop_ramping = 0U;
     (void)BlowerIpc_CM7_Stop();
     g_have_posted = 0U;
+    if (g_state == BREATH_STATE_IDLE) { g_target_rpm = g_params.rpm_base; }
   }
 }
 
@@ -1895,7 +1909,7 @@ void BreathSim_Start(void)
   g_flags           = 0U;
   g_track_err_s     = 0.0f;
   g_p_invalid_s     = 0.0f;
-  g_abort_ramping   = 0U;
+  g_stop_ramping    = 0U;
   g_amp_scale       = 1.0f;
   g_flat_eff        = g_params.flattening;
   g_fl_shape_eff    = g_params.fl_shape;
@@ -1970,20 +1984,29 @@ void BreathSim_Stop(void)
   g_envelope   = 0.0f;
   g_env_raw    = 0.0f;
   g_segment    = BREATH_SEG_EXP_PAUSE;
-  g_target_rpm = g_params.rpm_base;
-  g_abort_ramping = 0U;   /* an explicit stop overrides an abort ramp */
 
   BreathSim_ScriptStop();
   BreathSim_SetActiveEvent((uint8_t)BREATH_EVENT_NONE, 0.0f, 0.0f);
 
-  if (was_active)
+  /* Ramp down from the speed the run was at (an abort ramp already under way
+   * just carries on). Only a drive that is not in RUN is stopped at once,
+   * from baseline as before. */
+  if (was_active && (g_stop_ramping == 0U) && !BreathSim_BeginStopRamp("stop"))
   {
+    g_target_rpm = g_params.rpm_base;
     (void)BlowerIpc_CM7_SetSpeedRpmSilent(g_target_rpm);
     (void)BlowerIpc_CM7_Stop();
+  }
+  if (was_active)
+  {
     DBG_I("SIM", "stop: %lu breaths, flags=0x%04X",
           (unsigned long)g_breath_index, (unsigned)g_flags);
   }
-  g_have_posted = 0U;
+  if (g_stop_ramping == 0U)
+  {
+    g_target_rpm  = g_params.rpm_base;
+    g_have_posted = 0U;
+  }
 
   BreathSim_PublishStatus();
 }
@@ -1995,18 +2018,24 @@ bool BreathSim_IsRunning(void)
 
 void BreathSim_Update(float dt_s)
 {
+  if (dt_s <= 0.0f) { dt_s = 0.005f; }
+
   if (g_state == BREATH_STATE_IDLE)
   {
+    if (g_stop_ramping != 0U)
+    {
+      BreathSim_Supervise(dt_s);   /* a fault here cuts the ramp short */
+      if (g_stop_ramping != 0U) { BreathSim_StopRampStep(dt_s); }
+      BreathSim_PublishStatus();
+    }
     return;
   }
-
-  if (dt_s <= 0.0f) { dt_s = 0.005f; }
 
   BreathSim_Supervise(dt_s);
 
   if (g_state == BREATH_STATE_FAULT)
   {
-    if (g_abort_ramping != 0U) { BreathSim_AbortRampStep(dt_s); }
+    if (g_stop_ramping != 0U) { BreathSim_StopRampStep(dt_s); }
     BreathSim_PublishStatus();
     return;
   }

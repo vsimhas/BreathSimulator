@@ -676,6 +676,8 @@ void BreathSim_GetTiming(BreathSimTiming_t *out);
 void BreathSim_GetStatus(BreathSimStatus_t *out);
 
 void BreathSim_Start(void);
+/** End the run. A blower in RUN is ramped down to BREATH_RPM_OBS_MIN_RPM
+  * by the breath task before the STOP is posted; otherwise it stops at once. */
 void BreathSim_Stop(void);
 bool BreathSim_IsRunning(void);
 
