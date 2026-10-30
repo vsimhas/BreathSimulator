@@ -80,6 +80,15 @@ HAL_StatusTypeDef AMS5935_Init(AMS5935_HandleTypeDef *dev)
     dev->read_count  = 0U;
     dev->error_count = 0U;
     dev->present     = 0U;
+    dev->consec_held     = 0U;
+    dev->spi_fail_count  = 0U;
+    dev->busy_count      = 0U;
+    dev->memerr_count    = 0U;
+    dev->ovf_count       = 0U;
+    dev->span_count      = 0U;
+    dev->tear_count      = 0U;
+    dev->last_bad_status = 0U;
+    dev->recover_count   = 0U;
 
     /* Datasheet startup: 2.5 ms, no SCLK during this window. */
     HAL_Delay(5U);
@@ -158,11 +167,37 @@ static HAL_StatusTypeDef ams5935_read_frame(AMS5935_HandleTypeDef *dev,
     return HAL_OK;
 }
 
+/* Record why a frame was rejected (diagnostics only - see the handle). */
+static void ams5935_count_reject(AMS5935_HandleTypeDef *dev, const AMS5935_Data_t *data)
+{
+    dev->last_bad_status = data->status;
+    if (AMS5935_StatusBusy(data->status) != 0U)
+    {
+        dev->busy_count++;
+    }
+    else if (AMS5935_StatusMemoryError(data->status) != 0U)
+    {
+        dev->memerr_count++;
+    }
+    else if (AMS5935_StatusOverflow(data->status) != 0U)
+    {
+        dev->ovf_count++;
+    }
+    else
+    {
+        dev->span_count++;
+    }
+}
+
 static HAL_StatusTypeDef ams5935_hold_last(AMS5935_HandleTypeDef *dev,
                                            AMS5935_Data_t *data)
 {
     dev->held_last = 1U;
     dev->held_count++;
+    if (dev->consec_held < 0xFFFFU)
+    {
+        dev->consec_held++;
+    }
     if (dev->last_valid != 0U)
     {
         const uint8_t bad_status = data->status;
@@ -187,7 +222,18 @@ HAL_StatusTypeDef AMS5935_ReadRaw(AMS5935_HandleTypeDef *dev, AMS5935_Data_t *da
     ret = ams5935_read_frame(dev, data);
     if (ret != HAL_OK)
     {
+        /* A failed transfer is a held sample too. It used to return here
+         * without setting held_last, so a caller that gates on held_last
+         * (SensorTask's p_valid) kept treating the last value as fresh for
+         * as long as the bus stayed broken. */
         dev->error_count++;
+        dev->spi_fail_count++;
+        dev->held_last = 1U;
+        dev->held_count++;
+        if (dev->consec_held < 0xFFFFU)
+        {
+            dev->consec_held++;
+        }
         return ret;
     }
 
@@ -195,6 +241,7 @@ HAL_StatusTypeDef AMS5935_ReadRaw(AMS5935_HandleTypeDef *dev, AMS5935_Data_t *da
      * payload is not a finished conversion. Hold the last good sample. */
     if (ams5935_payload_unreliable(data) != 0U)
     {
+        ams5935_count_reject(dev, data);
         return ams5935_hold_last(dev, data);
     }
 
@@ -205,10 +252,12 @@ HAL_StatusTypeDef AMS5935_ReadRaw(AMS5935_HandleTypeDef *dev, AMS5935_Data_t *da
     if (ret != HAL_OK)
     {
         dev->error_count++;
+        dev->spi_fail_count++;
         return ams5935_hold_last(dev, data);
     }
     if (ams5935_payload_unreliable(&second) != 0U)
     {
+        ams5935_count_reject(dev, &second);
         return ams5935_hold_last(dev, data);
     }
 
@@ -217,13 +266,15 @@ HAL_StatusTypeDef AMS5935_ReadRaw(AMS5935_HandleTypeDef *dev, AMS5935_Data_t *da
                : (second.pressure_raw - data->pressure_raw);
     if (tear > AMS5935_TEAR_MAX_COUNTS)
     {
+        dev->tear_count++;
         return ams5935_hold_last(dev, data);
     }
 
-    dev->last_good  = *data;
-    dev->last_valid = 1U;
-    dev->held_last  = 0U;
-    dev->present    = 1U;
+    dev->last_good   = *data;
+    dev->last_valid  = 1U;
+    dev->held_last   = 0U;
+    dev->consec_held = 0U;
+    dev->present     = 1U;
     dev->read_count++;
     return HAL_OK;
 }

@@ -468,6 +468,12 @@ typedef enum
 /** Pressure feed-forward selected, but the pressure sample was unusable, so
   * the controller fell back to the static path for those ticks. */
 #define BREATH_FLAG_FF_NO_PRESSURE   0x0800U
+/** Airway pressure invalid (sensor held / not responding) for longer than
+  * BREATH_P_INVALID_ABORT_S while a pressure limit or the pressure
+  * feed-forward was in use; run aborted. Without it the pressure limit is
+  * silently off - it only runs on valid samples. This abort and the
+  * pressure-limit one ramp the blower down before stopping it. */
+#define BREATH_FLAG_PRESSURE_INVALID 0x1000U
 
 /* ===========================================================================
  * Data

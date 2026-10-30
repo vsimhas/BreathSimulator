@@ -38,6 +38,9 @@ extern SFM3300_Handle_t hSfm3300;
 extern volatile HAL_StatusTypeDef sfm3300_init_status;
 extern volatile uint8_t  g_flow_reinit_request;
 extern volatile uint32_t g_flow_bus_busy_count;
+extern volatile uint32_t g_i2c1_bus_recover_count;
+extern volatile uint8_t  g_flow_busrecover_request;
+extern volatile uint32_t g_press_inject_hold_ms;
 
 /* AMS5935 pressure sensors; SensorTask owns all SPI4 traffic, this
  * file only reads the published values and raises the tare request. */
@@ -987,7 +990,7 @@ static void Telem_PushFlowStatus(void)
   char line2[208];
   const int n2 = snprintf(line2, sizeof(line2),
     "# flow reads=%lu err=%lu crc=%lu range=%lu recov=%lu startfail=%lu "
-    "busbusy=%lu hal=%d\r\n",
+    "busbusy=%lu hal=%d i2crec=%lu\r\n",
     (unsigned long)hSfm3300.read_count,
     (unsigned long)hSfm3300.error_count,
     (unsigned long)hSfm3300.crc_error_count,
@@ -995,7 +998,8 @@ static void Telem_PushFlowStatus(void)
     (unsigned long)hSfm3300.recover_count,
     (unsigned long)hSfm3300.start_fail_count,
     (unsigned long)g_flow_bus_busy_count,
-    (int)hSfm3300.last_status);
+    (int)hSfm3300.last_status,
+    (unsigned long)g_i2c1_bus_recover_count);
   if (n2 > 0) { Telem_BufPush((const uint8_t *)line2, (uint32_t)n2); }
 }
 
@@ -1048,6 +1052,15 @@ static void Telem_CmdFlow(const char *cmd, const char *args)
     /* Re-init blocks for ~60 ms and needs the I2C1 mutex, so hand it to
      * FlowTask rather than doing it here. */
     g_flow_reinit_request = 1U;
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  /* Test hook for the I2C1 bus recovery (main.c I2C1_BusRecover): run it
+   * once on a healthy bus and check the sensor comes back measuring. */
+  if (strcmp(args, "busrecover") == 0)
+  {
+    g_flow_busrecover_request = 1U;
     Telem_PushAck(cmd);
     return;
   }
@@ -1123,6 +1136,21 @@ static void Telem_PushPressureStatus(void)
     (int)g_pressure_spi_last_status);
   if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
 
+  /* Why samples were rejected, and the SPI recoveries (2026-10-30). */
+  n = snprintf(line, sizeof(line),
+    "# press PS reject spi=%lu busy=%lu memerr=%lu ovf=%lu span=%lu tear=%lu "
+    "last=0x%02X consec=%u recov=%lu\r\n",
+    (unsigned long)hamsPS.spi_fail_count,
+    (unsigned long)hamsPS.busy_count,
+    (unsigned long)hamsPS.memerr_count,
+    (unsigned long)hamsPS.ovf_count,
+    (unsigned long)hamsPS.span_count,
+    (unsigned long)hamsPS.tear_count,
+    (unsigned)hamsPS.last_bad_status,
+    (unsigned)hamsPS.consec_held,
+    (unsigned long)hamsPS.recover_count);
+  if (n > 0) { Telem_BufPush((const uint8_t *)line, (uint32_t)n); }
+
 #if PRESSURE_AS_ENABLED
   n = snprintf(line, sizeof(line),
     "# press AS(1200,CS1/PE4) present=%u %.1f mbar reads=%lu err=%lu held=%lu\r\n",
@@ -1154,6 +1182,23 @@ static void Telem_CmdPress(const char *cmd, const char *args)
   if ((strcmp(args, "off") == 0) || (strcmp(args, "0") == 0))
   {
     s_telem_press_enabled = 0U;
+    Telem_PushAck(cmd);
+    return;
+  }
+
+  /* Test hook for the sensor-freeze handling (2026-10-30): SensorTask
+   * reports the gauge as held for <ms> - BreathSim should abort a run that
+   * depends on pressure after 0.3 s (PRESSURE_INVALID), and SensorTask
+   * should attempt an SPI recovery after 200 ms. */
+  if (strncmp(args, "inject ", 7U) == 0)
+  {
+    const long ms = strtol(&args[7], NULL, 10);
+    if ((ms <= 0L) || (ms > 10000L))
+    {
+      Telem_PushErr("press inject <1..10000 ms>");
+      return;
+    }
+    g_press_inject_hold_ms = (uint32_t)ms;
     Telem_PushAck(cmd);
     return;
   }
@@ -1201,7 +1246,7 @@ static void Telem_CmdPress(const char *cmd, const char *args)
     return;
   }
 
-  Telem_PushErr("press status|on|off|zero|clearzero|range <lo> <hi>");
+  Telem_PushErr("press status|on|off|zero|clearzero|range <lo> <hi>|inject <ms>");
 }
 
 static void Telem_CmdFoc(const char *cmd, const char *args)

@@ -289,6 +289,23 @@ static uint8_t  g_q_valid;
 static uint32_t g_q_stamp_ms;
 static float    g_p_cmh2o;
 static uint8_t  g_p_valid;
+/* Time the pressure has been invalid while the run depends on it - see the
+ * watchdog in BreathSim_Update. */
+#define BREATH_P_INVALID_ABORT_S  0.3f
+static float    g_p_invalid_s;
+
+/* Abort ramp-down. An abort the motor itself did not cause (pressure limit,
+ * pressure invalid) used to post STOP straight away, which switches PWM off
+ * at whatever speed the blower was at. Instead the speed is walked down at
+ * the normal, bus-voltage-derated fall rate to ABORT_RAMP_END_RPM and only
+ * then stopped. Active decel also drops the airway pressure faster than a
+ * free coast does. ABORT_RAMP_SLACK_S bounds the wait for the rotor to
+ * follow, so a drive that will not decelerate is still stopped. */
+#define BREATH_ABORT_RAMP_END_RPM   BREATH_RPM_OBS_MIN_RPM
+#define BREATH_ABORT_RAMP_TOL_RPM   1000
+#define BREATH_ABORT_RAMP_SLACK_S   2.0f
+static uint8_t  g_abort_ramping;
+static float    g_abort_ramp_left_s;
 
 static float    g_q_target_lpm;
 static float    g_q_peak_lpm;      /* peak this breath needs for tidal_ml */
@@ -1468,8 +1485,24 @@ static void BreathSim_AckFaultIfLatched(void)
   }
 }
 
-static void BreathSim_EnterFault(const char *why)
+/** Abort the run. @p soft_stop asks for a ramp-down before STOP; it is only
+ *  honoured while the drive is in RUN and healthy - a motor fault, or a drive
+ *  that never got to RUN, is stopped at once. */
+static void BreathSim_EnterFault(const char *why, bool soft_stop)
 {
+  const bool was_ramping = (g_abort_ramping != 0U);
+
+  g_abort_ramping = 0U;
+  if (was_ramping)
+  {
+    /* A fault arriving during the ramp: the ramp is void, stop now. */
+    DBG_E("SIM", "abort ramp cut short: %s (mc=%u cur=0x%04X rpm_act=%ld)",
+          why, (unsigned)g_mc_state, (unsigned)g_current_faults, (long)g_rpm_act);
+    (void)BlowerIpc_CM7_Stop();
+    g_have_posted = 0U;
+    return;
+  }
+
   g_flags |= BREATH_FLAG_MOTOR_FAULT;
   g_state = BREATH_STATE_FAULT;
   /* Log occurred_faults, and log it BEFORE the stop below. Aborting sends a
@@ -1483,8 +1516,51 @@ static void BreathSim_EnterFault(const char *why)
   DBG_E("SIM", "  at rpm_cmd=%ld rpm_act=%ld vbus=%lu mV flags=0x%04X",
         (long)g_target_rpm, (long)g_rpm_act,
         (unsigned long)g_bus_voltage_mv, (unsigned)g_flags);
+
+  if (soft_stop && (g_mc_state == MC_STATE_RUN) && (g_current_faults == 0U) &&
+      (g_have_posted != 0U) && (g_target_rpm > BREATH_ABORT_RAMP_END_RPM))
+  {
+    const float span = (float)(g_target_rpm - BREATH_ABORT_RAMP_END_RPM);
+    g_abort_ramping     = 1U;
+    g_abort_ramp_left_s = (span / BREATH_SLEW_FALL_MIN_RPM_PER_S) +
+                          BREATH_ABORT_RAMP_SLACK_S;
+    DBG_W("SIM", "abort: ramping %ld -> %d rpm before stop",
+          (long)g_target_rpm, (int)BREATH_ABORT_RAMP_END_RPM);
+    return;
+  }
+
   (void)BlowerIpc_CM7_Stop();
   g_have_posted = 0U;
+}
+
+/** One tick of the abort ramp-down; posts STOP once the rotor is down. */
+static void BreathSim_AbortRampStep(float dt_s)
+{
+  const int32_t max_drop = (int32_t)lroundf(BreathSim_FallSlewLimit() * dt_s);
+  int32_t next = g_target_rpm - max_drop;
+
+  if (next < BREATH_ABORT_RAMP_END_RPM) { next = BREATH_ABORT_RAMP_END_RPM; }
+  g_target_rpm = next;
+  BreathSim_PostRpm(next);
+
+  g_abort_ramp_left_s -= dt_s;
+  const bool down = (next == BREATH_ABORT_RAMP_END_RPM) &&
+                    (g_rpm_act <= (BREATH_ABORT_RAMP_END_RPM + BREATH_ABORT_RAMP_TOL_RPM));
+  if (down || (g_abort_ramp_left_s <= 0.0f))
+  {
+    if (!down)
+    {
+      DBG_W("SIM", "abort ramp timed out: cmd=%ld act=%ld, stopping",
+            (long)g_target_rpm, (long)g_rpm_act);
+    }
+    else
+    {
+      DBG_I("SIM", "abort ramp done at rpm_act=%ld, stopping", (long)g_rpm_act);
+    }
+    g_abort_ramping = 0U;
+    (void)BlowerIpc_CM7_Stop();
+    g_have_posted = 0U;
+  }
 }
 
 /** Read CM4 status and decide whether the run is still valid. */
@@ -1510,7 +1586,7 @@ static void BreathSim_Supervise(float dt_s)
   if ((st.mc_state == MC_STATE_FAULT_NOW) || (st.mc_state == MC_STATE_FAULT_OVER) ||
       (st.current_faults != 0U))
   {
-    BreathSim_EnterFault("motor fault");
+    BreathSim_EnterFault("motor fault", false);
     return;
   }
 
@@ -1818,6 +1894,8 @@ void BreathSim_Start(void)
   g_segment         = BREATH_SEG_EXP_PAUSE;
   g_flags           = 0U;
   g_track_err_s     = 0.0f;
+  g_p_invalid_s     = 0.0f;
+  g_abort_ramping   = 0U;
   g_amp_scale       = 1.0f;
   g_flat_eff        = g_params.flattening;
   g_fl_shape_eff    = g_params.fl_shape;
@@ -1893,6 +1971,7 @@ void BreathSim_Stop(void)
   g_env_raw    = 0.0f;
   g_segment    = BREATH_SEG_EXP_PAUSE;
   g_target_rpm = g_params.rpm_base;
+  g_abort_ramping = 0U;   /* an explicit stop overrides an abort ramp */
 
   BreathSim_ScriptStop();
   BreathSim_SetActiveEvent((uint8_t)BREATH_EVENT_NONE, 0.0f, 0.0f);
@@ -1927,6 +2006,7 @@ void BreathSim_Update(float dt_s)
 
   if (g_state == BREATH_STATE_FAULT)
   {
+    if (g_abort_ramping != 0U) { BreathSim_AbortRampStep(dt_s); }
     BreathSim_PublishStatus();
     return;
   }
@@ -1992,7 +2072,7 @@ void BreathSim_Update(float dt_s)
     {
       if (g_mc_state != MC_STATE_RUN)
       {
-        BreathSim_EnterFault("motor never reached RUN");
+        BreathSim_EnterFault("motor never reached RUN", false);
         BreathSim_PublishStatus();
         return;
       }
@@ -2191,10 +2271,35 @@ void BreathSim_Update(float dt_s)
         (g_p_cmh2o > g_params.pressure_limit_cmh2o))
     {
       g_flags |= BREATH_FLAG_PRESSURE_LIMIT;
-      BreathSim_EnterFault("airway pressure limit exceeded");
+      BreathSim_EnterFault("airway pressure limit exceeded", true);
       BreathSim_PublishStatus();
       return;
     }
+  }
+
+  /* The limit above only runs on valid samples, so a frozen sensor switches
+   * it off. 2026-10-30: the gauge held 32.4-33.2 cmH2O for several seconds
+   * at a time, the pressure feed-forward fell back to the static path, and
+   * when the sensor returned the lung was at 40.1 cmH2O. Whenever the run
+   * depends on pressure - a limit is set, or the pressure feed-forward is
+   * selected - stop instead of continuing blind. Brief holds (busy, torn
+   * reads: a tick or two) are normal and stay well under the threshold;
+   * SensorTask also attempts an SPI recovery after 200 ms (main.c). */
+  if ((g_params.pressure_limit_cmh2o > 0.0f) ||
+      (g_params.ff_mode == (uint8_t)BREATH_FF_PRESSURE))
+  {
+    g_p_invalid_s = (g_p_valid != 0U) ? 0.0f : (g_p_invalid_s + dt_s);
+    if (g_p_invalid_s >= BREATH_P_INVALID_ABORT_S)
+    {
+      g_flags |= BREATH_FLAG_PRESSURE_INVALID;
+      BreathSim_EnterFault("airway pressure invalid (sensor held / not responding)", true);
+      BreathSim_PublishStatus();
+      return;
+    }
+  }
+  else
+  {
+    g_p_invalid_s = 0.0f;
   }
 
   const BreathSegment_t prev_seg = g_segment;

@@ -1211,6 +1211,12 @@ volatile uint8_t g_flow_reinit_request = 0U;
 /* Counts cycles where the sensor task could not get the bus in time -
  * non-zero means something else on I2C1 is stealing flow samples. */
 volatile uint32_t g_flow_bus_busy_count = 0U;
+/* I2C1 bus recoveries done by SensorTask (see I2C1_BusRecover). */
+volatile uint32_t g_i2c1_bus_recover_count = 0U;
+/* Test hooks for the lock-up handling: 'flow busrecover' runs the I2C1 bus
+ * recovery once; 'press inject <ms>' reports the gauge as held for <ms>. */
+volatile uint8_t  g_flow_busrecover_request = 0U;
+volatile uint32_t g_press_inject_hold_ms = 0U;
 
 /*
  * AMS5935 pressure sensors on SPI4, software chip select. Same parts and
@@ -2499,6 +2505,78 @@ static void ClimateTask(void *argument)
   * margin - comfortably more than the 5 ms loop in the CPAP firmware, where
   * the tight margin was a known source of torn reads.
   */
+
+/* Sensor lock-up recovery (2026-10-30).
+ *
+ * Mid-run, both sensors have locked up until a power cycle: the AMS5935
+ * gauge (SPI4) held 32.4-33.2 cmH2O four times, and the SFM3300 (I2C1) froze
+ * at 37.3 and 51.1 L/min with ~190 failed restarts in a row - always near
+ * the simulator blower's high-speed peaks at CPAP 20 cmH2O, so electrical
+ * noise is the suspect. A frozen pressure also switched off the airway
+ * pressure limit, which only runs on valid samples; the lung then reached
+ * 40 cmH2O. BreathSim_Update now aborts on a sustained invalid pressure
+ * (BREATH_FLAG_PRESSURE_INVALID); these helpers try to bring the buses back
+ * without a power cycle.
+ *
+ * Neither calls MX_*_Init: those end in Error_Handler(), which would hang
+ * the simulator mid-run. The Init structs set at boot are reused. */
+#define PRESS_RECOVER_AFTER_READS  20U   /* 20 x 10 ms of held samples */
+
+static void SPI4_Recover(void)
+{
+  (void)HAL_SPI_Abort(&hspi4);
+  (void)HAL_SPI_DeInit(&hspi4);
+  (void)HAL_SPI_Init(&hspi4);
+  /* Chip selects back high (HAL_SPI_DeInit leaves them alone, but a part
+   * that saw a truncated frame needs a fresh CS edge). */
+  HAL_GPIO_WritePin(hamsPS.cs_port, hamsPS.cs_pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(hamsAS.cs_port, hamsAS.cs_pin, GPIO_PIN_SET);
+  hamsPS.consec_held = 0U;
+  hamsPS.recover_count++;
+}
+
+/* Standard I2C bus recovery: a slave that lost a clock mid-byte holds SDA
+ * low and no master-side reset can clear it. Clock SCL (PB8) up to nine
+ * times until SDA (PB7) is released, send a STOP, then re-init the
+ * peripheral. Both pins are open-drain on the board's external pull-ups. */
+static void I2C1_BusRecover(void)
+{
+  GPIO_InitTypeDef g = {0};
+
+  (void)HAL_I2C_DeInit(&hi2c1);              /* MspDeInit releases PB7/PB8 */
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7 | GPIO_PIN_8, GPIO_PIN_SET);
+  g.Pin   = GPIO_PIN_7 | GPIO_PIN_8;
+  g.Mode  = GPIO_MODE_OUTPUT_OD;
+  g.Pull  = GPIO_NOPULL;
+  g.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &g);
+  HAL_Delay(1U);
+
+  for (uint8_t i = 0U; (i < 9U) && (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) == GPIO_PIN_RESET); i++)
+  {
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
+    HAL_Delay(1U);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+    HAL_Delay(1U);
+  }
+  /* STOP: SDA low -> high while SCL is high. */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_Delay(1U);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+  HAL_Delay(1U);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+  HAL_Delay(1U);
+
+  HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7 | GPIO_PIN_8);
+  if (HAL_I2C_Init(&hi2c1) == HAL_OK)       /* MspInit restores AF4 */
+  {
+    (void)HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE);
+    (void)HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0);
+  }
+  g_i2c1_bus_recover_count++;
+}
+
 static void SensorTask(void *argument)
 {
   (void)argument;
@@ -2616,6 +2694,19 @@ static void SensorTask(void *argument)
             (int)sfm3300_init_status, (unsigned long)hSfm3300.serial);
     }
 
+    if (g_flow_busrecover_request != 0U)
+    {
+      g_flow_busrecover_request = 0U;
+      if (osMutexAcquire(g_i2c1_mutex, osWaitForever) == osOK)
+      {
+        I2C1_BusRecover();
+        sfm3300_init_status = SFM3300_Init(&hSfm3300, &hi2c1, SFM3300_I2C_ADDR);
+        (void)osMutexRelease(g_i2c1_mutex);
+      }
+      DBG_I("FLOW", "test bus recovery #%lu: re-init hal=%d",
+            (unsigned long)g_i2c1_bus_recover_count, (int)sfm3300_init_status);
+    }
+
     /* The transfer itself is well under a millisecond; the timeout only
      * has to cover another owner holding the bus. Time out rather than
      * slipping the schedule, and count it so contention is visible in
@@ -2641,6 +2732,15 @@ static void SensorTask(void *argument)
           /* A full re-init also re-runs the soft reset, which is what a
            * sensor that browned out actually needs. */
           sfm3300_init_status = SFM3300_Init(&hSfm3300, &hi2c1, SFM3300_I2C_ADDR);
+        }
+        if (sfm3300_init_status != HAL_OK)
+        {
+          /* Still nothing: the bus itself may be stuck (SDA held low), which
+           * no amount of re-addressing the sensor clears. */
+          I2C1_BusRecover();
+          sfm3300_init_status = SFM3300_Init(&hSfm3300, &hi2c1, SFM3300_I2C_ADDR);
+          DBG_W("FLOW", "I2C1 bus recovery #%lu: re-init hal=%d",
+                (unsigned long)g_i2c1_bus_recover_count, (int)sfm3300_init_status);
         }
         if (sfm3300_init_status == HAL_OK)
         {
@@ -2668,12 +2768,32 @@ static void SensorTask(void *argument)
     }
     else if (ps_in_flight != 0U)  /* the only path while PRESSURE_AS_ENABLED is 0 */
     {
-      if (AMS5935_ReadRaw(&hamsPS, &g_measPS) == HAL_OK)
+      if (g_press_inject_hold_ms > 0U)
+      {
+        /* 'press inject' test hook: behave exactly like a frozen sensor -
+         * no read at all, so a healthy conversion cannot reset consec_held
+         * and the recovery path below is exercised too. */
+        g_press_inject_hold_ms = (g_press_inject_hold_ms > period_ms)
+                                 ? (g_press_inject_hold_ms - period_ms) : 0U;
+        hamsPS.held_last = 1U;
+        hamsPS.held_count++;
+        if (hamsPS.consec_held < 0xFFFFU) { hamsPS.consec_held++; }
+      }
+      else if (AMS5935_ReadRaw(&hamsPS, &g_measPS) == HAL_OK)
       {
         g_press_mbar  = g_measPS.pressure - hamsPS.zero_offset_mbar;
         g_press_cmh2o = g_press_mbar * AMS5935_MBAR_TO_CMH2O;
       }
       ps_in_flight = 0U;
+
+      /* No fresh conversion for 200 ms: reset the bus (see SPI4_Recover). */
+      if (hamsPS.consec_held >= PRESS_RECOVER_AFTER_READS)
+      {
+        SPI4_Recover();
+        DBG_W("PRS", "SPI4 recovery #%lu (last status 0x%02X, spi fails %lu)",
+              (unsigned long)hamsPS.recover_count, (unsigned)hamsPS.last_bad_status,
+              (unsigned long)hamsPS.spi_fail_count);
+      }
     }
 
     /* Tare is actioned here rather than in the command task so it uses a

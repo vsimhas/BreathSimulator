@@ -82,6 +82,22 @@ typedef struct
     uint32_t error_count;
     uint8_t  present;           /**< 1 once a clean conversion has landed. */
     float    zero_offset_mbar;  /**< subtracted from every reading */
+
+    /* Failure diagnostics and recovery (2026-10-30). The gauge sensor froze
+     * mid-run four times in two days (held 32.4-33.2 cmH2O until a power
+     * cycle); hold_last kept repeating the last good value forever and
+     * nothing recorded why. consec_held drives SensorTask's SPI recovery;
+     * the per-cause counters and last_bad_status say what the part was
+     * returning ('press status'). */
+    uint16_t consec_held;       /**< reads in a row that were not a fresh conversion */
+    uint32_t spi_fail_count;    /**< SPI transfer itself failed */
+    uint32_t busy_count;        /**< status: busy */
+    uint32_t memerr_count;      /**< status: memory error */
+    uint32_t ovf_count;         /**< status: analog overflow */
+    uint32_t span_count;        /**< payload outside the 10..90 % digital span */
+    uint32_t tear_count;        /**< two back-to-back reads disagreed */
+    uint8_t  last_bad_status;   /**< status byte of the last rejected frame */
+    uint32_t recover_count;     /**< SPI re-inits done by SensorTask */
 } AMS5935_HandleTypeDef;
 
 HAL_StatusTypeDef AMS5935_Init(AMS5935_HandleTypeDef *dev);
